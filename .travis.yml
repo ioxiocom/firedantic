@@ -1,0 +1,46 @@
+language: python
+python:
+  - 3.6
+  - 3.7
+  - 3.8
+cache:
+  pip: true
+  directories:
+    - "$HOME/.cache/pre-commit"
+    - "$HOME/.cache/pypoetry"
+    - "$HOME/google-cloud-sdk/"
+
+env:
+  global:
+    - secure: "BQS9emqcUDBqJg35Em6m89jV3cRdE1lgYZVFmNaIrTrcsLRuYtTgmBqPP9tYkTnkdiLb2oLZNCNVwPtZSr8Sz9/7ApFyO3l6XqWTconyaw2MSPqh/qEBMoQobpuHEIQDGgVx5PqtNdWn3F13NLumiiQI169wwm1Uc4/+jo7M+s6GSlGtpVqIHaf4vs6tOixJs8TvwZh1oarsLo4Gci6K3DSPv/M2UiJ69eL9o7X7UbD2gEh3rYOK83/+GdFnxSJLrg9JWEmkD3ypiPBrnZkuW5eHC3r5fRkmKP1avs8uo20MUMu/MX1lRpwRHTv9fKsEwksoJauuk1bjX5hDLF6Ucuq34Anu0BWN6qFXzxA6iENH9/FM2TRP6QPRJRzwO+dTttfqVmlzZRTq8rnBD1QjClnlvx4CdT2zBySauSv5jUdGYrwGWRybFL1rQb1t5fvAOwwSn4iormqKYVArN4LzVz0M8BqJxKWCBFYm5CKm0SdoV+ioHn1eWsDK3GdjTvjGL5pqZY+hUF6RbH7ry16ajS+/N8xin/8UhEYfRGp6aWDGwxk3HnfNFHbVRyuM23WOwVtMylkhSc9e1F6d8AibquoPGgQfUGdt/TtVYJPxphR6ZDytfTcZ4XlbwBSzNdty6f3/hRqW7fnPeUvsv04Mf+wmCGgbX+6lTwp7XuQ6CuI="
+
+before_install:
+  - gcloud version || true
+  - if [ ! -d "$HOME/google-cloud-sdk/bin" ]; then rm -rf
+    $HOME/google-cloud-sdk; export CLOUDSDK_CORE_DISABLE_PROMPTS=1; curl
+    https://sdk.cloud.google.com | bash; fi
+  # Add gcloud to $PATH
+  - source /home/travis/google-cloud-sdk/path.bash.inc
+  - gcloud version
+  - gcloud components install beta cloud-firestore-emulator --quiet
+  - pip install poetry pre-commit
+
+install:
+  - poetry install
+
+script:
+  # Start the firestore emulator to be able to run the tests.
+  - gcloud beta emulators firestore start --host-port=127.0.0.1:8686 > /dev/null
+    2>&1 &
+  - poetry run invoke test
+
+before_deploy:
+  - poetry config pypi-token.pypi $PYPI_PASSWORD
+
+deploy:
+  - provider: script
+    skip_existing: true
+    script: poetry publish --build
+    on:
+      branch: master
+      tags: true
