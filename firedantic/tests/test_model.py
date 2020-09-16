@@ -1,6 +1,7 @@
 from typing import List
 
 import pytest
+
 from firedantic.exceptions import ModelNotFoundError
 from firedantic.tests.conftest import Company
 

@@ -16,12 +16,12 @@ In your application you will need to configure the firestore db client and
 optionally the collection prefix, which by default is empty.
 
 ```python
+from mock import Mock
 from os import environ
 
 import google.auth.credentials
 from firedantic.configurations import configure
 from google.cloud import firestore
-from mock import Mock
 
 # Firestore emulator must be running if using locally.
 if environ.get("FIRESTORE_EMULATOR_HOST"):

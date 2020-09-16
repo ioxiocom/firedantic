@@ -2,9 +2,10 @@ from abc import ABC
 from typing import List, Optional, Type, TypeVar
 
 import pydantic
+from google.cloud.firestore_v1 import CollectionReference, DocumentReference
+
 from firedantic.configurations import CONFIGURATIONS
 from firedantic.exceptions import ModelNotFoundError
-from google.cloud.firestore_v1 import CollectionReference, DocumentReference
 
 TModel = TypeVar("TModel", bound="Model")
 
@@ -37,6 +38,9 @@ class Model(pydantic.BaseModel, ABC):
     def find(cls: Type[TModel], filter_: dict) -> List[TModel]:
         """Returns a list of models from the database based on a filter.
 
+        Example: `Company.find({"company_id": "1234567-8"})`.
+        Currently only supports `==` operator.
+
         :param filter_: The filter criteria.
         :return: List of found models.
         """
@@ -64,7 +68,7 @@ class Model(pydantic.BaseModel, ABC):
 
     @classmethod
     def get_by_id(cls: Type[TModel], id_: str) -> TModel:
-        """Returns the model based on the ID.
+        """Returns a model based on the ID.
 
         :param id_: The id of the entry.
         :return: The model.

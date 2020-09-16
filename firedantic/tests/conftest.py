@@ -3,10 +3,11 @@ from unittest.mock import Mock
 
 import google.auth.credentials
 import pytest
-from firedantic.configurations import configure
-from firedantic.models import Model
 from google.cloud import firestore
 from pydantic import BaseModel
+
+from firedantic.configurations import configure
+from firedantic.models import Model
 
 
 class Owner(BaseModel):
