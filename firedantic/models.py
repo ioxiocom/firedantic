@@ -60,7 +60,7 @@ class Model(pydantic.BaseModel, ABC):
         try:
             return cls.find(filter_)[0]
         except IndexError:
-            raise ModelNotFoundError("Model not found")
+            raise ModelNotFoundError(f"No '{cls.__name__}' found")
 
     @classmethod
     def get_by_id(cls: Type[TModel], id_: str) -> TModel:

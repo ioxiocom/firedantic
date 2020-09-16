@@ -26,9 +26,9 @@ from mock import Mock
 # Firestore emulator must be running if using locally.
 if environ.get("FIRESTORE_EMULATOR_HOST"):
     client = firestore.Client(
-            project="firedantic-test",
-            credentials=Mock(spec=google.auth.credentials.Credentials)
-        )
+        project="firedantic-test",
+        credentials=Mock(spec=google.auth.credentials.Credentials)
+    )
 else:
     client = firestore.Client()
 
