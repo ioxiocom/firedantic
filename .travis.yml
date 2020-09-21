@@ -31,8 +31,7 @@ install:
 
 script:
   # Start the firestore emulator to be able to run the tests.
-  - gcloud beta emulators firestore start --host-port=127.0.0.1:8686 > /dev/null
-    2>&1 &
+  - gcloud beta emulators firestore start --host-port=127.0.0.1:8686 > /dev/null 2>&1 &
   - poetry run invoke test
 
 before_deploy:
