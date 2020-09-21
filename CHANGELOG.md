@@ -20,5 +20,5 @@ and this project adheres to
 - Update README.md
 - Update .gitignore
 
-[unreleased]: https://github.com/digitalliving/firedantic/compare/0.1.0...HEAD
+[Unreleased]: https://github.com/digitalliving/firedantic/compare/0.1.0...HEAD
 [0.1.0]: https://github.com/digitalliving/firedantic/releases/tag/0.1.0
