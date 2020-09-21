@@ -8,6 +8,15 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [0.1.2] - 2020-09-21
+
+### Changed
+
+- Update README.md
+- Add imports to root level init
+- Update CHANGELOG.md
+- Bump version
+
 ## [0.1.1] - 2020-09-21
 
 ### Removed
@@ -35,5 +44,6 @@ and this project adheres to
 - Update .gitignore
 
 [Unreleased]: https://github.com/digitalliving/firedantic/compare/0.1.1...HEAD
+[0.1.2]: https://github.com/digitalliving/firedantic/compare/0.1.1...0.1.2
 [0.1.1]: https://github.com/digitalliving/firedantic/compare/0.1.0...0.1.1
 [0.1.0]: https://github.com/digitalliving/firedantic/releases/tag/0.1.0

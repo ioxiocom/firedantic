@@ -22,7 +22,7 @@ from mock import Mock
 from os import environ
 
 import google.auth.credentials
-from firedantic.configurations import configure
+from firedantic import configure
 from google.cloud import firestore
 
 # Firestore emulator must be running if using locally.
@@ -42,7 +42,7 @@ Once that is done, you can start defining your Pydantic models, e.g:
 ```python
 from pydantic import BaseModel
 
-from firedantic.models import Model
+from firedantic import Model
 
 class Owner(BaseModel):
     """Dummy owner Pydantic model."""
@@ -61,6 +61,7 @@ owner = Owner(first_name="John", last_name="Doe")
 company = Company(company_id="1234567-8", owner=owner)
 company.save()
 
+# Prints out the firestore ID of the Company model
 print(company.id)
 ```
 
