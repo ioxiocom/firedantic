@@ -8,6 +8,16 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [0.1.1] - 2020-09-21
+
+## Changed
+
+- Update PyPi token
+- Update README.md with build badge
+- Update travis.yml to only deploy on certain version
+- Update CHANGELOG.md
+- Bump version
+
 ## [0.1.0] - 2020-09-21
 
 ### Added
@@ -20,5 +30,6 @@ and this project adheres to
 - Update README.md
 - Update .gitignore
 
-[unreleased]: https://github.com/digitalliving/firedantic/compare/0.1.0...HEAD
+[Unreleased]: https://github.com/digitalliving/firedantic/compare/0.1.1...HEAD
+[0.1.1]: https://github.com/digitalliving/firedantic/compare/0.1.0...0.1.1
 [0.1.0]: https://github.com/digitalliving/firedantic/releases/tag/0.1.0

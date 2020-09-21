@@ -1,5 +1,7 @@
 # Firedantic
 
+[![Build Status](https://travis-ci.org/digitalliving/firedantic.svg?branch=master)](https://travis-ci.org/digitalliving/firedantic)
+
 Database models for Firestore using Pydantic base models.
 
 ## Installation
