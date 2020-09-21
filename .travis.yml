@@ -15,7 +15,6 @@ env:
     - secure: "qRfZF6oOoh5ZVsTA7+qzRKzaIu+9Gy9ec3Olt2EqibtnG7FT/7XG+x8PI8fx9v3p5omvvcW/+LpOJ9O2tiU/WZRbP67qWw/hFhupzVzqFZOAiqLINm2W7zWxgFfZhhIoUD2JlVQqtWY5MA0pCT31oC0y0z0aFdU5EMNcxz5Ic9xeVZ9H5jaZ8uXbe2Fd2W54nMMqFhfrLKHJuMRPOFC8f/rCeyC3rmK5FdqNlK4A6BvFUjbIs+al3Sho5oSfi9/fpoeitrWTy3Puoo1RonRGYSrP859AQs1JWVXITyjBxtIkLfCsg99tziXd5DWY/+c9hGvq2p5VJbJn4tA2Pbw6h5KUoO69h7nZfUaqIzTLK3Y8EJawZpxvIp6/cQHOWDMsERdcLnLA/UqcqTGmmEAe/rJWv1Er5c7bFK21WgY0wjwKA7ZjSEDAipICFGsiFevHTOUD16ZPuNIJrWuZSnj6ok5PuSW6ouhpKtzz8+4B+0zbee830JEOoCOPN1APeIsIZf77qOHQmTf42i5xQrdVUg1NE4mkpPJ1bSKQvt//AKRW2/lxL3ttd3rDZQnBDkxNgYGZw2HSL8LQVz6w0tzODcow79hDFOeBJHd9TvOV7Jb9Fbvuqqb/Plh/o92TcGF4hSGFv0oanxAWniWIsGYBB9fu+w+xk/+w0PUR5F2DJqw="
 
 before_install:
-  - nvm install
   - gcloud version || true
   - if [ ! -d "$HOME/google-cloud-sdk/bin" ]; then rm -rf
     $HOME/google-cloud-sdk; export CLOUDSDK_CORE_DISABLE_PROMPTS=1; curl
