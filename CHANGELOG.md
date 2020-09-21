@@ -8,6 +8,20 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [0.1.1] - 2020-09-21
+
+### Removed
+
+- .nvmrc
+- .prettierrc.yaml
+
+### Updated
+
+- README.md with build status badge
+- Only run deploy to PyPi on Python 3.6 environment
+- CHANGELOG.md
+- Bump version
+
 ## [0.1.0] - 2020-09-21
 
 ### Added
@@ -20,5 +34,6 @@ and this project adheres to
 - Update README.md
 - Update .gitignore
 
-[Unreleased]: https://github.com/digitalliving/firedantic/compare/0.1.0...HEAD
+[Unreleased]: https://github.com/digitalliving/firedantic/compare/0.1.1...HEAD
+[0.1.1]: https://github.com/digitalliving/firedantic/compare/0.1.0...0.1.1
 [0.1.0]: https://github.com/digitalliving/firedantic/releases/tag/0.1.0
