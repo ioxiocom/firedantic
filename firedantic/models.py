@@ -5,7 +5,7 @@ import pydantic
 from google.cloud.firestore_v1 import CollectionReference, DocumentReference
 
 from firedantic.configurations import CONFIGURATIONS
-from firedantic.exceptions import ModelNotFoundError
+from firedantic.exceptions import CollectionNotDefined, ModelNotFoundError
 
 TModel = TypeVar("TModel", bound="Model")
 
@@ -22,7 +22,7 @@ class Model(pydantic.BaseModel, ABC):
 
     def save(self) -> None:
         """Saves this model in the database."""
-        data = self.dict()
+        data = self.dict(by_alias=True)
         if "id" in data:
             del data["id"]
 
@@ -82,8 +82,22 @@ class Model(pydantic.BaseModel, ABC):
         return cls(**data)
 
     @classmethod
+    def truncate_collection(cls) -> int:
+        """Removes all documents inside a collection.
+
+        :return: Number of removed documents.
+        """
+        removed = 0
+        for doc_ref in cls._get_col_ref().list_documents():
+            doc_ref.delete()
+            removed += 1
+        return removed
+
+    @classmethod
     def _get_col_ref(cls) -> CollectionReference:
         """Returns the collection reference."""
+        if cls.__collection__ is None:
+            raise CollectionNotDefined(f"Missing collection name for {cls.__name__}")
         return CONFIGURATIONS["db"].collection(
             CONFIGURATIONS["prefix"] + cls.__collection__
         )

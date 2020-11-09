@@ -1,7 +1,9 @@
 from typing import List
 
 import pytest
+from pydantic import Field
 
+from firedantic import CollectionNotDefined, Model
 from firedantic.exceptions import ModelNotFoundError
 from firedantic.tests.conftest import Company
 
@@ -69,3 +71,38 @@ def test_get_by_id(configure_db, create_company):
     assert c_2.id == c.id
     assert c_2.company_id == "1234567-8"
     assert c_2.owner.first_name == "John"
+
+
+def test_missing_collection(configure_db):
+    class User(Model):
+        name: str
+
+    with pytest.raises(CollectionNotDefined):
+        User(name="John").save()
+
+
+def test_model_aliases(configure_db):
+    class User(Model):
+        __collection__ = "User"
+
+        first_name: str = Field(..., alias="firstName")
+        city: str
+
+    user = User(firstName="John", city="Helsinki")
+    user.save()
+
+    user_from_db = User.get_by_id(user.id)
+    assert user_from_db.first_name == "John"
+    assert user_from_db.city == "Helsinki"
+
+
+def test_truncate_collection(configure_db, create_company):
+    create_company(company_id="1234567-8")
+    create_company(company_id="1234567-9")
+
+    companies = Company.find({})
+    assert len(companies) == 2
+
+    Company.truncate_collection()
+    new_companies = Company.find({})
+    assert len(new_companies) == 0
