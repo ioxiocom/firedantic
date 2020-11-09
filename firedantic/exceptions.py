@@ -6,3 +6,7 @@ class ModelError(Exception):
 
 class ModelNotFoundError(ModelError):
     pass
+
+
+class CollectionNotDefined(ModelError):
+    pass

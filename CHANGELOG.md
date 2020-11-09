@@ -8,6 +8,17 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [0.1.3] - 2020-11-09
+
+### Changed
+
+- Respect model's aliases when saving a model
+
+### Added
+
+- `CollectionNotDefined` error
+- `truncate_collection` class method for `Model`
+
 ## [0.1.2] - 2020-09-21
 
 ### Changed
@@ -43,7 +54,8 @@ and this project adheres to
 - Update README.md
 - Update .gitignore
 
-[Unreleased]: https://github.com/digitalliving/firedantic/compare/0.1.1...HEAD
+[Unreleased]: https://github.com/digitalliving/firedantic/compare/0.1.3...HEAD
+[0.1.3]: https://github.com/digitalliving/firedantic/compare/0.1.2...0.1.3
 [0.1.2]: https://github.com/digitalliving/firedantic/compare/0.1.1...0.1.2
 [0.1.1]: https://github.com/digitalliving/firedantic/compare/0.1.0...0.1.1
 [0.1.0]: https://github.com/digitalliving/firedantic/releases/tag/0.1.0
