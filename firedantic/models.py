@@ -82,16 +82,24 @@ class Model(pydantic.BaseModel, ABC):
         return cls(**data)
 
     @classmethod
-    def truncate_collection(cls) -> int:
+    def truncate_collection(cls, batch_size: int = 128) -> int:
         """Removes all documents inside a collection.
 
+        :param batch_size: Batch size for listing documents.
         :return: Number of removed documents.
         """
-        removed = 0
-        for doc_ref in cls._get_col_ref().list_documents():
-            doc_ref.delete()
-            removed += 1
-        return removed
+        count = 0
+        col_ref = cls._get_col_ref()
+
+        while True:
+            deleted = 0
+            for doc in col_ref.limit(batch_size).stream():
+                doc.reference.delete()
+                deleted += 1
+
+            count += deleted
+            if deleted < batch_size:
+                return count
 
     @classmethod
     def _get_col_ref(cls) -> CollectionReference:
