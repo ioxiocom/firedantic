@@ -54,6 +54,23 @@ class Model(pydantic.BaseModel, ABC):
         return [cls(id=doc.id, **doc.to_dict()) for doc in query.stream()]
 
     @classmethod
+    def query(cls: Type[TModel], key, comparison, value) -> List[TModel]:
+        """Returns a list of models from the database based on the given query.
+
+        Example: `Company.find("count", ">=", 3)`.
+
+        See more: https://firebase.google.com/docs/firestore/query-data/queries#python
+
+        :param key: The path of the model property to compare
+        :param comparison: ==, !=, <, <=, >, >=, array-contains, array-contains-any, in, not-in
+        :return: List of found models.
+        """
+        coll = cls._get_col_ref()
+        query = coll.where(key, comparison, value)
+
+        return [cls(id=doc.id, **doc.to_dict()) for doc in query.stream()]
+
+    @classmethod
     def find_one(cls: Type[TModel], filter_: dict) -> TModel:
         """Returns one model from the DB based on a filter.
 

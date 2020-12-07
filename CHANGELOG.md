@@ -8,6 +8,12 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [0.1.4] - 2020-12-07
+
+### Added
+
+- `Model.query` to do simple custom Firestore queries
+
 ## [0.1.3] - 2020-11-09
 
 ### Changed
