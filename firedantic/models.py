@@ -57,7 +57,7 @@ class Model(pydantic.BaseModel, ABC):
     def query(cls: Type[TModel], key, comparison, value) -> List[TModel]:
         """Returns a list of models from the database based on the given query.
 
-        Example: `Company.find("count", ">=", 3)`.
+        Example: `Company.query("count", ">=", 3)`.
 
         See more: https://firebase.google.com/docs/firestore/query-data/queries#python
 
