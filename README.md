@@ -4,6 +4,7 @@
 
 Database models for Firestore using Pydantic base models.
 
+
 ## Installation
 
 The package is available on PyPi:
@@ -11,6 +12,7 @@ The package is available on PyPi:
 ```bash
 pip install firedantic
 ```
+
 
 ## Usage
 
@@ -64,6 +66,39 @@ company.save()
 # Prints out the firestore ID of the Company model
 print(company.id)
 ```
+
+Querying is done via a MongoDB-like `find()`:
+
+```python
+from firedantic import Model
+
+class Product(Model):
+    __collection__ = "products"
+    product_id: str
+    stock: int
+
+Product.find({"product_id": "abc-123"})
+Product.find({"stock": {">=": 3}})
+```
+
+The query operators are found at [https://firebase.google.com/docs/firestore/query-data/queries#query_operators](https://firebase.google.com/docs/firestore/query-data/queries#query_operators).
+
+
+## Development
+
+PRs are welcome!
+
+
+
+To run tests locally, you should run:
+
+```bash
+poetry install
+poetry run invoke test
+# or
+poetry run py test
+```
+
 
 ## License
 

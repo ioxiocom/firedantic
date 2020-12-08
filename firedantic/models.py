@@ -1,13 +1,27 @@
 from abc import ABC
-from typing import List, Optional, Type, TypeVar
+from typing import Any, List, Optional, Type, TypeVar
 
 import pydantic
-from google.cloud.firestore_v1 import CollectionReference, DocumentReference
+from google.cloud.firestore_v1 import CollectionReference, DocumentReference, Query
 
 from firedantic.configurations import CONFIGURATIONS
 from firedantic.exceptions import CollectionNotDefined, ModelNotFoundError
 
 TModel = TypeVar("TModel", bound="Model")
+
+# https://firebase.google.com/docs/firestore/query-data/queries#query_operators
+FIND_TYPES = {
+    "<",
+    "<=",
+    "==",
+    ">",
+    ">=",
+    "!=",
+    "array-contains",
+    "array-contains-any",
+    "in",
+    "not-in",
+}
 
 
 class Model(pydantic.BaseModel, ABC):
@@ -39,7 +53,7 @@ class Model(pydantic.BaseModel, ABC):
         """Returns a list of models from the database based on a filter.
 
         Example: `Company.find({"company_id": "1234567-8"})`.
-        Currently only supports `==` operator.
+        Example: `Product.find({"stock": {">=": 1}})`.
 
         :param filter_: The filter criteria.
         :return: List of found models.
@@ -49,9 +63,22 @@ class Model(pydantic.BaseModel, ABC):
         query = coll
 
         for key, value in filter_.items():
-            query = query.where(key, "==", value)
+            query = cls._add_filter(query, key, value)
 
         return [cls(id=doc.id, **doc.to_dict()) for doc in query.stream()]
+
+    @classmethod
+    def _add_filter(cls, query: CollectionReference, field: str, value: Any) -> Query:
+        if type(value) is dict:
+            for f_type in value:
+                if f_type not in FIND_TYPES:
+                    raise ValueError(
+                        f"Unsupported filter type: {f_type}. Supported types are: {', '.join(FIND_TYPES)}"
+                    )
+                query = query.where(field, f_type, value[f_type])
+            return query
+        else:
+            return query.where(field, "==", value)
 
     @classmethod
     def find_one(cls: Type[TModel], filter_: dict) -> TModel:
