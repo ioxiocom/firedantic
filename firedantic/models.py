@@ -10,7 +10,7 @@ from firedantic.exceptions import CollectionNotDefined, ModelNotFoundError
 TModel = TypeVar("TModel", bound="Model")
 
 # https://firebase.google.com/docs/firestore/query-data/queries#query_operators
-FIND_TYPES = (
+FIND_TYPES = {
     "<",
     "<=",
     "==",
@@ -21,7 +21,7 @@ FIND_TYPES = (
     "array-contains-any",
     "in",
     "not-in",
-)
+}
 
 
 class Model(pydantic.BaseModel, ABC):
