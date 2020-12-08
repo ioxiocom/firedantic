@@ -73,8 +73,7 @@ class Model(pydantic.BaseModel, ABC):
             for f_type in value:
                 if f_type not in FIND_TYPES:
                     raise ValueError(
-                        f"Unsupported filter type: {f_type}. "
-                        f"Supported types are: {', '.join(FIND_TYPES)}"
+                        f"Unsupported filter type: {f_type}. Supported types are: {', '.join(FIND_TYPES)}"
                     )
                 query = query.where(field, f_type, value[f_type])
             return query

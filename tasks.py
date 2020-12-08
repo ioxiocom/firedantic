@@ -38,9 +38,6 @@ def test(ctx):
     if run_test_cmd(ctx, "pytest", env=DEV_ENV):
         failed_commands.append("Unit tests")
 
-    if run_test_cmd(ctx, "flake8"):
-        failed_commands.append("flake8")
-
     if failed_commands:
         msg = "Errors: " + ", ".join(failed_commands)
         raise Exit(message=msg, code=len(failed_commands))
