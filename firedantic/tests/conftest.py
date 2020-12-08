@@ -25,6 +25,15 @@ class Company(Model):
     owner: Owner
 
 
+class Product(Model):
+    """Dummy product Firedantic model."""
+
+    __collection__ = "products"
+    product_id: str
+    price: float
+    stock: int
+
+
 @pytest.fixture
 def configure_db():
     client = firestore.Client(
@@ -45,5 +54,17 @@ def create_company():
         company = Company(company_id=company_id, owner=owner)
         company.save()
         return company
+
+    return _create
+
+
+@pytest.fixture
+def create_product():
+    def _create(product_id: str = None, price: float = 1.23, stock: int = 3):
+        if not product_id:
+            product_id = str(uuid.uuid4())
+        p = Product(product_id=product_id, price=price, stock=stock)
+        p.save()
+        return p
 
     return _create

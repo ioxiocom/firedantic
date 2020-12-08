@@ -5,7 +5,14 @@ from pydantic import Field
 
 from firedantic import CollectionNotDefined, Model
 from firedantic.exceptions import ModelNotFoundError
-from firedantic.tests.conftest import Company
+from firedantic.tests.conftest import Company, Product
+
+TEST_PRODUCTS = [
+    {"product_id": "a", "stock": 0},
+    {"product_id": "b", "stock": 1},
+    {"product_id": "c", "stock": 2},
+    {"product_id": "d", "stock": 3},
+]
 
 
 def test_save_model(configure_db, create_company):
@@ -45,7 +52,7 @@ def test_find_one(configure_db, create_company):
         Company.find_one({"company_id": "Foo"})
 
 
-def test_find(configure_db, create_company):
+def test_find(configure_db, create_company, create_product):
     ids = ["1234555-1", "1234567-8", "2131232-4", "4124432-4"]
     companies = []
     for company_id in ids:
@@ -57,6 +64,23 @@ def test_find(configure_db, create_company):
 
     d: List[Company] = Company.find({"owner.first_name": "John"})
     assert len(d) == 4
+
+    for p in TEST_PRODUCTS:
+        create_product(**p)
+
+    assert len(Product.find({})) == 4
+
+    products: List[Product] = Product.find({"stock": {">=": 1}})
+    assert len(products) == 3
+
+    products: List[Product] = Product.find({"stock": {">=": 2, "<": 4}})
+    assert len(products) == 2
+
+    products: List[Product] = Product.find({"product_id": {"in": ["a", "d", "g"]}})
+    assert len(products) == 2
+
+    with pytest.raises(ValueError):
+        Product.find({"product_id": {"<>": "a"}})
 
 
 def test_get_by_id(configure_db, create_company):

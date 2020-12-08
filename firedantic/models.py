@@ -1,13 +1,27 @@
 from abc import ABC
-from typing import List, Optional, Type, TypeVar
+from typing import Any, List, Optional, Type, TypeVar
 
 import pydantic
-from google.cloud.firestore_v1 import CollectionReference, DocumentReference
+from google.cloud.firestore_v1 import CollectionReference, DocumentReference, Query
 
 from firedantic.configurations import CONFIGURATIONS
 from firedantic.exceptions import CollectionNotDefined, ModelNotFoundError
 
 TModel = TypeVar("TModel", bound="Model")
+
+# https://firebase.google.com/docs/firestore/query-data/queries#query_operators
+FIND_TYPES = (
+    "<",
+    "<=",
+    "==",
+    ">",
+    ">=",
+    "!=",
+    "array-contains",
+    "array-contains-any",
+    "in",
+    "not-in",
+)
 
 
 class Model(pydantic.BaseModel, ABC):
@@ -49,26 +63,23 @@ class Model(pydantic.BaseModel, ABC):
         query = coll
 
         for key, value in filter_.items():
-            query = query.where(key, "==", value)
+            query = cls._add_filter(query, key, value)
 
         return [cls(id=doc.id, **doc.to_dict()) for doc in query.stream()]
 
     @classmethod
-    def query(cls: Type[TModel], key, comparison, value) -> List[TModel]:
-        """Returns a list of models from the database based on the given query.
-
-        Example: `Company.query("count", ">=", 3)`.
-
-        See more: https://firebase.google.com/docs/firestore/query-data/queries#python
-
-        :param key: The path of the model property to compare
-        :param comparison: ==, !=, <, <=, >, >=, array-contains, array-contains-any, in, not-in
-        :return: List of found models.
-        """
-        coll = cls._get_col_ref()
-        query = coll.where(key, comparison, value)
-
-        return [cls(id=doc.id, **doc.to_dict()) for doc in query.stream()]
+    def _add_filter(cls, query: CollectionReference, field: str, value: Any) -> Query:
+        if type(value) is dict:
+            for f_type in value:
+                if f_type not in FIND_TYPES:
+                    raise ValueError(
+                        f"Unsupported filter type: {f_type}. "
+                        f"Supported types are: {', '.join(FIND_TYPES)}"
+                    )
+                query = query.where(field, f_type, value[f_type])
+            return query
+        else:
+            return query.where(field, "==", value)
 
     @classmethod
     def find_one(cls: Type[TModel], filter_: dict) -> TModel:
