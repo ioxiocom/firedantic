@@ -53,7 +53,7 @@ class Model(pydantic.BaseModel, ABC):
         """Returns a list of models from the database based on a filter.
 
         Example: `Company.find({"company_id": "1234567-8"})`.
-        Currently only supports `==` operator.
+        Example: `Product.find({"stock": {">=": 1}})`.
 
         :param filter_: The filter criteria.
         :return: List of found models.
