@@ -14,8 +14,8 @@ packages = [
 [tool.poetry.dependencies]
 python = "^3.6"
 pydantic = "^1.6.1"
-google-cloud-firestore = "^1.9.0"
-grpcio = "^1.32.0"
+google-cloud-firestore = "^2.0.2"
+grpcio = "^1.36.1"
 
 [tool.poetry.dev-dependencies]
 isort = "^5.5.2"
