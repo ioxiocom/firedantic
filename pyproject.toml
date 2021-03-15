@@ -24,6 +24,7 @@ mypy = "^0.782"
 flake8 = "^3.8.3"
 pytest = "^6.0.2"
 pydevd_pycharm = "^202.7319.37"
+pytest-asyncio = "^0.14.0"
 
 [build-system]
 requires = ["poetry>=1.0.0"]
