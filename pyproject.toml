@@ -12,8 +12,8 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.6"
-pydantic = "^1.6.1"
+python = ">=3.6.1,<4.0"
+pydantic = "^1.8.1"
 google-cloud-firestore = "^2.0.2"
 grpcio = "^1.36.1"
 
