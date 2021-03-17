@@ -14,7 +14,7 @@ packages = [
 [tool.poetry.dependencies]
 python = ">=3.6.1,<4.0"
 pydantic = "^1.8.1"
-google-cloud-firestore = "^2.0.2"
+google-cloud-firestore = {git = "https://github.com/googleapis/python-firestore", rev = "1a973f37e86207925e705d3fccdc88875d5d3ad1"}
 grpcio = "^1.36.1"
 
 [tool.poetry.dev-dependencies]
