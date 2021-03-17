@@ -142,8 +142,8 @@ pytz = "*"
 [package.source]
 type = "git"
 url = "https://github.com/googleapis/python-firestore"
-reference = "1a973f37e86207925e705d3fccdc88875d5d3ad1"
-resolved_reference = "1a973f37e86207925e705d3fccdc88875d5d3ad1"
+reference = "e57258c51e4b4aa664cc927454056412756fc7ac"
+resolved_reference = "e57258c51e4b4aa664cc927454056412756fc7ac"
 
 [[package]]
 name = "googleapis-common-protos"
@@ -526,7 +526,7 @@ testing = ["jaraco.itertools", "func-timeout"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.6.1,<4.0"
-content-hash = "120a2724c8dd9c3ddec1a0f4c0e349a80553d95e70ec391a4d0f464a191bec25"
+content-hash = "4cbfdca6582ded0a04ec776a0d46586b167c9421e2b8be0d65e2165d47cbd8b7"
 
 [metadata.files]
 atomicwrites = [
