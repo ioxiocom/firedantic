@@ -5,7 +5,7 @@ from pydantic import Field
 
 from firedantic import CollectionNotDefined, Model
 from firedantic.exceptions import ModelNotFoundError
-from firedantic.tests.conftest import Company, Product
+from firedantic.tests.tests_sync.conftest import Company, Product
 
 TEST_PRODUCTS = [
     {"product_id": "a", "stock": 0},
