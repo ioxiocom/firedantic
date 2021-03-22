@@ -1,9 +1,11 @@
-from google.cloud import firestore
+from typing import Any, Dict, Union
 
-CONFIGURATIONS = {}
+from google.cloud.firestore_v1 import AsyncClient, Client
+
+CONFIGURATIONS: Dict[str, Any] = {}
 
 
-def configure(db: firestore.Client, prefix: str = "") -> None:
+def configure(db: Union[Client, AsyncClient], prefix: str = "") -> None:
     """Configures the prefix and DB.
 
     :param db: The firestore client instance.
