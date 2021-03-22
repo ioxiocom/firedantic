@@ -3,7 +3,7 @@ from unittest.mock import Mock
 
 import google.auth.credentials
 import pytest
-from google.cloud import firestore
+from google.cloud.firestore import Client
 from pydantic import BaseModel
 
 from firedantic.configurations import configure
@@ -36,7 +36,7 @@ class Product(Model):
 
 @pytest.fixture
 def configure_db():
-    client = firestore.Client(
+    client = Client(
         project="firedantic-test",
         credentials=Mock(spec=google.auth.credentials.Credentials),
     )

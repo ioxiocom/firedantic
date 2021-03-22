@@ -1,8 +1,9 @@
 from abc import ABC
-from typing import Any, List, Optional, Type, TypeVar
+from typing import Any, List, Optional, Type, TypeVar, Union
 
 import pydantic
-from google.cloud.firestore_v1 import CollectionReference, DocumentReference, Query
+from google.cloud.firestore_v1 import CollectionReference, DocumentReference
+from google.cloud.firestore_v1.base_query import BaseQuery
 
 from firedantic.configurations import CONFIGURATIONS
 from firedantic.exceptions import CollectionNotDefined, ModelNotFoundError
@@ -60,15 +61,21 @@ class Model(pydantic.BaseModel, ABC):
         """
         coll = cls._get_col_ref()
 
-        query = coll
+        query: Union[BaseQuery, CollectionReference] = coll
 
         for key, value in filter_.items():
             query = cls._add_filter(query, key, value)
 
-        return [cls(id=doc.id, **doc.to_dict()) for doc in query.stream()]
+        return [
+            cls(id=doc_id, **doc_dict)
+            for doc_id, doc_dict in ((doc.id, doc.to_dict()) for doc in query.stream())
+            if doc_dict is not None
+        ]
 
     @classmethod
-    def _add_filter(cls, query: CollectionReference, field: str, value: Any) -> Query:
+    def _add_filter(
+        cls, query: Union[BaseQuery, CollectionReference], field: str, value: Any
+    ) -> Union[BaseQuery, CollectionReference]:
         if type(value) is dict:
             for f_type in value:
                 if f_type not in FIND_TYPES:
@@ -102,9 +109,9 @@ class Model(pydantic.BaseModel, ABC):
         :raise ModelNotFoundError: Raised if no matching document is found.
         """
         document = cls._get_col_ref().document(id_).get()
-        if not document.exists:
-            raise ModelNotFoundError(f"No '{cls.__name__}' found with id '{id_}'")
         data = document.to_dict()
+        if data is None:
+            raise ModelNotFoundError(f"No '{cls.__name__}' found with id '{id_}'")
         data["id"] = id_
         return cls(**data)
 
@@ -120,7 +127,7 @@ class Model(pydantic.BaseModel, ABC):
 
         while True:
             deleted = 0
-            for doc in col_ref.limit(batch_size).stream():
+            for doc in col_ref.limit(batch_size).stream():  # type: ignore
                 doc.reference.delete()
                 deleted += 1
 
@@ -133,9 +140,10 @@ class Model(pydantic.BaseModel, ABC):
         """Returns the collection reference."""
         if cls.__collection__ is None:
             raise CollectionNotDefined(f"Missing collection name for {cls.__name__}")
-        return CONFIGURATIONS["db"].collection(
+        collection: CollectionReference = CONFIGURATIONS["db"].collection(
             CONFIGURATIONS["prefix"] + cls.__collection__
         )
+        return collection
 
     def _get_doc_ref(self) -> DocumentReference:
         """Returns the document reference."""
