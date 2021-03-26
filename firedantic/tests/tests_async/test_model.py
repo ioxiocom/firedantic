@@ -3,9 +3,8 @@ from typing import List
 import pytest
 from pydantic import Field
 
-from firedantic import CollectionNotDefined
-from firedantic.async_models import AsyncModel
-from firedantic.exceptions import ModelNotFoundError
+from firedantic import AsyncModel
+from firedantic.exceptions import CollectionNotDefined, ModelNotFoundError
 from firedantic.tests.tests_async.conftest import Company, Product
 
 TEST_PRODUCTS = [

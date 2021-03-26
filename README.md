@@ -159,6 +159,22 @@ poetry install
 poetry run invoke test
 ```
 
+### About sync and async versions of library
+
+Although this library provides both sync and async versions of models, please keep in mind that
+you need to explicitly maintain only async version of it. The synchronous version is generated automatically by invoke task:
+
+```bash
+poetry run invoke unasync
+```
+
+We decided to go this way in order to:
+- make sure both versions have the same API
+- reduce human error factor
+- avoid working on two code bases at the same time to reduce maintenance effort
+
+Thus, please make sure you don't modify any of files under [firedantic/_sync](./firedantic/_sync) and [firedantic/tests/tests_sync](./firedantic/tests/tests_sync) by hands.
+`unasync` is also running as part of pre-commit hooks, but in order to run the latest version of tests you have to run it manually.
 
 ## License
 

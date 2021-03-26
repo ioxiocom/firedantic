@@ -6,7 +6,7 @@ import pytest
 from google.cloud.firestore_v1 import AsyncClient
 from pydantic import BaseModel
 
-from firedantic.async_models import AsyncModel
+from firedantic import AsyncModel
 from firedantic.configurations import configure
 
 

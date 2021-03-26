@@ -1,8 +1,7 @@
-
 [tool.poetry]
 name = "firedantic"
-version = "0.1.4"
-description = "Pydantic base model for Firestore"
+version = "0.2.0"
+description = "Pydantic base models for Firestore"
 authors = ["Digital Living International Ltd"]
 license = "BSD-3-Clause"
 readme = "README.md"
