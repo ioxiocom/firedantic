@@ -2,13 +2,13 @@ from abc import ABC
 from typing import Any, List, Optional, Type, TypeVar, Union
 
 import pydantic
-from google.cloud.firestore_v1 import AsyncCollectionReference, AsyncDocumentReference
+from google.cloud.firestore_v1 import CollectionReference, DocumentReference
 from google.cloud.firestore_v1.base_query import BaseQuery
 
 from firedantic.configurations import CONFIGURATIONS
 from firedantic.exceptions import CollectionNotDefined, ModelNotFoundError
 
-TAsyncModel = TypeVar("TAsyncModel", bound="AsyncModel")
+TModel = TypeVar("TModel", bound="Model")
 
 # https://firebase.google.com/docs/firestore/query-data/queries#query_operators
 FIND_TYPES = {
@@ -25,7 +25,7 @@ FIND_TYPES = {
 }
 
 
-class AsyncModel(pydantic.BaseModel, ABC):
+class Model(pydantic.BaseModel, ABC):
     """Base model class.
 
     Implements basic functionality for Pydantic models, such as save, delete, find etc.
@@ -35,22 +35,22 @@ class AsyncModel(pydantic.BaseModel, ABC):
 
     id: Optional[str] = None
 
-    async def save(self) -> None:
+    def save(self) -> None:
         """Saves this model in the database."""
         data = self.dict(by_alias=True)
         if "id" in data:
             del data["id"]
 
         doc_ref = self._get_doc_ref()
-        await doc_ref.set(data)
+        doc_ref.set(data)
         self.id = doc_ref.id
 
-    async def delete(self) -> None:
+    def delete(self) -> None:
         """Deletes this model from the database."""
-        await self._get_doc_ref().delete()
+        self._get_doc_ref().delete()
 
     @classmethod
-    async def find(cls: Type[TAsyncModel], filter_: dict) -> List[TAsyncModel]:
+    def find(cls: Type[TModel], filter_: dict) -> List[TModel]:
         """Returns a list of models from the database based on a filter.
 
         Example: `Company.find({"company_id": "1234567-8"})`.
@@ -61,23 +61,21 @@ class AsyncModel(pydantic.BaseModel, ABC):
         """
         coll = cls._get_col_ref()
 
-        query: Union[BaseQuery, AsyncCollectionReference] = coll
+        query: Union[BaseQuery, CollectionReference] = coll
 
         for key, value in filter_.items():
             query = cls._add_filter(query, key, value)
 
         return [
             cls(id=doc_id, **doc_dict)
-            async for doc_id, doc_dict in (
-                (doc.id, doc.to_dict()) async for doc in query.stream()
-            )
+            for doc_id, doc_dict in ((doc.id, doc.to_dict()) for doc in query.stream())
             if doc_dict is not None
         ]
 
     @classmethod
     def _add_filter(
-        cls, query: Union[BaseQuery, AsyncCollectionReference], field: str, value: Any
-    ) -> Union[BaseQuery, AsyncCollectionReference]:
+        cls, query: Union[BaseQuery, CollectionReference], field: str, value: Any
+    ) -> Union[BaseQuery, CollectionReference]:
         if type(value) is dict:
             for f_type in value:
                 if f_type not in FIND_TYPES:
@@ -90,27 +88,28 @@ class AsyncModel(pydantic.BaseModel, ABC):
             return query.where(field, "==", value)
 
     @classmethod
-    async def find_one(cls: Type[TAsyncModel], filter_: dict) -> TAsyncModel:
+    def find_one(cls: Type[TModel], filter_: dict) -> TModel:
         """Returns one model from the DB based on a filter.
 
         :param filter_: The filter criteria.
         :return: The model instance.
         :raise ModelNotFoundError: If the entry is not found.
         """
+        models = cls.find(filter_)
         try:
-            return (await cls.find(filter_))[0]
+            return models[0]
         except IndexError:
             raise ModelNotFoundError(f"No '{cls.__name__}' found")
 
     @classmethod
-    async def get_by_id(cls: Type[TAsyncModel], id_: str) -> TAsyncModel:
+    def get_by_id(cls: Type[TModel], id_: str) -> TModel:
         """Returns a model based on the ID.
 
         :param id_: The id of the entry.
         :return: The model.
         :raise ModelNotFoundError: Raised if no matching document is found.
         """
-        document = await cls._get_col_ref().document(id_).get()  # type: ignore
+        document = cls._get_col_ref().document(id_).get()  # type: ignore
         data = document.to_dict()
         if data is None:
             raise ModelNotFoundError(f"No '{cls.__name__}' found with id '{id_}'")
@@ -118,7 +117,7 @@ class AsyncModel(pydantic.BaseModel, ABC):
         return cls(**data)
 
     @classmethod
-    async def truncate_collection(cls, batch_size: int = 128) -> int:
+    def truncate_collection(cls, batch_size: int = 128) -> int:
         """Removes all documents inside a collection.
 
         :param batch_size: Batch size for listing documents.
@@ -129,8 +128,8 @@ class AsyncModel(pydantic.BaseModel, ABC):
 
         while True:
             deleted = 0
-            async for doc in col_ref.limit(batch_size).stream():  # type: ignore
-                await doc.reference.delete()
+            for doc in col_ref.limit(batch_size).stream():  # type: ignore
+                doc.reference.delete()
                 deleted += 1
 
             count += deleted
@@ -138,15 +137,15 @@ class AsyncModel(pydantic.BaseModel, ABC):
                 return count
 
     @classmethod
-    def _get_col_ref(cls) -> AsyncCollectionReference:
+    def _get_col_ref(cls) -> CollectionReference:
         """Returns the collection reference."""
         if cls.__collection__ is None:
             raise CollectionNotDefined(f"Missing collection name for {cls.__name__}")
-        collection: AsyncCollectionReference = CONFIGURATIONS["db"].collection(
+        collection: CollectionReference = CONFIGURATIONS["db"].collection(
             CONFIGURATIONS["prefix"] + cls.__collection__
         )
         return collection
 
-    def _get_doc_ref(self) -> AsyncDocumentReference:
+    def _get_doc_ref(self) -> DocumentReference:
         """Returns the document reference."""
         return self._get_col_ref().document(self.id)  # type: ignore

@@ -41,3 +41,14 @@ def test(ctx):
     if failed_commands:
         msg = "Errors: " + ", ".join(failed_commands)
         raise Exit(message=msg, code=len(failed_commands))
+
+
+@task
+def unasync(ctx):
+    """
+    Generate source code for synchronous version of library
+    """
+    import unasync
+
+    unasync.main()
+    ctx.run("poetry run black .")
