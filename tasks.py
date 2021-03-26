@@ -51,4 +51,4 @@ def unasync(ctx):
     import unasync
 
     unasync.main()
-    ctx.run("poetry run black .")
+    ctx.run("black .")
