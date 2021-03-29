@@ -43,8 +43,8 @@ def unasync_file(in_path: Path, out_path: Path):
 
 def unasync_dir(in_dir: Path, out_dir: Path):
     for in_path in in_dir.glob("**/*.py"):
-        out_path = str(in_path).replace(str(in_dir), str(out_dir))
-        unasync_file(in_path, Path(out_path))
+        out_path = out_dir / in_path.relative_to(in_dir)
+        unasync_file(in_path, out_path)
 
 
 def main():
