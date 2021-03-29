@@ -8,12 +8,16 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [0.2.0] - 2021-03-29
+
 ### Added
 
 - New AsyncModel that supports async and await syntax.
 
 ### Changed
 
+- Refactor file structure; `models.py` no longer exists, so make sure to import
+  `Model` directly from firedantic: `from firedantic import Model`
 - Update `google-cloud-firestore`. The 2.0.2 version has an [issue
   with running in async mode against the emulator](https://github.com/googleapis/python-firestore/issues/286),
   that has been fixed in the git `master`, but not included in any official
@@ -81,7 +85,8 @@ and this project adheres to
 - Update README.md
 - Update .gitignore
 
-[Unreleased]: https://github.com/digitalliving/firedantic/compare/0.1.4...HEAD
+[Unreleased]: https://github.com/digitalliving/firedantic/compare/0.2.0...HEAD
+[0.2.0]: https://github.com/digitalliving/firedantic/compare/0.1.4...0.2.0
 [0.1.4]: https://github.com/digitalliving/firedantic/compare/0.1.3...0.1.4
 [0.1.3]: https://github.com/digitalliving/firedantic/compare/0.1.2...0.1.3
 [0.1.2]: https://github.com/digitalliving/firedantic/compare/0.1.1...0.1.2

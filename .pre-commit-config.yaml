@@ -8,6 +8,13 @@ repos:
       - id: end-of-file-fixer
       - id: check-yaml
       - id: check-added-large-files
+  - repo: local
+    hooks:
+      - id: invoke-unasync
+        name: Invoke unasync task
+        entry: poetry run invoke unasync
+        language: system
+        pass_filenames: false
   - repo: https://github.com/pre-commit/mirrors-isort
     rev: v5.5.1
     hooks:
