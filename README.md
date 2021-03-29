@@ -20,21 +20,21 @@ In your application you will need to configure the firestore db client and
 optionally the collection prefix, which by default is empty.
 
 ```python
-from mock import Mock
 from os import environ
+from unittest.mock import Mock
 
 import google.auth.credentials
 from firedantic import configure
-from google.cloud import firestore
+from google.cloud.firestore import Client
 
 # Firestore emulator must be running if using locally.
 if environ.get("FIRESTORE_EMULATOR_HOST"):
-    client = firestore.Client(
+    client = Client(
         project="firedantic-test",
         credentials=Mock(spec=google.auth.credentials.Credentials)
     )
 else:
-    client = firestore.Client()
+    client = Client()
 
 configure(client, prefix="firedantic-test-")
 ```
@@ -84,6 +84,68 @@ Product.find({"stock": {">=": 3}})
 The query operators are found at [https://firebase.google.com/docs/firestore/query-data/queries#query_operators](https://firebase.google.com/docs/firestore/query-data/queries#query_operators).
 
 
+### Async usage
+
+Firedantic can also be used in an async way, like this:
+```python
+import asyncio
+from os import environ
+from unittest.mock import Mock
+
+import google.auth.credentials
+from google.cloud.firestore import AsyncClient
+
+from firedantic import AsyncModel, configure
+
+# Firestore emulator must be running if using locally.
+if environ.get("FIRESTORE_EMULATOR_HOST"):
+    client = AsyncClient(
+        project="firedantic-test",
+        credentials=Mock(spec=google.auth.credentials.Credentials),
+    )
+else:
+    client = AsyncClient()
+
+configure(client, prefix="firedantic-test-")
+
+
+class Person(AsyncModel):
+    __collection__ = "persons"
+    name: str
+
+
+async def main():
+    alice = Person(name="Alice")
+    await alice.save()
+    print(f"Saved Alice as {alice.id}")
+    bob = Person(name="Bob")
+    await bob.save()
+    print(f"Saved Bob as {bob.id}")
+
+    found_alice = await Person.find_one({"name": "Alice"})
+    print(f"Found Alice: {found_alice.id}")
+    assert alice.id == found_alice.id
+
+    found_bob = await Person.get_by_id(bob.id)
+    assert bob.id == found_bob.id
+    print(f"Found Bob: {found_bob.id}")
+
+    await alice.delete()
+    print("Deleted Alice")
+    await bob.delete()
+    print("Deleted Bob")
+
+
+if __name__ == "__main__":
+    # Starting from Python 3.7 ->
+    # asyncio.run(main())
+
+    # Compatible with Python 3.6 ->
+    loop = asyncio.get_event_loop()
+    result = loop.run_until_complete(main())
+```
+
+
 ## Development
 
 PRs are welcome!
@@ -95,8 +157,6 @@ To run tests locally, you should run:
 ```bash
 poetry install
 poetry run invoke test
-# or
-poetry run py test
 ```
 
 

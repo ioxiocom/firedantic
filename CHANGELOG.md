@@ -8,6 +8,27 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- New AsyncModel that supports async and await syntax.
+
+### Changed
+
+- Update `google-cloud-firestore`. The 2.0.2 version has an [issue
+  with running in async mode against the emulator](https://github.com/googleapis/python-firestore/issues/286),
+  that has been fixed in the git `master`, but not included in any official
+  release yet. Using the latest master (pinned to the commit hash). In case you
+  are using poetry to install `firedantic`, please be aware that poetry has an
+  [issue with updating from a pypi package to a git
+  commit](https://github.com/python-poetry/poetry/issues/3803).
+  The simplest work-around is to after updating `firedantic` (and thus also
+  `google-cloud-firestore`) delete the virtualenv and then run `poetry install`
+  again
+- Update `pydantic` to 1.8.1 and `grpcio` to 1.36.1
+- Fixes for Mypy errors and warnings
+- Updated examples in README
+
+
 ## [0.1.4] - 2020-12-08
 
 ### Added
