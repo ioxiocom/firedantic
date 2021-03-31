@@ -8,6 +8,15 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [0.2.1] - 2021-03-31
+
+### Changed
+
+- Update `google-cloud-firestore` to 2.1.0 that supports async with firestore
+  emulator. Using an officially released version of `google-cloud-firestore`
+  from PyPI will also make it possible to get this release of `firedantic`
+  uploaded to PyPI.
+
 ## [0.2.0] - 2021-03-29
 
 ### Added
@@ -85,7 +94,8 @@ and this project adheres to
 - Update README.md
 - Update .gitignore
 
-[Unreleased]: https://github.com/digitalliving/firedantic/compare/0.2.0...HEAD
+[Unreleased]: https://github.com/digitalliving/firedantic/compare/0.2.1...HEAD
+[0.2.1]: https://github.com/digitalliving/firedantic/compare/0.2.0...0.2.1
 [0.2.0]: https://github.com/digitalliving/firedantic/compare/0.1.4...0.2.0
 [0.1.4]: https://github.com/digitalliving/firedantic/compare/0.1.3...0.1.4
 [0.1.3]: https://github.com/digitalliving/firedantic/compare/0.1.2...0.1.3
