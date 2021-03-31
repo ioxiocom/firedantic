@@ -69,7 +69,7 @@ class AsyncModel(pydantic.BaseModel, ABC):
         return [
             cls(id=doc_id, **doc_dict)
             async for doc_id, doc_dict in (
-                (doc.id, doc.to_dict()) async for doc in query.stream()
+                (doc.id, doc.to_dict()) async for doc in query.stream()  # type: ignore
             )
             if doc_dict is not None
         ]
