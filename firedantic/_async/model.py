@@ -5,6 +5,7 @@ import pydantic
 from google.cloud.firestore_v1 import AsyncCollectionReference, AsyncDocumentReference
 from google.cloud.firestore_v1.base_query import BaseQuery
 
+from firedantic import async_truncate_collection
 from firedantic.configurations import CONFIGURATIONS
 from firedantic.exceptions import CollectionNotDefined, ModelNotFoundError
 
@@ -50,7 +51,9 @@ class AsyncModel(pydantic.BaseModel, ABC):
         await self._get_doc_ref().delete()
 
     @classmethod
-    async def find(cls: Type[TAsyncModel], filter_: dict) -> List[TAsyncModel]:
+    async def find(
+        cls: Type[TAsyncModel], filter_: Optional[dict] = None
+    ) -> List[TAsyncModel]:
         """Returns a list of models from the database based on a filter.
 
         Example: `Company.find({"company_id": "1234567-8"})`.
@@ -59,6 +62,9 @@ class AsyncModel(pydantic.BaseModel, ABC):
         :param filter_: The filter criteria.
         :return: List of found models.
         """
+        if not filter_:
+            filter_ = {}
+
         coll = cls._get_col_ref()
 
         query: Union[BaseQuery, AsyncCollectionReference] = coll
@@ -90,7 +96,9 @@ class AsyncModel(pydantic.BaseModel, ABC):
             return query.where(field, "==", value)
 
     @classmethod
-    async def find_one(cls: Type[TAsyncModel], filter_: dict) -> TAsyncModel:
+    async def find_one(
+        cls: Type[TAsyncModel], filter_: Optional[dict] = None
+    ) -> TAsyncModel:
         """Returns one model from the DB based on a filter.
 
         :param filter_: The filter criteria.
@@ -125,18 +133,10 @@ class AsyncModel(pydantic.BaseModel, ABC):
         :param batch_size: Batch size for listing documents.
         :return: Number of removed documents.
         """
-        count = 0
-        col_ref = cls._get_col_ref()
-
-        while True:
-            deleted = 0
-            async for doc in col_ref.limit(batch_size).stream():  # type: ignore
-                await doc.reference.delete()
-                deleted += 1
-
-            count += deleted
-            if deleted < batch_size:
-                return count
+        return await async_truncate_collection(
+            col_ref=cls._get_col_ref(),
+            batch_size=batch_size,
+        )
 
     @classmethod
     def _get_col_ref(cls) -> AsyncCollectionReference:
