@@ -5,6 +5,7 @@ import pydantic
 from google.cloud.firestore_v1 import AsyncCollectionReference, AsyncDocumentReference
 from google.cloud.firestore_v1.base_query import BaseQuery
 
+from firedantic import async_truncate_collection
 from firedantic.configurations import CONFIGURATIONS
 from firedantic.exceptions import CollectionNotDefined, ModelNotFoundError
 
@@ -132,18 +133,10 @@ class AsyncModel(pydantic.BaseModel, ABC):
         :param batch_size: Batch size for listing documents.
         :return: Number of removed documents.
         """
-        count = 0
-        col_ref = cls._get_col_ref()
-
-        while True:
-            deleted = 0
-            async for doc in col_ref.limit(batch_size).stream():  # type: ignore
-                await doc.reference.delete()
-                deleted += 1
-
-            count += deleted
-            if deleted < batch_size:
-                return count
+        return await async_truncate_collection(
+            col_ref=cls._get_col_ref(),
+            batch_size=batch_size,
+        )
 
     @classmethod
     def _get_col_ref(cls) -> AsyncCollectionReference:
