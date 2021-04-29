@@ -50,7 +50,7 @@ class Model(pydantic.BaseModel, ABC):
         self._get_doc_ref().delete()
 
     @classmethod
-    def find(cls: Type[TModel], filter_: dict) -> List[TModel]:
+    def find(cls: Type[TModel], filter_: Optional[dict] = None) -> List[TModel]:
         """Returns a list of models from the database based on a filter.
 
         Example: `Company.find({"company_id": "1234567-8"})`.
@@ -59,6 +59,9 @@ class Model(pydantic.BaseModel, ABC):
         :param filter_: The filter criteria.
         :return: List of found models.
         """
+        if not filter_:
+            filter_ = {}
+
         coll = cls._get_col_ref()
 
         query: Union[BaseQuery, CollectionReference] = coll
@@ -90,7 +93,7 @@ class Model(pydantic.BaseModel, ABC):
             return query.where(field, "==", value)
 
     @classmethod
-    def find_one(cls: Type[TModel], filter_: dict) -> TModel:
+    def find_one(cls: Type[TModel], filter_: Optional[dict] = None) -> TModel:
         """Returns one model from the DB based on a filter.
 
         :param filter_: The filter criteria.

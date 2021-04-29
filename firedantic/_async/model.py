@@ -50,7 +50,9 @@ class AsyncModel(pydantic.BaseModel, ABC):
         await self._get_doc_ref().delete()
 
     @classmethod
-    async def find(cls: Type[TAsyncModel], filter_: dict) -> List[TAsyncModel]:
+    async def find(
+        cls: Type[TAsyncModel], filter_: Optional[dict] = None
+    ) -> List[TAsyncModel]:
         """Returns a list of models from the database based on a filter.
 
         Example: `Company.find({"company_id": "1234567-8"})`.
@@ -59,6 +61,9 @@ class AsyncModel(pydantic.BaseModel, ABC):
         :param filter_: The filter criteria.
         :return: List of found models.
         """
+        if not filter_:
+            filter_ = {}
+
         coll = cls._get_col_ref()
 
         query: Union[BaseQuery, AsyncCollectionReference] = coll
@@ -90,7 +95,9 @@ class AsyncModel(pydantic.BaseModel, ABC):
             return query.where(field, "==", value)
 
     @classmethod
-    async def find_one(cls: Type[TAsyncModel], filter_: dict) -> TAsyncModel:
+    async def find_one(
+        cls: Type[TAsyncModel], filter_: Optional[dict] = None
+    ) -> TAsyncModel:
         """Returns one model from the DB based on a filter.
 
         :param filter_: The filter criteria.

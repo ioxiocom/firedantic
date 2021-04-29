@@ -37,6 +37,9 @@ def test_delete_model(configure_db, create_company):
 
 
 def test_find_one(configure_db, create_company):
+    with pytest.raises(ModelNotFoundError):
+        Company.find_one()
+
     company_a: Company = create_company(company_id="1234555-1", first_name="Foo")
     company_b: Company = create_company(company_id="1231231-2", first_name="Bar")
 
@@ -50,6 +53,9 @@ def test_find_one(configure_db, create_company):
 
     with pytest.raises(ModelNotFoundError):
         Company.find_one({"company_id": "Foo"})
+
+    random_company = Company.find_one()
+    assert random_company.company_id in {a.company_id, b.company_id}
 
 
 def test_find(configure_db, create_company, create_product):

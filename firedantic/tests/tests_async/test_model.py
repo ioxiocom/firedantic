@@ -40,6 +40,9 @@ async def test_delete_model(configure_db, create_company):
 
 @pytest.mark.asyncio
 async def test_find_one(configure_db, create_company):
+    with pytest.raises(ModelNotFoundError):
+        await Company.find_one()
+
     company_a: Company = await create_company(company_id="1234555-1", first_name="Foo")
     company_b: Company = await create_company(company_id="1231231-2", first_name="Bar")
 
@@ -53,6 +56,9 @@ async def test_find_one(configure_db, create_company):
 
     with pytest.raises(ModelNotFoundError):
         await Company.find_one({"company_id": "Foo"})
+
+    random_company = await Company.find_one()
+    assert random_company.company_id in {a.company_id, b.company_id}
 
 
 @pytest.mark.asyncio
