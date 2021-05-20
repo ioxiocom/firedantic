@@ -8,6 +8,13 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [0.2.3] - 2021-05-20
+
+### Fixed
+
+- Fix filter bug affecting `array_contains` and `array_contains_any`
+- Update `pydantic` to ^1.8.2 that fixes CVE-2021-29510
+
 ## [0.2.2] - 2021-04-29
 
 ### Added
@@ -105,7 +112,8 @@ and this project adheres to
 - Update README.md
 - Update .gitignore
 
-[Unreleased]: https://github.com/digitalliving/firedantic/compare/0.2.2...HEAD
+[Unreleased]: https://github.com/digitalliving/firedantic/compare/0.2.3...HEAD
+[0.2.2]: https://github.com/digitalliving/firedantic/compare/0.2.2...0.2.3
 [0.2.1]: https://github.com/digitalliving/firedantic/compare/0.2.1...0.2.2
 [0.2.1]: https://github.com/digitalliving/firedantic/compare/0.2.0...0.2.1
 [0.2.0]: https://github.com/digitalliving/firedantic/compare/0.1.4...0.2.0

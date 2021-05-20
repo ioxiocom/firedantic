@@ -5,7 +5,7 @@ from pydantic import Field
 
 from firedantic import Model
 from firedantic.exceptions import CollectionNotDefined, ModelNotFoundError
-from firedantic.tests.tests_sync.conftest import Company, Product
+from firedantic.tests.tests_sync.conftest import Company, Product, TodoList
 
 TEST_PRODUCTS = [
     {"product_id": "a", "stock": 0},
@@ -87,6 +87,49 @@ def test_find(configure_db, create_company, create_product):
 
     with pytest.raises(ValueError):
         Product.find({"product_id": {"<>": "a"}})
+
+
+def test_find_not_in(configure_db, create_company):
+    ids = ["1234555-1", "1234567-8", "2131232-4", "4124432-4"]
+    companies = []
+    for company_id in ids:
+        companies.append(create_company(company_id=company_id))
+
+    found: List[Company] = Company.find(
+        {
+            "company_id": {
+                "not-in": [
+                    "1234555-1",
+                    "1234567-8",
+                ]
+            }
+        }
+    )
+    assert len(found) == 2
+    for company in found:
+        assert company.company_id in ("2131232-4", "4124432-4")
+
+
+def test_find_array_contains(configure_db, create_todolist):
+    list_1 = create_todolist("list_1", ["Work", "Eat", "Sleep"])
+    create_todolist("list_2", ["Learn Python", "Walk the dog"])
+
+    found: List[TodoList] = TodoList.find({"items": {"array_contains": "Eat"}})
+    assert len(found) == 1
+    assert found[0].name == list_1.name
+
+
+def test_find_array_contains_any(configure_db, create_todolist):
+    list_1 = create_todolist("list_1", ["Work", "Eat"])
+    list_2 = create_todolist("list_2", ["Relax", "Chill", "Sleep"])
+    create_todolist("list_3", ["Learn Python", "Walk the dog"])
+
+    found: List[TodoList] = TodoList.find(
+        {"items": {"array_contains_any": ["Eat", "Sleep"]}}
+    )
+    assert len(found) == 2
+    for lst in found:
+        assert lst.name in (list_1.name, list_2.name)
 
 
 def test_get_by_id(configure_db, create_company):

@@ -19,8 +19,8 @@ FIND_TYPES = {
     ">",
     ">=",
     "!=",
-    "array-contains",
-    "array-contains-any",
+    "array_contains",
+    "array_contains_any",
     "in",
     "not-in",
 }
