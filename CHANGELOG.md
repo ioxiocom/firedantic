@@ -10,6 +10,12 @@ and this project adheres to
 
 ## [0.2.3] - 2021-05-21
 
+### Added
+- `firedantic.operators` with operators as constants to avoid gotchas with filters like
+  `not-in` and `array_contains`. Preferable way to build queries is to
+  `import firedantic.operators as op` and then use
+  `op.NOT_IN`, `op.ARRAY_CONTAINS`, `op.GTE` and so on.
+
 ### Fixed
 
 - Fix filter bug affecting `array_contains` and `array_contains_any`
