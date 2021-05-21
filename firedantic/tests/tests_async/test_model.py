@@ -1,11 +1,10 @@
-from typing import List
-
 import pytest
 from pydantic import Field
 
+import firedantic.operators as op
 from firedantic import AsyncModel
 from firedantic.exceptions import CollectionNotDefined, ModelNotFoundError
-from firedantic.tests.tests_async.conftest import Company, Product
+from firedantic.tests.tests_async.conftest import Company, Product, TodoList
 
 TEST_PRODUCTS = [
     {"product_id": "a", "stock": 0},
@@ -64,15 +63,14 @@ async def test_find_one(configure_db, create_company):
 @pytest.mark.asyncio
 async def test_find(configure_db, create_company, create_product):
     ids = ["1234555-1", "1234567-8", "2131232-4", "4124432-4"]
-    companies = []
     for company_id in ids:
-        companies.append(await create_company(company_id=company_id))
+        await create_company(company_id=company_id)
 
-    c: List[Company] = await Company.find({"company_id": "4124432-4"})
+    c = await Company.find({"company_id": "4124432-4"})
     assert c[0].company_id == "4124432-4"
     assert c[0].owner.first_name == "John"
 
-    d: List[Company] = await Company.find({"owner.first_name": "John"})
+    d = await Company.find({"owner.first_name": "John"})
     assert len(d) == 4
 
     for p in TEST_PRODUCTS:
@@ -80,19 +78,60 @@ async def test_find(configure_db, create_company, create_product):
 
     assert len(await Product.find({})) == 4
 
-    products: List[Product] = await Product.find({"stock": {">=": 1}})
+    products = await Product.find({"stock": {op.GTE: 1}})
     assert len(products) == 3
 
-    products: List[Product] = await Product.find({"stock": {">=": 2, "<": 4}})
+    products = await Product.find({"stock": {op.GTE: 2, op.LT: 4}})
     assert len(products) == 2
 
-    products: List[Product] = await Product.find(
-        {"product_id": {"in": ["a", "d", "g"]}}
-    )
+    products = await Product.find({"product_id": {op.IN: ["a", "d", "g"]}})
     assert len(products) == 2
 
     with pytest.raises(ValueError):
         await Product.find({"product_id": {"<>": "a"}})
+
+
+@pytest.mark.asyncio
+async def test_find_not_in(configure_db, create_company):
+    ids = ["1234555-1", "1234567-8", "2131232-4", "4124432-4"]
+    for company_id in ids:
+        await create_company(company_id=company_id)
+
+    found = await Company.find(
+        {
+            "company_id": {
+                op.NOT_IN: [
+                    "1234555-1",
+                    "1234567-8",
+                ]
+            }
+        }
+    )
+    assert len(found) == 2
+    for company in found:
+        assert company.company_id in ("2131232-4", "4124432-4")
+
+
+@pytest.mark.asyncio
+async def test_find_array_contains(configure_db, create_todolist):
+    list_1 = await create_todolist("list_1", ["Work", "Eat", "Sleep"])
+    await create_todolist("list_2", ["Learn Python", "Walk the dog"])
+
+    found = await TodoList.find({"items": {op.ARRAY_CONTAINS: "Eat"}})
+    assert len(found) == 1
+    assert found[0].name == list_1.name
+
+
+@pytest.mark.asyncio
+async def test_find_array_contains_any(configure_db, create_todolist):
+    list_1 = await create_todolist("list_1", ["Work", "Eat"])
+    list_2 = await create_todolist("list_2", ["Relax", "Chill", "Sleep"])
+    await create_todolist("list_3", ["Learn Python", "Walk the dog"])
+
+    found = await TodoList.find({"items": {op.ARRAY_CONTAINS_ANY: ["Eat", "Sleep"]}})
+    assert len(found) == 2
+    for lst in found:
+        assert lst.name in (list_1.name, list_2.name)
 
 
 @pytest.mark.asyncio

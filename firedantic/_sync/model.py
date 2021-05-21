@@ -5,6 +5,7 @@ import pydantic
 from google.cloud.firestore_v1 import CollectionReference, DocumentReference
 from google.cloud.firestore_v1.base_query import BaseQuery
 
+import firedantic.operators as op
 from firedantic import truncate_collection
 from firedantic.configurations import CONFIGURATIONS
 from firedantic.exceptions import CollectionNotDefined, ModelNotFoundError
@@ -13,16 +14,16 @@ TModel = TypeVar("TModel", bound="Model")
 
 # https://firebase.google.com/docs/firestore/query-data/queries#query_operators
 FIND_TYPES = {
-    "<",
-    "<=",
-    "==",
-    ">",
-    ">=",
-    "!=",
-    "array-contains",
-    "array-contains-any",
-    "in",
-    "not-in",
+    op.LT,
+    op.LTE,
+    op.EQ,
+    op.NE,
+    op.GT,
+    op.GTE,
+    op.ARRAY_CONTAINS,
+    op.ARRAY_CONTAINS_ANY,
+    op.IN,
+    op.NOT_IN,
 }
 
 

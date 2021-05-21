@@ -1,4 +1,5 @@
 import uuid
+from typing import List
 from unittest.mock import Mock
 
 import google.auth.credentials
@@ -34,6 +35,12 @@ class Product(Model):
     stock: int
 
 
+class TodoList(Model):
+    __collection__ = "todoLists"
+    name: str
+    items: List[str]
+
+
 @pytest.fixture
 def configure_db():
     client = Client(
@@ -64,6 +71,16 @@ def create_product():
         if not product_id:
             product_id = str(uuid.uuid4())
         p = Product(product_id=product_id, price=price, stock=stock)
+        p.save()
+        return p
+
+    return _create
+
+
+@pytest.fixture
+def create_todolist():
+    def _create(name: str, items: List[str]):
+        p = TodoList(name=name, items=items)
         p.save()
         return p
 
