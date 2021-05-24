@@ -8,6 +8,10 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Fixed
+
+- Incorrect links in CHANGELOG.md
+
 ## [0.2.4] - 2021-05-24
 
 ### Fixed
@@ -126,9 +130,9 @@ and this project adheres to
 - Update .gitignore
 
 [Unreleased]: https://github.com/digitalliving/firedantic/compare/0.2.4...HEAD
-[0.2.3]: https://github.com/digitalliving/firedantic/compare/0.2.3...0.2.4
-[0.2.2]: https://github.com/digitalliving/firedantic/compare/0.2.2...0.2.3
-[0.2.1]: https://github.com/digitalliving/firedantic/compare/0.2.1...0.2.2
+[0.2.4]: https://github.com/digitalliving/firedantic/compare/0.2.3...0.2.4
+[0.2.3]: https://github.com/digitalliving/firedantic/compare/0.2.2...0.2.3
+[0.2.2]: https://github.com/digitalliving/firedantic/compare/0.2.1...0.2.2
 [0.2.1]: https://github.com/digitalliving/firedantic/compare/0.2.0...0.2.1
 [0.2.0]: https://github.com/digitalliving/firedantic/compare/0.1.4...0.2.0
 [0.1.4]: https://github.com/digitalliving/firedantic/compare/0.1.3...0.1.4
