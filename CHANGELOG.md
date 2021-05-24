@@ -8,6 +8,13 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [0.2.4] - 2021-05-24
+
+### Fixed
+
+- Allow firedantic to be used with older versions of `google-cloud-firestore` that
+  works with the firestore emulator on Windows.
+
 ## [0.2.3] - 2021-05-21
 
 ### Added
@@ -118,7 +125,8 @@ and this project adheres to
 - Update README.md
 - Update .gitignore
 
-[Unreleased]: https://github.com/digitalliving/firedantic/compare/0.2.3...HEAD
+[Unreleased]: https://github.com/digitalliving/firedantic/compare/0.2.4...HEAD
+[0.2.3]: https://github.com/digitalliving/firedantic/compare/0.2.3...0.2.4
 [0.2.2]: https://github.com/digitalliving/firedantic/compare/0.2.2...0.2.3
 [0.2.1]: https://github.com/digitalliving/firedantic/compare/0.2.1...0.2.2
 [0.2.1]: https://github.com/digitalliving/firedantic/compare/0.2.0...0.2.1
