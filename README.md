@@ -1,6 +1,10 @@
 # Firedantic
 
 [![Build Status](https://travis-ci.com/digitalliving/firedantic.svg?branch=master)](https://travis-ci.com/digitalliving/firedantic)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![PyPI](https://img.shields.io/pypi/v/firedantic)](https://pypi.org/project/firedantic/)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/firedantic)](https://pypi.org/project/firedantic/)
+[![License: BSD 3-Clause](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
 Database models for Firestore using Pydantic base models.
 
