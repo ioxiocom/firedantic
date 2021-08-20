@@ -185,5 +185,5 @@ class AsyncModel(AsyncBareModel):
     id: Optional[str] = None
 
     @classmethod
-    async def get_by_id(cls: Type[TAsyncBareModel], doc_id: str) -> TAsyncBareModel:
-        return await cls.get_by_doc_id(doc_id)
+    async def get_by_id(cls: Type[TAsyncBareModel], id_: str) -> TAsyncBareModel:
+        return await cls.get_by_doc_id(id_)

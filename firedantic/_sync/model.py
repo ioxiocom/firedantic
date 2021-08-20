@@ -181,5 +181,5 @@ class Model(BareModel):
     id: Optional[str] = None
 
     @classmethod
-    def get_by_id(cls: Type[TBareModel], doc_id: str) -> TBareModel:
-        return cls.get_by_doc_id(doc_id)
+    def get_by_id(cls: Type[TBareModel], id_: str) -> TBareModel:
+        return cls.get_by_doc_id(id_)
