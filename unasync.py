@@ -11,7 +11,7 @@ SUBS = [
     ("AsyncDocumentReference", "DocumentReference"),
     ("AsyncModel", "Model"),
     ("AsyncClient", "Client"),
-    ("TAsyncModel", "TModel"),
+    ("TAsyncBareModel", "TBareModel"),
     ("tests_async", "tests_sync"),
     ("Async([A-Z][A-Za-z0-9_]*)", r"\2"),
     ("async def", "def"),
