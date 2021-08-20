@@ -3,7 +3,11 @@ from logging import getLogger
 from typing import Any, Dict, List, Optional, Type, TypeVar, Union
 
 import pydantic
-from google.cloud.firestore_v1 import CollectionReference, DocumentReference
+from google.cloud.firestore_v1 import (
+    CollectionReference,
+    DocumentReference,
+    DocumentSnapshot,
+)
 from google.cloud.firestore_v1.base_query import BaseQuery
 
 import firedantic.operators as op
@@ -110,10 +114,11 @@ class Model(pydantic.BaseModel, ABC):
                     raise ValueError(
                         f"Unsupported filter type: {f_type}. Supported types are: {', '.join(FIND_TYPES)}"
                     )
-                query = query.where(field, f_type, value[f_type])  # type: ignore
+                query: BaseQuery = query.where(field, f_type, value[f_type])  # type: ignore
             return query
         else:
-            return query.where(field, "==", value)  # type: ignore
+            query: BaseQuery = query.where(field, "==", value)  # type: ignore
+            return query
 
     @classmethod
     def find_one(cls: Type[TModel], filter_: Optional[dict] = None) -> TModel:
@@ -137,8 +142,8 @@ class Model(pydantic.BaseModel, ABC):
         :return: The model.
         :raise ModelNotFoundError: Raised if no matching document is found.
         """
-        document = cls._get_col_ref().document(id_).get()  # type: ignore
-        data = document.to_dict()  # type: ignore
+        document: DocumentSnapshot = cls._get_col_ref().document(id_).get()  # type: ignore
+        data = document.to_dict()
         if data is None:
             raise ModelNotFoundError(f"No '{cls.__name__}' found with id '{id_}'")
         data["id"] = id_
