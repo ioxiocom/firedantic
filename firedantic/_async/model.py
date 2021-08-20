@@ -15,7 +15,7 @@ from firedantic import async_truncate_collection
 from firedantic.configurations import CONFIGURATIONS
 from firedantic.exceptions import CollectionNotDefined, ModelNotFoundError
 
-TAsyncModel = TypeVar("TAsyncModel", bound="AsyncModel")
+TAsyncModel = TypeVar("TAsyncModel", bound="AsyncBareModel")
 logger = getLogger("firedantic")
 
 # https://firebase.google.com/docs/firestore/query-data/queries#query_operators

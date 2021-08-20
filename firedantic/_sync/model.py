@@ -15,7 +15,7 @@ from firedantic import truncate_collection
 from firedantic.configurations import CONFIGURATIONS
 from firedantic.exceptions import CollectionNotDefined, ModelNotFoundError
 
-TModel = TypeVar("TModel", bound="Model")
+TModel = TypeVar("TModel", bound="BareModel")
 logger = getLogger("firedantic")
 
 # https://firebase.google.com/docs/firestore/query-data/queries#query_operators
