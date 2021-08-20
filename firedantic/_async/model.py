@@ -4,7 +4,7 @@ from typing import Any, List, Optional, Type, TypeVar, Union
 
 import pydantic
 from google.cloud.firestore_v1 import AsyncCollectionReference, AsyncDocumentReference
-from google.cloud.firestore_v1.base_query import BaseQuery
+from google.cloud.firestore_v1.async_query import AsyncQuery
 
 import firedantic.operators as op
 from firedantic import async_truncate_collection
@@ -77,7 +77,7 @@ class AsyncModel(pydantic.BaseModel, ABC):
 
         coll = cls._get_col_ref()
 
-        query: Union[BaseQuery, AsyncCollectionReference] = coll
+        query: Union[AsyncQuery, AsyncCollectionReference] = coll
 
         for key, value in filter_.items():
             query = cls._add_filter(query, key, value)
@@ -104,8 +104,8 @@ class AsyncModel(pydantic.BaseModel, ABC):
 
     @classmethod
     def _add_filter(
-        cls, query: Union[BaseQuery, AsyncCollectionReference], field: str, value: Any
-    ) -> Union[BaseQuery, AsyncCollectionReference]:
+        cls, query: Union[AsyncQuery, AsyncCollectionReference], field: str, value: Any
+    ) -> Union[AsyncQuery, AsyncCollectionReference]:
         if type(value) is dict:
             for f_type in value:
                 if f_type not in FIND_TYPES:
