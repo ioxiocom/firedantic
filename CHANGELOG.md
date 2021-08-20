@@ -8,8 +8,18 @@ and this project adheres to
 
 ## [Unreleased]
 
-### Fixed
+## [0.2.5] - 2021-08-20
 
+### Added
+- Support for customizing the field used to hold the document ID. By subclassing the
+  `AsyncBareModel`/`BareModel` it's possible to use any field for the document ID, not
+  just the `id`, which is used by `AsyncModel`/`Model`.
+
+### Changed
+- Update `grpcio` to `^1.39.0` which fixes a problem with emulator support on Windows.
+- Pre-commit hooks for keeping line-endings consistent.
+
+### Fixed
 - Incorrect links in CHANGELOG.md
 
 ## [0.2.4] - 2021-05-24
@@ -129,7 +139,8 @@ and this project adheres to
 - Update README.md
 - Update .gitignore
 
-[Unreleased]: https://github.com/digitalliving/firedantic/compare/0.2.4...HEAD
+[Unreleased]: https://github.com/digitalliving/firedantic/compare/0.2.5...HEAD
+[0.2.5]: https://github.com/digitalliving/firedantic/compare/0.2.4...0.2.5
 [0.2.4]: https://github.com/digitalliving/firedantic/compare/0.2.3...0.2.4
 [0.2.3]: https://github.com/digitalliving/firedantic/compare/0.2.2...0.2.3
 [0.2.2]: https://github.com/digitalliving/firedantic/compare/0.2.1...0.2.2
