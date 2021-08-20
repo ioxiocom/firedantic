@@ -7,11 +7,11 @@ import pytest
 from google.cloud.firestore_v1 import Client
 from pydantic import BaseModel
 
-from firedantic import Model
+from firedantic import BareModel, Model
 from firedantic.configurations import configure
 
 
-class CustomIDModel(Model):
+class CustomIDModel(BareModel):
     __collection__ = "custom"
     __document_id__ = "foo"
 

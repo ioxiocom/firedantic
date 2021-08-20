@@ -33,16 +33,14 @@ FIND_TYPES = {
 }
 
 
-class Model(pydantic.BaseModel, ABC):
+class BareModel(pydantic.BaseModel, ABC):
     """Base model class.
 
     Implements basic functionality for Pydantic models, such as save, delete, find etc.
     """
 
     __collection__: Optional[str] = None
-    __document_id__: str = "id"
-
-    id: Optional[str] = None
+    __document_id__: str
 
     def save(self) -> None:
         """Saves this model in the database."""
@@ -174,3 +172,8 @@ class Model(pydantic.BaseModel, ABC):
     def _get_doc_ref(self) -> DocumentReference:
         """Returns the document reference."""
         return self._get_col_ref().document(self.get_document_id())  # type: ignore
+
+
+class Model(BareModel):
+    __document_id__: str = "id"
+    id: Optional[str] = None

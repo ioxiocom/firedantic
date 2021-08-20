@@ -33,16 +33,14 @@ FIND_TYPES = {
 }
 
 
-class AsyncModel(pydantic.BaseModel, ABC):
+class AsyncBareModel(pydantic.BaseModel, ABC):
     """Base model class.
 
     Implements basic functionality for Pydantic models, such as save, delete, find etc.
     """
 
     __collection__: Optional[str] = None
-    __document_id__: str = "id"
-
-    id: Optional[str] = None
+    __document_id__: str
 
     async def save(self) -> None:
         """Saves this model in the database."""
@@ -178,3 +176,8 @@ class AsyncModel(pydantic.BaseModel, ABC):
     def _get_doc_ref(self) -> AsyncDocumentReference:
         """Returns the document reference."""
         return self._get_col_ref().document(self.get_document_id())  # type: ignore
+
+
+class AsyncModel(AsyncBareModel):
+    __document_id__: str = "id"
+    id: Optional[str] = None

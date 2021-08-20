@@ -7,11 +7,11 @@ import pytest
 from google.cloud.firestore_v1 import AsyncClient
 from pydantic import BaseModel
 
-from firedantic import AsyncModel
+from firedantic import AsyncBareModel, AsyncModel
 from firedantic.configurations import configure
 
 
-class CustomIDModel(AsyncModel):
+class CustomIDModel(AsyncBareModel):
     __collection__ = "custom"
     __document_id__ = "foo"
 

@@ -192,7 +192,6 @@ def test_custom_id_model(configure_db):
     m = models[0]
     assert m.foo is not None
     assert m.bar == "bar"
-    assert m.id is None
 
 
 def test_custom_id_conflict(configure_db):
@@ -204,4 +203,3 @@ def test_custom_id_conflict(configure_db):
     m = models[0]
     assert m.foo != "foo"
     assert m.bar == "bar"
-    assert m.id is None
