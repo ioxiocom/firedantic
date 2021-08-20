@@ -137,18 +137,20 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
             raise ModelNotFoundError(f"No '{cls.__name__}' found")
 
     @classmethod
-    async def get_by_id(cls: Type[TAsyncBareModel], id_: str) -> TAsyncBareModel:
-        """Returns a model based on the ID.
+    async def get_by_doc_id(cls: Type[TAsyncBareModel], doc_id: str) -> TAsyncBareModel:
+        """Returns a model based on the document ID.
 
-        :param id_: The id of the entry.
+        :param doc_id: The document ID of the entry.
         :return: The model.
         :raise ModelNotFoundError: Raised if no matching document is found.
         """
-        document: DocumentSnapshot = await cls._get_col_ref().document(id_).get()  # type: ignore
+        document: DocumentSnapshot = await cls._get_col_ref().document(doc_id).get()  # type: ignore
         data = document.to_dict()
         if data is None:
-            raise ModelNotFoundError(f"No '{cls.__name__}' found with id '{id_}'")
-        data["id"] = id_
+            raise ModelNotFoundError(
+                f"No '{cls.__name__}' found with {cls.__document_id__} '{doc_id}'"
+            )
+        data[cls.__document_id__] = doc_id
         return cls(**data)
 
     @classmethod
@@ -181,3 +183,7 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
 class AsyncModel(AsyncBareModel):
     __document_id__: str = "id"
     id: Optional[str] = None
+
+    @classmethod
+    async def get_by_id(cls: Type[TAsyncBareModel], doc_id: str) -> TAsyncBareModel:
+        return await cls.get_by_doc_id(doc_id)

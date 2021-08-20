@@ -133,18 +133,20 @@ class BareModel(pydantic.BaseModel, ABC):
             raise ModelNotFoundError(f"No '{cls.__name__}' found")
 
     @classmethod
-    def get_by_id(cls: Type[TBareModel], id_: str) -> TBareModel:
-        """Returns a model based on the ID.
+    def get_by_doc_id(cls: Type[TBareModel], doc_id: str) -> TBareModel:
+        """Returns a model based on the document ID.
 
-        :param id_: The id of the entry.
+        :param doc_id: The document ID of the entry.
         :return: The model.
         :raise ModelNotFoundError: Raised if no matching document is found.
         """
-        document: DocumentSnapshot = cls._get_col_ref().document(id_).get()  # type: ignore
+        document: DocumentSnapshot = cls._get_col_ref().document(doc_id).get()  # type: ignore
         data = document.to_dict()
         if data is None:
-            raise ModelNotFoundError(f"No '{cls.__name__}' found with id '{id_}'")
-        data["id"] = id_
+            raise ModelNotFoundError(
+                f"No '{cls.__name__}' found with {cls.__document_id__} '{doc_id}'"
+            )
+        data[cls.__document_id__] = doc_id
         return cls(**data)
 
     @classmethod
@@ -177,3 +179,7 @@ class BareModel(pydantic.BaseModel, ABC):
 class Model(BareModel):
     __document_id__: str = "id"
     id: Optional[str] = None
+
+    @classmethod
+    def get_by_id(cls: Type[TBareModel], doc_id: str) -> TBareModel:
+        return cls.get_by_doc_id(doc_id)

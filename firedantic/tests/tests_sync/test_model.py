@@ -1,5 +1,5 @@
 import pytest
-from pydantic import Field
+from pydantic import Field, ValidationError
 
 import firedantic.operators as op
 from firedantic import Model
@@ -8,6 +8,7 @@ from firedantic.tests.tests_sync.conftest import (
     Company,
     CustomIDConflictModel,
     CustomIDModel,
+    CustomIDModelExtra,
     Product,
     TodoList,
 )
@@ -203,3 +204,29 @@ def test_custom_id_conflict(configure_db):
     m = models[0]
     assert m.foo != "foo"
     assert m.bar == "bar"
+
+
+def test_model_id_persistency(configure_db):
+    c = CustomIDConflictModel(foo="foo", bar="bar")
+    c.save()
+
+    c = CustomIDConflictModel.get_by_doc_id(c.id)
+    c.save()
+
+    assert len(CustomIDConflictModel.find({})) == 1
+
+
+def test_bare_model_document_id_persistency(configure_db):
+    c = CustomIDModel(bar="bar")
+    c.save()
+
+    c = CustomIDModel.get_by_doc_id(c.foo)
+    c.save()
+
+    assert len(CustomIDModel.find({})) == 1
+
+
+def test_extra_fields(configure_db):
+    CustomIDModelExtra(foo="foo", bar="bar", baz="baz").save()
+    with pytest.raises(ValidationError):
+        CustomIDModel.find({})

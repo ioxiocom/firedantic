@@ -5,7 +5,7 @@ from unittest.mock import Mock
 import google.auth.credentials
 import pytest
 from google.cloud.firestore_v1 import Client
-from pydantic import BaseModel
+from pydantic import BaseModel, Extra
 
 from firedantic import BareModel, Model
 from firedantic.configurations import configure
@@ -18,12 +18,30 @@ class CustomIDModel(BareModel):
     foo: Optional[str]
     bar: str
 
+    class Config:
+        extra = Extra.forbid
+
+
+class CustomIDModelExtra(BareModel):
+    __collection__ = "custom"
+    __document_id__ = "foo"
+
+    foo: Optional[str]
+    bar: str
+    baz: str
+
+    class Config:
+        extra = Extra.forbid
+
 
 class CustomIDConflictModel(Model):
     __collection__ = "custom"
 
     foo: str
     bar: str
+
+    class Config:
+        extra = Extra.forbid
 
 
 class Owner(BaseModel):
@@ -32,6 +50,9 @@ class Owner(BaseModel):
     first_name: str
     last_name: str
 
+    class Config:
+        extra = Extra.forbid
+
 
 class Company(Model):
     """Dummy company Firedantic model."""
@@ -39,6 +60,9 @@ class Company(Model):
     __collection__ = "companies"
     company_id: str
     owner: Owner
+
+    class Config:
+        extra = Extra.forbid
 
 
 class Product(Model):
@@ -49,11 +73,17 @@ class Product(Model):
     price: float
     stock: int
 
+    class Config:
+        extra = Extra.forbid
+
 
 class TodoList(Model):
     __collection__ = "todoLists"
     name: str
     items: List[str]
+
+    class Config:
+        extra = Extra.forbid
 
 
 @pytest.fixture
