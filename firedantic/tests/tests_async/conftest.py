@@ -1,5 +1,5 @@
 import uuid
-from typing import List
+from typing import List, Optional
 from unittest.mock import Mock
 
 import google.auth.credentials
@@ -9,6 +9,21 @@ from pydantic import BaseModel
 
 from firedantic import AsyncModel
 from firedantic.configurations import configure
+
+
+class CustomIDModel(AsyncModel):
+    __collection__ = "custom"
+    __document_id__ = "foo"
+
+    foo: Optional[str]
+    bar: str
+
+
+class CustomIDConflictModel(AsyncModel):
+    __collection__ = "custom"
+
+    foo: str
+    bar: str
 
 
 class Owner(BaseModel):

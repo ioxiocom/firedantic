@@ -1,4 +1,5 @@
 from abc import ABC
+from logging import getLogger
 from typing import Any, List, Optional, Type, TypeVar, Union
 
 import pydantic
@@ -11,6 +12,7 @@ from firedantic.configurations import CONFIGURATIONS
 from firedantic.exceptions import CollectionNotDefined, ModelNotFoundError
 
 TAsyncModel = TypeVar("TAsyncModel", bound="AsyncModel")
+logger = getLogger("firedantic")
 
 # https://firebase.google.com/docs/firestore/query-data/queries#query_operators
 FIND_TYPES = {
@@ -34,22 +36,29 @@ class AsyncModel(pydantic.BaseModel, ABC):
     """
 
     __collection__: Optional[str] = None
+    __document_id__: str = "id"
 
     id: Optional[str] = None
 
     async def save(self) -> None:
         """Saves this model in the database."""
         data = self.dict(by_alias=True)
-        if "id" in data:
-            del data["id"]
+        if self.__document_id__ in data:
+            del data[self.__document_id__]
 
         doc_ref = self._get_doc_ref()
         await doc_ref.set(data)
-        self.id = doc_ref.id
+        setattr(self, self.__document_id__, doc_ref.id)
 
     async def delete(self) -> None:
         """Deletes this model from the database."""
         await self._get_doc_ref().delete()
+
+    def get_document_id(self):
+        """
+        Get the document ID for this model instance
+        """
+        return getattr(self, self.__document_id__, None)
 
     @classmethod
     async def find(
@@ -73,8 +82,20 @@ class AsyncModel(pydantic.BaseModel, ABC):
         for key, value in filter_.items():
             query = cls._add_filter(query, key, value)
 
+        def _cls(doc_id, data) -> TAsyncModel:
+            if cls.__document_id__ in data:
+                logger.warning(
+                    "%s document ID %s contains conflicting %s in data with value %s",
+                    cls.__name__,
+                    doc_id,
+                    cls.__document_id__,
+                    data[cls.__document_id__],
+                )
+            data[cls.__document_id__] = doc_id
+            return cls(**data)
+
         return [
-            cls(id=doc_id, **doc_dict)
+            _cls(doc_id, doc_dict)
             async for doc_id, doc_dict in (
                 (doc.id, doc.to_dict()) async for doc in query.stream()  # type: ignore
             )
@@ -151,4 +172,4 @@ class AsyncModel(pydantic.BaseModel, ABC):
 
     def _get_doc_ref(self) -> AsyncDocumentReference:
         """Returns the document reference."""
-        return self._get_col_ref().document(self.id)  # type: ignore
+        return self._get_col_ref().document(self.get_document_id())  # type: ignore

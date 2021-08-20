@@ -4,7 +4,13 @@ from pydantic import Field
 import firedantic.operators as op
 from firedantic import Model
 from firedantic.exceptions import CollectionNotDefined, ModelNotFoundError
-from firedantic.tests.tests_sync.conftest import Company, Product, TodoList
+from firedantic.tests.tests_sync.conftest import (
+    Company,
+    CustomIDConflictModel,
+    CustomIDModel,
+    Product,
+    TodoList,
+)
 
 TEST_PRODUCTS = [
     {"product_id": "a", "stock": 0},
@@ -174,3 +180,28 @@ def test_truncate_collection(configure_db, create_company):
     Company.truncate_collection()
     new_companies = Company.find({})
     assert len(new_companies) == 0
+
+
+def test_custom_id_model(configure_db):
+    c = CustomIDModel(bar="bar")
+    c.save()
+
+    models = CustomIDModel.find({})
+    assert len(models) == 1
+
+    m = models[0]
+    assert m.foo is not None
+    assert m.bar == "bar"
+    assert m.id is None
+
+
+def test_custom_id_conflict(configure_db):
+    CustomIDConflictModel(foo="foo", bar="bar").save()
+
+    models = CustomIDModel.find({})
+    assert len(models) == 1
+
+    m = models[0]
+    assert m.foo != "foo"
+    assert m.bar == "bar"
+    assert m.id is None
