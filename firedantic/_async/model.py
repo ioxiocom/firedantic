@@ -1,16 +1,22 @@
 from abc import ABC
-from typing import Any, List, Optional, Type, TypeVar, Union
+from logging import getLogger
+from typing import Any, Dict, List, Optional, Type, TypeVar, Union
 
 import pydantic
-from google.cloud.firestore_v1 import AsyncCollectionReference, AsyncDocumentReference
-from google.cloud.firestore_v1.base_query import BaseQuery
+from google.cloud.firestore_v1 import (
+    AsyncCollectionReference,
+    AsyncDocumentReference,
+    DocumentSnapshot,
+)
+from google.cloud.firestore_v1.async_query import AsyncQuery
 
 import firedantic.operators as op
 from firedantic import async_truncate_collection
 from firedantic.configurations import CONFIGURATIONS
 from firedantic.exceptions import CollectionNotDefined, ModelNotFoundError
 
-TAsyncModel = TypeVar("TAsyncModel", bound="AsyncModel")
+TAsyncBareModel = TypeVar("TAsyncBareModel", bound="AsyncBareModel")
+logger = getLogger("firedantic")
 
 # https://firebase.google.com/docs/firestore/query-data/queries#query_operators
 FIND_TYPES = {
@@ -27,34 +33,39 @@ FIND_TYPES = {
 }
 
 
-class AsyncModel(pydantic.BaseModel, ABC):
+class AsyncBareModel(pydantic.BaseModel, ABC):
     """Base model class.
 
     Implements basic functionality for Pydantic models, such as save, delete, find etc.
     """
 
     __collection__: Optional[str] = None
-
-    id: Optional[str] = None
+    __document_id__: str
 
     async def save(self) -> None:
         """Saves this model in the database."""
         data = self.dict(by_alias=True)
-        if "id" in data:
-            del data["id"]
+        if self.__document_id__ in data:
+            del data[self.__document_id__]
 
         doc_ref = self._get_doc_ref()
         await doc_ref.set(data)
-        self.id = doc_ref.id
+        setattr(self, self.__document_id__, doc_ref.id)
 
     async def delete(self) -> None:
         """Deletes this model from the database."""
         await self._get_doc_ref().delete()
 
+    def get_document_id(self):
+        """
+        Get the document ID for this model instance
+        """
+        return getattr(self, self.__document_id__, None)
+
     @classmethod
     async def find(
-        cls: Type[TAsyncModel], filter_: Optional[dict] = None
-    ) -> List[TAsyncModel]:
+        cls: Type[TAsyncBareModel], filter_: Optional[dict] = None
+    ) -> List[TAsyncBareModel]:
         """Returns a list of models from the database based on a filter.
 
         Example: `Company.find({"company_id": "1234567-8"})`.
@@ -68,13 +79,25 @@ class AsyncModel(pydantic.BaseModel, ABC):
 
         coll = cls._get_col_ref()
 
-        query: Union[BaseQuery, AsyncCollectionReference] = coll
+        query: Union[AsyncQuery, AsyncCollectionReference] = coll
 
         for key, value in filter_.items():
             query = cls._add_filter(query, key, value)
 
+        def _cls(doc_id: str, data: Dict[str, Any]) -> TAsyncBareModel:
+            if cls.__document_id__ in data:
+                logger.warning(
+                    "%s document ID %s contains conflicting %s in data with value %s",
+                    cls.__name__,
+                    doc_id,
+                    cls.__document_id__,
+                    data[cls.__document_id__],
+                )
+            data[cls.__document_id__] = doc_id
+            return cls(**data)
+
         return [
-            cls(id=doc_id, **doc_dict)
+            _cls(doc_id, doc_dict)
             async for doc_id, doc_dict in (
                 (doc.id, doc.to_dict()) async for doc in query.stream()  # type: ignore
             )
@@ -83,23 +106,24 @@ class AsyncModel(pydantic.BaseModel, ABC):
 
     @classmethod
     def _add_filter(
-        cls, query: Union[BaseQuery, AsyncCollectionReference], field: str, value: Any
-    ) -> Union[BaseQuery, AsyncCollectionReference]:
+        cls, query: Union[AsyncQuery, AsyncCollectionReference], field: str, value: Any
+    ) -> Union[AsyncQuery, AsyncCollectionReference]:
         if type(value) is dict:
             for f_type in value:
                 if f_type not in FIND_TYPES:
                     raise ValueError(
                         f"Unsupported filter type: {f_type}. Supported types are: {', '.join(FIND_TYPES)}"
                     )
-                query = query.where(field, f_type, value[f_type])
+                query: AsyncQuery = query.where(field, f_type, value[f_type])  # type: ignore
             return query
         else:
-            return query.where(field, "==", value)
+            query: AsyncQuery = query.where(field, "==", value)  # type: ignore
+            return query
 
     @classmethod
     async def find_one(
-        cls: Type[TAsyncModel], filter_: Optional[dict] = None
-    ) -> TAsyncModel:
+        cls: Type[TAsyncBareModel], filter_: Optional[dict] = None
+    ) -> TAsyncBareModel:
         """Returns one model from the DB based on a filter.
 
         :param filter_: The filter criteria.
@@ -113,18 +137,20 @@ class AsyncModel(pydantic.BaseModel, ABC):
             raise ModelNotFoundError(f"No '{cls.__name__}' found")
 
     @classmethod
-    async def get_by_id(cls: Type[TAsyncModel], id_: str) -> TAsyncModel:
-        """Returns a model based on the ID.
+    async def get_by_doc_id(cls: Type[TAsyncBareModel], doc_id: str) -> TAsyncBareModel:
+        """Returns a model based on the document ID.
 
-        :param id_: The id of the entry.
+        :param doc_id: The document ID of the entry.
         :return: The model.
         :raise ModelNotFoundError: Raised if no matching document is found.
         """
-        document = await cls._get_col_ref().document(id_).get()  # type: ignore
+        document: DocumentSnapshot = await cls._get_col_ref().document(doc_id).get()  # type: ignore
         data = document.to_dict()
         if data is None:
-            raise ModelNotFoundError(f"No '{cls.__name__}' found with id '{id_}'")
-        data["id"] = id_
+            raise ModelNotFoundError(
+                f"No '{cls.__name__}' found with {cls.__document_id__} '{doc_id}'"
+            )
+        data[cls.__document_id__] = doc_id
         return cls(**data)
 
     @classmethod
@@ -151,4 +177,13 @@ class AsyncModel(pydantic.BaseModel, ABC):
 
     def _get_doc_ref(self) -> AsyncDocumentReference:
         """Returns the document reference."""
-        return self._get_col_ref().document(self.id)  # type: ignore
+        return self._get_col_ref().document(self.get_document_id())  # type: ignore
+
+
+class AsyncModel(AsyncBareModel):
+    __document_id__: str = "id"
+    id: Optional[str] = None
+
+    @classmethod
+    async def get_by_id(cls: Type[TAsyncBareModel], id_: str) -> TAsyncBareModel:
+        return await cls.get_by_doc_id(id_)

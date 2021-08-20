@@ -1,14 +1,47 @@
 import uuid
-from typing import List
+from typing import List, Optional
 from unittest.mock import Mock
 
 import google.auth.credentials
 import pytest
 from google.cloud.firestore_v1 import AsyncClient
-from pydantic import BaseModel
+from pydantic import BaseModel, Extra
 
-from firedantic import AsyncModel
+from firedantic import AsyncBareModel, AsyncModel
 from firedantic.configurations import configure
+
+
+class CustomIDModel(AsyncBareModel):
+    __collection__ = "custom"
+    __document_id__ = "foo"
+
+    foo: Optional[str]
+    bar: str
+
+    class Config:
+        extra = Extra.forbid
+
+
+class CustomIDModelExtra(AsyncBareModel):
+    __collection__ = "custom"
+    __document_id__ = "foo"
+
+    foo: Optional[str]
+    bar: str
+    baz: str
+
+    class Config:
+        extra = Extra.forbid
+
+
+class CustomIDConflictModel(AsyncModel):
+    __collection__ = "custom"
+
+    foo: str
+    bar: str
+
+    class Config:
+        extra = Extra.forbid
 
 
 class Owner(BaseModel):
@@ -17,6 +50,9 @@ class Owner(BaseModel):
     first_name: str
     last_name: str
 
+    class Config:
+        extra = Extra.forbid
+
 
 class Company(AsyncModel):
     """Dummy company Firedantic model."""
@@ -24,6 +60,9 @@ class Company(AsyncModel):
     __collection__ = "companies"
     company_id: str
     owner: Owner
+
+    class Config:
+        extra = Extra.forbid
 
 
 class Product(AsyncModel):
@@ -34,11 +73,17 @@ class Product(AsyncModel):
     price: float
     stock: int
 
+    class Config:
+        extra = Extra.forbid
+
 
 class TodoList(AsyncModel):
     __collection__ = "todoLists"
     name: str
     items: List[str]
+
+    class Config:
+        extra = Extra.forbid
 
 
 @pytest.fixture

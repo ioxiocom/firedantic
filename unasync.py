@@ -5,11 +5,13 @@ import re
 from pathlib import Path
 
 SUBS = [
+    ("google.cloud.firestore_v1.async_query", "google.cloud.firestore_v1.base_query"),
+    ("AsyncQuery", "BaseQuery"),
     ("AsyncCollectionReference", "CollectionReference"),
     ("AsyncDocumentReference", "DocumentReference"),
     ("AsyncModel", "Model"),
     ("AsyncClient", "Client"),
-    ("TAsyncModel", "TModel"),
+    ("TAsyncBareModel", "TBareModel"),
     ("tests_async", "tests_sync"),
     ("Async([A-Z][A-Za-z0-9_]*)", r"\2"),
     ("async def", "def"),

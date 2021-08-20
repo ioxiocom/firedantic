@@ -1,10 +1,17 @@
 import pytest
-from pydantic import Field
+from pydantic import Field, ValidationError
 
 import firedantic.operators as op
 from firedantic import AsyncModel
 from firedantic.exceptions import CollectionNotDefined, ModelNotFoundError
-from firedantic.tests.tests_async.conftest import Company, Product, TodoList
+from firedantic.tests.tests_async.conftest import (
+    Company,
+    CustomIDConflictModel,
+    CustomIDModel,
+    CustomIDModelExtra,
+    Product,
+    TodoList,
+)
 
 TEST_PRODUCTS = [
     {"product_id": "a", "stock": 0},
@@ -185,3 +192,57 @@ async def test_truncate_collection(configure_db, create_company):
     await Company.truncate_collection()
     new_companies = await Company.find({})
     assert len(new_companies) == 0
+
+
+@pytest.mark.asyncio
+async def test_custom_id_model(configure_db):
+    c = CustomIDModel(bar="bar")
+    await c.save()
+
+    models = await CustomIDModel.find({})
+    assert len(models) == 1
+
+    m = models[0]
+    assert m.foo is not None
+    assert m.bar == "bar"
+
+
+@pytest.mark.asyncio
+async def test_custom_id_conflict(configure_db):
+    await CustomIDConflictModel(foo="foo", bar="bar").save()
+
+    models = await CustomIDModel.find({})
+    assert len(models) == 1
+
+    m = models[0]
+    assert m.foo != "foo"
+    assert m.bar == "bar"
+
+
+@pytest.mark.asyncio
+async def test_model_id_persistency(configure_db):
+    c = CustomIDConflictModel(foo="foo", bar="bar")
+    await c.save()
+
+    c = await CustomIDConflictModel.get_by_doc_id(c.id)
+    await c.save()
+
+    assert len(await CustomIDConflictModel.find({})) == 1
+
+
+@pytest.mark.asyncio
+async def test_bare_model_document_id_persistency(configure_db):
+    c = CustomIDModel(bar="bar")
+    await c.save()
+
+    c = await CustomIDModel.get_by_doc_id(c.foo)
+    await c.save()
+
+    assert len(await CustomIDModel.find({})) == 1
+
+
+@pytest.mark.asyncio
+async def test_extra_fields(configure_db):
+    await CustomIDModelExtra(foo="foo", bar="bar", baz="baz").save()
+    with pytest.raises(ValidationError):
+        await CustomIDModel.find({})

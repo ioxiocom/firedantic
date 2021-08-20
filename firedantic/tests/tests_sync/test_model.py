@@ -1,10 +1,17 @@
 import pytest
-from pydantic import Field
+from pydantic import Field, ValidationError
 
 import firedantic.operators as op
 from firedantic import Model
 from firedantic.exceptions import CollectionNotDefined, ModelNotFoundError
-from firedantic.tests.tests_sync.conftest import Company, Product, TodoList
+from firedantic.tests.tests_sync.conftest import (
+    Company,
+    CustomIDConflictModel,
+    CustomIDModel,
+    CustomIDModelExtra,
+    Product,
+    TodoList,
+)
 
 TEST_PRODUCTS = [
     {"product_id": "a", "stock": 0},
@@ -174,3 +181,52 @@ def test_truncate_collection(configure_db, create_company):
     Company.truncate_collection()
     new_companies = Company.find({})
     assert len(new_companies) == 0
+
+
+def test_custom_id_model(configure_db):
+    c = CustomIDModel(bar="bar")
+    c.save()
+
+    models = CustomIDModel.find({})
+    assert len(models) == 1
+
+    m = models[0]
+    assert m.foo is not None
+    assert m.bar == "bar"
+
+
+def test_custom_id_conflict(configure_db):
+    CustomIDConflictModel(foo="foo", bar="bar").save()
+
+    models = CustomIDModel.find({})
+    assert len(models) == 1
+
+    m = models[0]
+    assert m.foo != "foo"
+    assert m.bar == "bar"
+
+
+def test_model_id_persistency(configure_db):
+    c = CustomIDConflictModel(foo="foo", bar="bar")
+    c.save()
+
+    c = CustomIDConflictModel.get_by_doc_id(c.id)
+    c.save()
+
+    assert len(CustomIDConflictModel.find({})) == 1
+
+
+def test_bare_model_document_id_persistency(configure_db):
+    c = CustomIDModel(bar="bar")
+    c.save()
+
+    c = CustomIDModel.get_by_doc_id(c.foo)
+    c.save()
+
+    assert len(CustomIDModel.find({})) == 1
+
+
+def test_extra_fields(configure_db):
+    CustomIDModelExtra(foo="foo", bar="bar", baz="baz").save()
+    with pytest.raises(ValidationError):
+        CustomIDModel.find({})
