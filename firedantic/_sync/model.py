@@ -1,6 +1,6 @@
 from abc import ABC
 from logging import getLogger
-from typing import Any, List, Optional, Type, TypeVar, Union
+from typing import Any, Dict, List, Optional, Type, TypeVar, Union
 
 import pydantic
 from google.cloud.firestore_v1 import CollectionReference, DocumentReference
@@ -80,7 +80,7 @@ class Model(pydantic.BaseModel, ABC):
         for key, value in filter_.items():
             query = cls._add_filter(query, key, value)
 
-        def _cls(doc_id, data) -> TModel:
+        def _cls(doc_id: str, data: Dict[str, Any]) -> TModel:
             if cls.__document_id__ in data:
                 logger.warning(
                     "%s document ID %s contains conflicting %s in data with value %s",
@@ -110,10 +110,10 @@ class Model(pydantic.BaseModel, ABC):
                     raise ValueError(
                         f"Unsupported filter type: {f_type}. Supported types are: {', '.join(FIND_TYPES)}"
                     )
-                query = query.where(field, f_type, value[f_type])
+                query = query.where(field, f_type, value[f_type])  # type: ignore
             return query
         else:
-            return query.where(field, "==", value)
+            return query.where(field, "==", value)  # type: ignore
 
     @classmethod
     def find_one(cls: Type[TModel], filter_: Optional[dict] = None) -> TModel:
@@ -138,7 +138,7 @@ class Model(pydantic.BaseModel, ABC):
         :raise ModelNotFoundError: Raised if no matching document is found.
         """
         document = cls._get_col_ref().document(id_).get()  # type: ignore
-        data = document.to_dict()
+        data = document.to_dict()  # type: ignore
         if data is None:
             raise ModelNotFoundError(f"No '{cls.__name__}' found with id '{id_}'")
         data["id"] = id_
