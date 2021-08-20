@@ -15,7 +15,7 @@ from firedantic import truncate_collection
 from firedantic.configurations import CONFIGURATIONS
 from firedantic.exceptions import CollectionNotDefined, ModelNotFoundError
 
-TAsyncConcreteModel = TypeVar("TAsyncConcreteModel", bound="BareModel")
+TAsyncBareModel = TypeVar("TAsyncBareModel", bound="BareModel")
 logger = getLogger("firedantic")
 
 # https://firebase.google.com/docs/firestore/query-data/queries#query_operators
@@ -64,8 +64,8 @@ class BareModel(pydantic.BaseModel, ABC):
 
     @classmethod
     def find(
-        cls: Type[TAsyncConcreteModel], filter_: Optional[dict] = None
-    ) -> List[TAsyncConcreteModel]:
+        cls: Type[TAsyncBareModel], filter_: Optional[dict] = None
+    ) -> List[TAsyncBareModel]:
         """Returns a list of models from the database based on a filter.
 
         Example: `Company.find({"company_id": "1234567-8"})`.
@@ -84,7 +84,7 @@ class BareModel(pydantic.BaseModel, ABC):
         for key, value in filter_.items():
             query = cls._add_filter(query, key, value)
 
-        def _cls(doc_id: str, data: Dict[str, Any]) -> TAsyncConcreteModel:
+        def _cls(doc_id: str, data: Dict[str, Any]) -> TAsyncBareModel:
             if cls.__document_id__ in data:
                 logger.warning(
                     "%s document ID %s contains conflicting %s in data with value %s",
@@ -122,8 +122,8 @@ class BareModel(pydantic.BaseModel, ABC):
 
     @classmethod
     def find_one(
-        cls: Type[TAsyncConcreteModel], filter_: Optional[dict] = None
-    ) -> TAsyncConcreteModel:
+        cls: Type[TAsyncBareModel], filter_: Optional[dict] = None
+    ) -> TAsyncBareModel:
         """Returns one model from the DB based on a filter.
 
         :param filter_: The filter criteria.
@@ -137,7 +137,7 @@ class BareModel(pydantic.BaseModel, ABC):
             raise ModelNotFoundError(f"No '{cls.__name__}' found")
 
     @classmethod
-    def get_by_id(cls: Type[TAsyncConcreteModel], id_: str) -> TAsyncConcreteModel:
+    def get_by_id(cls: Type[TAsyncBareModel], id_: str) -> TAsyncBareModel:
         """Returns a model based on the ID.
 
         :param id_: The id of the entry.
