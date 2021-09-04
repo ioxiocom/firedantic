@@ -5,9 +5,15 @@ from unittest.mock import Mock
 import google.auth.credentials
 import pytest
 from google.cloud.firestore_v1 import AsyncClient
-from pydantic import BaseModel, Extra
+from pydantic import BaseModel, Extra, PrivateAttr
 
-from firedantic import AsyncBareModel, AsyncModel
+from firedantic import (
+    AsyncBareModel,
+    AsyncBareSubCollection,
+    AsyncBareSubModel,
+    AsyncModel,
+    ModelNotFoundError,
+)
 from firedantic.configurations import configure
 
 
@@ -54,6 +60,30 @@ class Owner(BaseModel):
         extra = Extra.forbid
 
 
+class CompanyStatsSubCollection(AsyncBareSubCollection):
+    __collection_tpl__ = "companies/{id}/Stats"
+    __document_id__ = "_doc_id"
+
+    class Model(AsyncBareSubModel):
+        _doc_id: Optional[str] = PrivateAttr()
+        sales: int
+
+        @classmethod
+        async def _get_by_id_or_empty(cls, _doc_id):
+            try:
+                return await cls.get_by_doc_id(_doc_id)
+            except ModelNotFoundError:
+                model = cls._create(
+                    sales=0,
+                )
+                model._doc_id = _doc_id
+                return model
+
+        @classmethod
+        async def get_stats(cls, period="2021") -> "CompanyStatsSubCollection":
+            return await cls._get_by_id_or_empty(period)
+
+
 class Company(AsyncModel):
     """Dummy company Firedantic model."""
 
@@ -63,6 +93,9 @@ class Company(AsyncModel):
 
     class Config:
         extra = Extra.forbid
+
+    def stats(self) -> CompanyStatsSubCollection:
+        return CompanyStatsSubCollection.model_for(self)
 
 
 class Product(AsyncModel):

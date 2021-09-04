@@ -33,6 +33,16 @@ FIND_TYPES = {
 }
 
 
+def _get_col_ref(cls, name):
+    if name is None:
+        raise CollectionNotDefined(f"Missing collection name for {cls.__name__}")
+
+    collection: AsyncCollectionReference = CONFIGURATIONS["db"].collection(
+        CONFIGURATIONS["prefix"] + name
+    )
+    return collection
+
+
 class AsyncBareModel(pydantic.BaseModel, ABC):
     """Base model class.
 
@@ -77,9 +87,7 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
         if not filter_:
             filter_ = {}
 
-        coll = cls._get_col_ref()
-
-        query: Union[AsyncQuery, AsyncCollectionReference] = coll
+        query: Union[AsyncQuery, AsyncCollectionReference] = cls._get_col_ref()
 
         for key, value in filter_.items():
             query = cls._add_filter(query, key, value)
@@ -94,7 +102,9 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
                     data[cls.__document_id__],
                 )
             data[cls.__document_id__] = doc_id
-            return cls(**data)
+            model = cls(**data)
+            setattr(model, cls.__document_id__, doc_id)
+            return model
 
         return [
             _cls(doc_id, doc_dict)
@@ -151,7 +161,9 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
                 f"No '{cls.__name__}' found with {cls.__document_id__} '{doc_id}'"
             )
         data[cls.__document_id__] = doc_id
-        return cls(**data)
+        model = cls(**data)
+        setattr(model, cls.__document_id__, doc_id)
+        return model
 
     @classmethod
     async def truncate_collection(cls, batch_size: int = 128) -> int:
@@ -168,12 +180,7 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
     @classmethod
     def _get_col_ref(cls) -> AsyncCollectionReference:
         """Returns the collection reference."""
-        if cls.__collection__ is None:
-            raise CollectionNotDefined(f"Missing collection name for {cls.__name__}")
-        collection: AsyncCollectionReference = CONFIGURATIONS["db"].collection(
-            CONFIGURATIONS["prefix"] + cls.__collection__
-        )
-        return collection
+        return _get_col_ref(cls, cls.__collection__)
 
     def _get_doc_ref(self) -> AsyncDocumentReference:
         """Returns the document reference."""
@@ -187,3 +194,56 @@ class AsyncModel(AsyncBareModel):
     @classmethod
     async def get_by_id(cls: Type[TAsyncBareModel], id_: str) -> TAsyncBareModel:
         return await cls.get_by_doc_id(id_)
+
+
+class AsyncBareSubModel(AsyncBareModel, ABC):
+    __collection_cls__: "AsyncBareSubCollection" = None
+    __collection__: Optional[str] = None
+    __document_id__: str
+
+    @classmethod
+    def _create(cls, **kwargs):
+        return cls(
+            **kwargs,
+        )
+
+    @classmethod
+    def _get_col_ref(cls) -> AsyncCollectionReference:
+        """Returns the collection reference."""
+        return _get_col_ref(cls.__collection_cls__, cls.__collection__)
+
+
+class AsyncSubModel(AsyncBareModel):
+    id: Optional[str] = None
+
+
+class AsyncBareSubCollection(ABC):
+    __collection_tpl__: Optional[str] = None
+    __document_id__: str
+
+    class Model(AsyncBareSubModel):
+        pass
+
+    @classmethod
+    def model_for(cls, parent):
+        parent_props = parent.dict(by_alias=True)
+
+        name = cls.__name__.replace("Collection", "Model")
+
+        ic = type(name, (cls.Model,), {})
+        ic.__collection_cls__ = cls
+        ic.__collection__ = cls.__collection_tpl__.format(**parent_props)
+        ic.__document_id__ = cls.__document_id__
+
+        return ic
+
+
+class AsyncSubCollection(AsyncBareSubCollection, ABC):
+    __document_id__ = "id"
+
+    class Model(AsyncSubModel):
+        pass
+
+        @classmethod
+        async def get_by_id(cls: Type[TAsyncBareModel], id_: str) -> TAsyncBareModel:
+            return await cls.get_by_doc_id(id_)

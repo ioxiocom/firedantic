@@ -246,3 +246,24 @@ async def test_extra_fields(configure_db):
     await CustomIDModelExtra(foo="foo", bar="bar", baz="baz").save()
     with pytest.raises(ValidationError):
         await CustomIDModel.find({})
+
+
+@pytest.mark.asyncio
+async def test_company_stats(configure_db, create_company):
+    company: Company = await create_company(company_id="1234567-8")
+    company_stats = company.stats()
+
+    stats = await company_stats.get_stats()
+    stats.sales = 100
+    await stats.save()
+
+    # Ensure the data can be still loaded
+    loaded = await company.stats().get_stats()
+    assert loaded.sales == stats.sales
+
+    # And that we can still save
+    loaded.sales += 1
+    await loaded.save()
+
+    stats = await company_stats.get_stats()
+    assert stats.sales == 101

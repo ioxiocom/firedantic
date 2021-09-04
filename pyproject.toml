@@ -25,6 +25,7 @@ pytest = "^6.0.2"
 pydevd_pycharm = "^202.7319.37"
 pytest-asyncio = "^0.14.0"
 black = "20.8b1"
+watchdog = "^2.1.5"
 
 [build-system]
 requires = ["poetry>=1.0.0"]

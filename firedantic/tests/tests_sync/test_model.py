@@ -230,3 +230,23 @@ def test_extra_fields(configure_db):
     CustomIDModelExtra(foo="foo", bar="bar", baz="baz").save()
     with pytest.raises(ValidationError):
         CustomIDModel.find({})
+
+
+def test_company_stats(configure_db, create_company):
+    company: Company = create_company(company_id="1234567-8")
+    company_stats = company.stats()
+
+    stats = company_stats.get_stats()
+    stats.sales = 100
+    stats.save()
+
+    # Ensure the data can be still loaded
+    loaded = company.stats().get_stats()
+    assert loaded.sales == stats.sales
+
+    # And that we can still save
+    loaded.sales += 1
+    loaded.save()
+
+    stats = company_stats.get_stats()
+    assert stats.sales == 101
