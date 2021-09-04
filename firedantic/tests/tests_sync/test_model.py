@@ -11,6 +11,9 @@ from firedantic.tests.tests_sync.conftest import (
     CustomIDModelExtra,
     Product,
     TodoList,
+    User,
+    UserStatsCollection,
+    get_user_purchases,
 )
 
 TEST_PRODUCTS = [
@@ -250,3 +253,13 @@ def test_company_stats(configure_db, create_company):
 
     stats = company_stats.get_stats()
     assert stats.sales == 101
+
+
+def test_get_user_purchases(configure_db):
+    u = User(name="Foo")
+    u.save()
+
+    us = UserStatsCollection.model_for(u)
+    us(id="2021", purchases=42).save()
+
+    assert get_user_purchases(u.id) == 42

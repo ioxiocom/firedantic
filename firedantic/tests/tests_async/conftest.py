@@ -12,9 +12,12 @@ from firedantic import (
     AsyncBareSubCollection,
     AsyncBareSubModel,
     AsyncModel,
-    ModelNotFoundError,
+    AsyncSubCollection,
+    AsyncSubModel,
 )
 from firedantic.configurations import configure
+
+from firedantic import ModelNotFoundError  # isort:skip
 
 
 class CustomIDModel(AsyncBareModel):
@@ -163,3 +166,28 @@ def create_todolist():
         return p
 
     return _create
+
+
+# Test case from README
+class UserStatsCollection(AsyncSubCollection):
+    # Can use any properties of the "parent" model
+    __collection_tpl__ = "users/{id}/stats"
+
+    class Model(AsyncSubModel):
+        id: Optional[str]
+        purchases: int = 0
+
+
+class User(AsyncModel):
+    __collection__ = "users"
+    name: str
+
+
+async def get_user_purchases(user_id: str, period="2021") -> int:
+    user = await User.get_by_id(user_id)
+    stats_model = UserStatsCollection.model_for(user)
+    try:
+        stats = await stats_model.get_by_id(period)
+    except ModelNotFoundError:
+        stats = stats_model()
+    return stats.purchases

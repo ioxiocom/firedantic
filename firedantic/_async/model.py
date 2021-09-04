@@ -213,10 +213,6 @@ class AsyncBareSubModel(AsyncBareModel, ABC):
         return _get_col_ref(cls.__collection_cls__, cls.__collection__)
 
 
-class AsyncSubModel(AsyncBareModel):
-    id: Optional[str] = None
-
-
 class AsyncBareSubCollection(ABC):
     __collection_tpl__: Optional[str] = None
     __document_id__: str
@@ -238,12 +234,27 @@ class AsyncBareSubCollection(ABC):
         return ic
 
 
+class AsyncSubModel(AsyncBareSubModel):
+    id: Optional[str] = None
+
+    @classmethod
+    def _create(cls, **kwargs):
+        return cls(
+            **kwargs,
+        )
+
+    @classmethod
+    def _get_col_ref(cls) -> AsyncCollectionReference:
+        """Returns the collection reference."""
+        return _get_col_ref(cls.__collection_cls__, cls.__collection__)
+
+    @classmethod
+    async def get_by_id(cls: Type[TAsyncBareModel], id_: str) -> TAsyncBareModel:
+        return await cls.get_by_doc_id(id_)
+
+
 class AsyncSubCollection(AsyncBareSubCollection, ABC):
     __document_id__ = "id"
 
     class Model(AsyncSubModel):
         pass
-
-        @classmethod
-        async def get_by_id(cls: Type[TAsyncBareModel], id_: str) -> TAsyncBareModel:
-            return await cls.get_by_doc_id(id_)

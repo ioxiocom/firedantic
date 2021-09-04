@@ -209,10 +209,6 @@ class BareSubModel(BareModel, ABC):
         return _get_col_ref(cls.__collection_cls__, cls.__collection__)
 
 
-class SubModel(BareModel):
-    id: Optional[str] = None
-
-
 class BareSubCollection(ABC):
     __collection_tpl__: Optional[str] = None
     __document_id__: str
@@ -234,12 +230,27 @@ class BareSubCollection(ABC):
         return ic
 
 
+class SubModel(BareSubModel):
+    id: Optional[str] = None
+
+    @classmethod
+    def _create(cls, **kwargs):
+        return cls(
+            **kwargs,
+        )
+
+    @classmethod
+    def _get_col_ref(cls) -> CollectionReference:
+        """Returns the collection reference."""
+        return _get_col_ref(cls.__collection_cls__, cls.__collection__)
+
+    @classmethod
+    def get_by_id(cls: Type[TBareModel], id_: str) -> TBareModel:
+        return cls.get_by_doc_id(id_)
+
+
 class SubCollection(BareSubCollection, ABC):
     __document_id__ = "id"
 
     class Model(SubModel):
         pass
-
-        @classmethod
-        def get_by_id(cls: Type[TBareModel], id_: str) -> TBareModel:
-            return cls.get_by_doc_id(id_)

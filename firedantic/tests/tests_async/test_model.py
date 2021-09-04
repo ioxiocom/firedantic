@@ -11,6 +11,9 @@ from firedantic.tests.tests_async.conftest import (
     CustomIDModelExtra,
     Product,
     TodoList,
+    User,
+    UserStatsCollection,
+    get_user_purchases,
 )
 
 TEST_PRODUCTS = [
@@ -267,3 +270,14 @@ async def test_company_stats(configure_db, create_company):
 
     stats = await company_stats.get_stats()
     assert stats.sales == 101
+
+
+@pytest.mark.asyncio
+async def test_get_user_purchases(configure_db):
+    u = User(name="Foo")
+    await u.save()
+
+    us = UserStatsCollection.model_for(u)
+    await us(id="2021", purchases=42).save()
+
+    assert await get_user_purchases(u.id) == 42

@@ -12,9 +12,12 @@ from firedantic import (
     BareSubCollection,
     BareSubModel,
     Model,
-    ModelNotFoundError,
+    SubCollection,
+    SubModel,
 )
 from firedantic.configurations import configure
+
+from firedantic import ModelNotFoundError  # isort:skip
 
 
 class CustomIDModel(BareModel):
@@ -163,3 +166,28 @@ def create_todolist():
         return p
 
     return _create
+
+
+# Test case from README
+class UserStatsCollection(SubCollection):
+    # Can use any properties of the "parent" model
+    __collection_tpl__ = "users/{id}/stats"
+
+    class Model(SubModel):
+        id: Optional[str]
+        purchases: int = 0
+
+
+class User(Model):
+    __collection__ = "users"
+    name: str
+
+
+def get_user_purchases(user_id: str, period="2021") -> int:
+    user = User.get_by_id(user_id)
+    stats_model = UserStatsCollection.model_for(user)
+    try:
+        stats = stats_model.get_by_id(period)
+    except ModelNotFoundError:
+        stats = stats_model()
+    return stats.purchases
