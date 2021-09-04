@@ -16,6 +16,7 @@ from firedantic.configurations import CONFIGURATIONS
 from firedantic.exceptions import CollectionNotDefined, ModelNotFoundError
 
 TBareModel = TypeVar("TBareModel", bound="BareModel")
+TAsyncBareSubModel = TypeVar("TAsyncBareSubModel", bound="BareSubModel")
 logger = getLogger("firedantic")
 
 # https://firebase.google.com/docs/firestore/query-data/queries#query_operators
@@ -33,7 +34,7 @@ FIND_TYPES = {
 }
 
 
-def _get_col_ref(cls, name):
+def _get_col_ref(cls, name) -> CollectionReference:
     if name is None:
         raise CollectionNotDefined(f"Missing collection name for {cls.__name__}")
 
@@ -193,13 +194,13 @@ class Model(BareModel):
 
 
 class BareSubModel(BareModel, ABC):
-    __collection_cls__: "BareSubCollection" = None
+    __collection_cls__: "BareSubCollection"
     __collection__: Optional[str] = None
     __document_id__: str
 
     @classmethod
-    def _create(cls, **kwargs):
-        return cls(
+    def _create(cls, **kwargs) -> TAsyncBareSubModel:
+        return cls(  # type: ignore
             **kwargs,
         )
 

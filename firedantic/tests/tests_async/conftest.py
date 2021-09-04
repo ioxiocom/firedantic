@@ -72,18 +72,18 @@ class CompanyStatsSubCollection(AsyncBareSubCollection):
         sales: int
 
         @classmethod
-        async def _get_by_id_or_empty(cls, _doc_id):
+        async def _get_by_id_or_empty(cls, _doc_id) -> AsyncBareSubModel:
             try:
                 return await cls.get_by_doc_id(_doc_id)
             except ModelNotFoundError:
-                model = cls._create(
+                model = cls._create(  # type: ignore
                     sales=0,
                 )
                 model._doc_id = _doc_id
-                return model
+                return model  # type: ignore
 
         @classmethod
-        async def get_stats(cls, period="2021") -> "CompanyStatsSubCollection":
+        async def get_stats(cls, period="2021"):
             return await cls._get_by_id_or_empty(period)
 
 
@@ -97,7 +97,7 @@ class Company(AsyncModel):
     class Config:
         extra = Extra.forbid
 
-    def stats(self) -> CompanyStatsSubCollection:
+    def stats(self):
         return CompanyStatsSubCollection.model_for(self)
 
 
@@ -190,4 +190,4 @@ async def get_user_purchases(user_id: str, period="2021") -> int:
         stats = await stats_model.get_by_id(period)
     except ModelNotFoundError:
         stats = stats_model()
-    return stats.purchases
+    return stats.purchases  # type: ignore
