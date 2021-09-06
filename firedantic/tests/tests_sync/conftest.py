@@ -1,5 +1,5 @@
 import uuid
-from typing import List, Optional
+from typing import List, Optional, Type
 from unittest.mock import Mock
 
 import google.auth.credentials
@@ -63,28 +63,30 @@ class Owner(BaseModel):
         extra = Extra.forbid
 
 
+class CompanyStatsModel(BareSubModel):
+    _doc_id: Optional[str] = PrivateAttr()
+    sales: int
+
+    @classmethod
+    def _get_by_id_or_empty(cls, _doc_id) -> BareSubModel:
+        try:
+            return cls.get_by_doc_id(_doc_id)
+        except ModelNotFoundError:
+            model = cls._create(  # type: ignore
+                sales=0,
+            )
+            model._doc_id = _doc_id
+            return model  # type: ignore
+
+    @classmethod
+    def get_stats(cls, period="2021"):
+        return cls._get_by_id_or_empty(period)
+
+
 class CompanyStatsSubCollection(BareSubCollection):
     __collection_tpl__ = "companies/{id}/Stats"
     __document_id__ = "_doc_id"
-
-    class Model(BareSubModel):
-        _doc_id: Optional[str] = PrivateAttr()
-        sales: int
-
-        @classmethod
-        def _get_by_id_or_empty(cls, _doc_id) -> BareSubModel:
-            try:
-                return cls.get_by_doc_id(_doc_id)
-            except ModelNotFoundError:
-                model = cls._create(  # type: ignore
-                    sales=0,
-                )
-                model._doc_id = _doc_id
-                return model  # type: ignore
-
-        @classmethod
-        def get_stats(cls, period="2021"):
-            return cls._get_by_id_or_empty(period)
+    __model_cls__ = CompanyStatsModel
 
 
 class Company(Model):
@@ -97,8 +99,8 @@ class Company(Model):
     class Config:
         extra = Extra.forbid
 
-    def stats(self):
-        return CompanyStatsSubCollection.model_for(self)
+    def stats(self) -> Type[CompanyStatsModel]:
+        return CompanyStatsSubCollection.model_for(self)  # type: ignore
 
 
 class Product(Model):
@@ -169,13 +171,15 @@ def create_todolist():
 
 
 # Test case from README
+class UserStatsModel(SubModel):
+    id: Optional[str]
+    purchases: int = 0
+
+
 class UserStatsCollection(SubCollection):
     # Can use any properties of the "parent" model
     __collection_tpl__ = "users/{id}/stats"
-
-    class Model(SubModel):
-        id: Optional[str]
-        purchases: int = 0
+    __model_cls__ = UserStatsModel
 
 
 class User(Model):
@@ -183,11 +187,11 @@ class User(Model):
     name: str
 
 
-def get_user_purchases(user_id: str, period="2021") -> int:
+def get_user_purchases(user_id: str, period: str = "2021") -> int:
     user = User.get_by_id(user_id)
-    stats_model = UserStatsCollection.model_for(user)
+    stats_model: Type[UserStatsModel] = UserStatsCollection.model_for(user)
     try:
         stats = stats_model.get_by_id(period)
     except ModelNotFoundError:
         stats = stats_model()
-    return stats.purchases  # type: ignore
+    return stats.purchases

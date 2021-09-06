@@ -160,18 +160,20 @@ Subcollections in Firestore are basically dynamically named collections.
 Firedantic supports them via the `SubCollection` and `SubModel` classes, by creating dynamic classes with collection name determined based on the "parent" class it is in reference to using the `model_for()` method.
 
 ```python
-from typing import Optional
+from typing import Optional, Type
 
 from firedantic import AsyncModel, AsyncSubCollection, AsyncSubModel, ModelNotFoundError
+
+
+class UserStatsModel(AsyncSubModel):
+    id: Optional[str]
+    purchases: int = 0
 
 
 class UserStatsCollection(AsyncSubCollection):
     # Can use any properties of the "parent" model
     __collection_tpl__ = "users/{id}/stats"
-
-    class Model(AsyncSubModel):
-        id: Optional[str]
-        purchases: int = 0
+    __model_cls__ = UserStatsModel
 
 
 class User(AsyncModel):
@@ -179,9 +181,9 @@ class User(AsyncModel):
     name: str
 
 
-async def get_user_purchases(user_id: str, period="2021") -> int:
+async def get_user_purchases(user_id: str, period: str = "2021") -> int:
     user = await User.get_by_id(user_id)
-    stats_model = UserStatsCollection.model_for(user)
+    stats_model: Type[UserStatsModel] = UserStatsCollection.model_for(user)
     try:
         stats = await stats_model.get_by_id(period)
     except ModelNotFoundError:

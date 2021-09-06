@@ -217,17 +217,14 @@ class AsyncBareSubModel(AsyncBareModel, ABC):
 class AsyncBareSubCollection(ABC):
     __collection_tpl__: Optional[str] = None
     __document_id__: str
-
-    class Model(AsyncBareSubModel):
-        pass
+    __model_cls__: Type[AsyncBareSubModel]
 
     @classmethod
     def model_for(cls, parent):
         parent_props = parent.dict(by_alias=True)
 
-        name = cls.__name__.replace("Collection", "Model")
-
-        ic = type(name, (cls.Model,), {})
+        name = cls.__model_cls__.__name__
+        ic = type(name, (cls.__model_cls__,), {})
         ic.__collection_cls__ = cls
         ic.__collection__ = cls.__collection_tpl__.format(**parent_props)
         ic.__document_id__ = cls.__document_id__
