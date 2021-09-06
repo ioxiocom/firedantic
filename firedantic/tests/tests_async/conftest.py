@@ -67,6 +67,10 @@ class CompanyStats(AsyncBareSubModel):
     _doc_id: Optional[str] = PrivateAttr()
     sales: int
 
+    class Collection(AsyncBareSubCollection):
+        __collection_tpl__ = "companies/{id}/Stats"
+        __document_id__ = "_doc_id"
+
     @classmethod
     async def _get_by_id_or_empty(cls, _doc_id) -> AsyncBareSubModel:
         try:
@@ -83,12 +87,6 @@ class CompanyStats(AsyncBareSubModel):
         return await cls._get_by_id_or_empty(period)
 
 
-class CompanyStatsSubCollection(AsyncBareSubCollection):
-    __collection_tpl__ = "companies/{id}/Stats"
-    __document_id__ = "_doc_id"
-    __model_cls__ = CompanyStats
-
-
 class Company(AsyncModel):
     """Dummy company Firedantic model."""
 
@@ -100,7 +98,7 @@ class Company(AsyncModel):
         extra = Extra.forbid
 
     def stats(self) -> Type[CompanyStats]:
-        return CompanyStatsSubCollection.model_for(self)  # type: ignore
+        return CompanyStats.model_for(self)  # type: ignore
 
 
 class Product(AsyncModel):
@@ -175,11 +173,9 @@ class UserStats(AsyncSubModel):
     id: Optional[str]
     purchases: int = 0
 
-
-class UserStatsCollection(AsyncSubCollection):
-    # Can use any properties of the "parent" model
-    __collection_tpl__ = "users/{id}/stats"
-    __model_cls__ = UserStats
+    class Collection(AsyncSubCollection):
+        # Can use any properties of the "parent" model
+        __collection_tpl__ = "users/{id}/stats"
 
 
 class User(AsyncModel):
@@ -189,7 +185,7 @@ class User(AsyncModel):
 
 async def get_user_purchases(user_id: str, period: str = "2021") -> int:
     user = await User.get_by_id(user_id)
-    stats_model: Type[UserStats] = UserStatsCollection.model_for(user)
+    stats_model: Type[UserStats] = UserStats.model_for(user)
     try:
         stats = await stats_model.get_by_id(period)
     except ModelNotFoundError:

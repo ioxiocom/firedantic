@@ -12,7 +12,7 @@ from firedantic.tests.tests_async.conftest import (
     Product,
     TodoList,
     User,
-    UserStatsCollection,
+    UserStats,
     get_user_purchases,
 )
 
@@ -277,7 +277,7 @@ async def test_get_user_purchases(configure_db):
     u = User(name="Foo")
     await u.save()
 
-    us = UserStatsCollection.model_for(u)
+    us = UserStats.model_for(u)
     await us(id="2021", purchases=42).save()
 
     assert await get_user_purchases(u.id) == 42

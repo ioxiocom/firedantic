@@ -197,10 +197,30 @@ class AsyncModel(AsyncBareModel):
         return await cls.get_by_doc_id(id_)
 
 
+class AsyncBareSubCollection(ABC):
+    __collection_tpl__: Optional[str] = None
+    __document_id__: str
+
+    @classmethod
+    def model_for(cls, parent, model_class):
+        parent_props = parent.dict(by_alias=True)
+
+        name = model_class.__name__
+        ic = type(name, (model_class,), {})
+        ic.__collection_cls__ = cls
+        ic.__collection__ = cls.__collection_tpl__.format(**parent_props)
+        ic.__document_id__ = cls.__document_id__
+
+        return ic
+
+
 class AsyncBareSubModel(AsyncBareModel, ABC):
     __collection_cls__: "AsyncBareSubCollection"
     __collection__: Optional[str] = None
     __document_id__: str
+
+    class Collection(AsyncBareSubCollection):
+        pass
 
     @classmethod
     def _create(cls, **kwargs) -> TAsyncBareSubModel:
@@ -213,23 +233,9 @@ class AsyncBareSubModel(AsyncBareModel, ABC):
         """Returns the collection reference."""
         return _get_col_ref(cls.__collection_cls__, cls.__collection__)
 
-
-class AsyncBareSubCollection(ABC):
-    __collection_tpl__: Optional[str] = None
-    __document_id__: str
-    __model_cls__: Type[AsyncBareSubModel]
-
     @classmethod
     def model_for(cls, parent):
-        parent_props = parent.dict(by_alias=True)
-
-        name = cls.__model_cls__.__name__
-        ic = type(name, (cls.__model_cls__,), {})
-        ic.__collection_cls__ = cls
-        ic.__collection__ = cls.__collection_tpl__.format(**parent_props)
-        ic.__document_id__ = cls.__document_id__
-
-        return ic
+        return cls.Collection.model_for(parent, cls)
 
 
 class AsyncSubModel(AsyncBareSubModel):
