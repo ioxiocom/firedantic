@@ -12,6 +12,7 @@ SUBS = [
     ("AsyncModel", "Model"),
     ("AsyncClient", "Client"),
     ("TAsyncBareModel", "TBareModel"),
+    ("TAsyncBareSubModel", "TBareSubModel"),
     ("tests_async", "tests_sync"),
     ("Async([A-Z][A-Za-z0-9_]*)", r"\2"),
     ("async def", "def"),
