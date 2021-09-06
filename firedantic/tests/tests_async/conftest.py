@@ -63,7 +63,7 @@ class Owner(BaseModel):
         extra = Extra.forbid
 
 
-class CompanyStatsModel(AsyncBareSubModel):
+class CompanyStats(AsyncBareSubModel):
     _doc_id: Optional[str] = PrivateAttr()
     sales: int
 
@@ -86,7 +86,7 @@ class CompanyStatsModel(AsyncBareSubModel):
 class CompanyStatsSubCollection(AsyncBareSubCollection):
     __collection_tpl__ = "companies/{id}/Stats"
     __document_id__ = "_doc_id"
-    __model_cls__ = CompanyStatsModel
+    __model_cls__ = CompanyStats
 
 
 class Company(AsyncModel):
@@ -99,7 +99,7 @@ class Company(AsyncModel):
     class Config:
         extra = Extra.forbid
 
-    def stats(self) -> Type[CompanyStatsModel]:
+    def stats(self) -> Type[CompanyStats]:
         return CompanyStatsSubCollection.model_for(self)  # type: ignore
 
 
@@ -171,7 +171,7 @@ def create_todolist():
 
 
 # Test case from README
-class UserStatsModel(AsyncSubModel):
+class UserStats(AsyncSubModel):
     id: Optional[str]
     purchases: int = 0
 
@@ -179,7 +179,7 @@ class UserStatsModel(AsyncSubModel):
 class UserStatsCollection(AsyncSubCollection):
     # Can use any properties of the "parent" model
     __collection_tpl__ = "users/{id}/stats"
-    __model_cls__ = UserStatsModel
+    __model_cls__ = UserStats
 
 
 class User(AsyncModel):
@@ -189,7 +189,7 @@ class User(AsyncModel):
 
 async def get_user_purchases(user_id: str, period: str = "2021") -> int:
     user = await User.get_by_id(user_id)
-    stats_model: Type[UserStatsModel] = UserStatsCollection.model_for(user)
+    stats_model: Type[UserStats] = UserStatsCollection.model_for(user)
     try:
         stats = await stats_model.get_by_id(period)
     except ModelNotFoundError:

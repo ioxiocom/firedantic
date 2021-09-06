@@ -253,6 +253,4 @@ class SubModel(BareSubModel):
 
 class SubCollection(BareSubCollection, ABC):
     __document_id__ = "id"
-
-    class Model(SubModel):
-        pass
+    __model_cls__: Type[SubModel]

@@ -257,6 +257,4 @@ class AsyncSubModel(AsyncBareSubModel):
 
 class AsyncSubCollection(AsyncBareSubCollection, ABC):
     __document_id__ = "id"
-
-    class Model(AsyncSubModel):
-        pass
+    __model_cls__: Type[AsyncSubModel]
