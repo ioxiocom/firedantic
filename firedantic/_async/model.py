@@ -248,6 +248,10 @@ class AsyncSubModel(AsyncBareSubModel):
 
     @classmethod
     async def get_by_id(cls: Type[TAsyncBareModel], id_: str) -> TAsyncBareModel:
+        """
+        Get single item by document ID
+        :raises ModelNotFoundError:
+        """
         return await cls.get_by_doc_id(id_)
 
 

@@ -244,6 +244,10 @@ class SubModel(BareSubModel):
 
     @classmethod
     def get_by_id(cls: Type[TBareModel], id_: str) -> TBareModel:
+        """
+        Get single item by document ID
+        :raises ModelNotFoundError:
+        """
         return cls.get_by_doc_id(id_)
 
 
