@@ -6,7 +6,7 @@ from invoke import Exit, task
 from watchdog.observers import Observer
 
 DEV_ENV = {"FIRESTORE_EMULATOR_HOST": "127.0.0.1:8686"}
-SKIP_WATCH = [".idea", ".pytest_cache", "__pycache__"]
+SKIP_WATCH = [".idea", ".pytest_cache", "__pycache__", ".git"]
 
 
 class TestWatcher:
