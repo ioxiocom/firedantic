@@ -219,7 +219,7 @@ class AsyncBareSubModel(AsyncBareModel, ABC):
     __collection__: Optional[str] = None
     __document_id__: str
 
-    class Collection(AsyncBareSubCollection):
+    class Collection(AsyncBareSubCollection, ABC):
         pass
 
     @classmethod
@@ -231,6 +231,11 @@ class AsyncBareSubModel(AsyncBareModel, ABC):
     @classmethod
     def _get_col_ref(cls) -> AsyncCollectionReference:
         """Returns the collection reference."""
+        if cls.__collection__ is None or "{" in cls.__collection__:
+            raise CollectionNotDefined(
+                f"{cls.__name__} is not properly prepared. "
+                f"You should use {cls.__name__}.model_for(parent)"
+            )
         return _get_col_ref(cls.__collection_cls__, cls.__collection__)
 
     @classmethod
@@ -240,17 +245,6 @@ class AsyncBareSubModel(AsyncBareModel, ABC):
 
 class AsyncSubModel(AsyncBareSubModel):
     id: Optional[str] = None
-
-    @classmethod
-    def _create(cls, **kwargs):
-        return cls(
-            **kwargs,
-        )
-
-    @classmethod
-    def _get_col_ref(cls) -> AsyncCollectionReference:
-        """Returns the collection reference."""
-        return _get_col_ref(cls.__collection_cls__, cls.__collection__)
 
     @classmethod
     async def get_by_id(cls: Type[TAsyncBareModel], id_: str) -> TAsyncBareModel:

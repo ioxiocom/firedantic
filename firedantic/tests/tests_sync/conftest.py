@@ -16,8 +16,7 @@ from firedantic import (
     SubModel,
 )
 from firedantic.configurations import configure
-
-from firedantic import ModelNotFoundError  # isort:skip
+from firedantic.exceptions import ModelNotFoundError
 
 
 class CustomIDModel(BareModel):

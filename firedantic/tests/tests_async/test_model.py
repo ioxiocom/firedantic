@@ -273,6 +273,15 @@ async def test_company_stats(configure_db, create_company):
 
 
 @pytest.mark.asyncio
+async def test_subcollection_model_safety(configure_db):
+    """
+    Ensure you shouldn't be able to use unprepared subcollection models accidentally
+    """
+    with pytest.raises(CollectionNotDefined):
+        await UserStats.find({})
+
+
+@pytest.mark.asyncio
 async def test_get_user_purchases(configure_db):
     u = User(name="Foo")
     await u.save()

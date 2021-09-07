@@ -16,8 +16,7 @@ from firedantic import (
     AsyncSubModel,
 )
 from firedantic.configurations import configure
-
-from firedantic import ModelNotFoundError  # isort:skip
+from firedantic.exceptions import ModelNotFoundError
 
 
 class CustomIDModel(AsyncBareModel):

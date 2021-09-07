@@ -255,6 +255,14 @@ def test_company_stats(configure_db, create_company):
     assert stats.sales == 101
 
 
+def test_subcollection_model_safety(configure_db):
+    """
+    Ensure you shouldn't be able to use unprepared subcollection models accidentally
+    """
+    with pytest.raises(CollectionNotDefined):
+        UserStats.find({})
+
+
 def test_get_user_purchases(configure_db):
     u = User(name="Foo")
     u.save()
