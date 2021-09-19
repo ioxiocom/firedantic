@@ -8,6 +8,14 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [0.2.6] - 2021-09-XX
+
+### Added
+- Support for subcollections
+
+### Fixed
+- Fixing support for `_` prefixed document ID attributes
+
 ## [0.2.5] - 2021-08-20
 
 ### Added
