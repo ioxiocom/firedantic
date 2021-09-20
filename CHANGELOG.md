@@ -8,6 +8,14 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [0.2.6] - 2021-09-20
+
+### Added
+- Support for subcollections
+
+### Fixed
+- Fixing support for `_` prefixed document ID attributes
+
 ## [0.2.5] - 2021-08-20
 
 ### Added
@@ -139,7 +147,8 @@ and this project adheres to
 - Update README.md
 - Update .gitignore
 
-[Unreleased]: https://github.com/digitalliving/firedantic/compare/0.2.5...HEAD
+[Unreleased]: https://github.com/digitalliving/firedantic/compare/0.2.6...HEAD
+[0.2.6]: https://github.com/digitalliving/firedantic/compare/0.2.5...0.2.6
 [0.2.5]: https://github.com/digitalliving/firedantic/compare/0.2.4...0.2.5
 [0.2.4]: https://github.com/digitalliving/firedantic/compare/0.2.3...0.2.4
 [0.2.3]: https://github.com/digitalliving/firedantic/compare/0.2.2...0.2.3

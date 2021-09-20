@@ -16,6 +16,7 @@ from firedantic.configurations import CONFIGURATIONS
 from firedantic.exceptions import CollectionNotDefined, ModelNotFoundError
 
 TBareModel = TypeVar("TBareModel", bound="BareModel")
+TBareSubModel = TypeVar("TBareSubModel", bound="BareSubModel")
 logger = getLogger("firedantic")
 
 # https://firebase.google.com/docs/firestore/query-data/queries#query_operators
@@ -31,6 +32,16 @@ FIND_TYPES = {
     op.IN,
     op.NOT_IN,
 }
+
+
+def _get_col_ref(cls, name) -> CollectionReference:
+    if name is None:
+        raise CollectionNotDefined(f"Missing collection name for {cls.__name__}")
+
+    collection: CollectionReference = CONFIGURATIONS["db"].collection(
+        CONFIGURATIONS["prefix"] + name
+    )
+    return collection
 
 
 class BareModel(pydantic.BaseModel, ABC):
@@ -75,9 +86,7 @@ class BareModel(pydantic.BaseModel, ABC):
         if not filter_:
             filter_ = {}
 
-        coll = cls._get_col_ref()
-
-        query: Union[BaseQuery, CollectionReference] = coll
+        query: Union[BaseQuery, CollectionReference] = cls._get_col_ref()
 
         for key, value in filter_.items():
             query = cls._add_filter(query, key, value)
@@ -92,7 +101,9 @@ class BareModel(pydantic.BaseModel, ABC):
                     data[cls.__document_id__],
                 )
             data[cls.__document_id__] = doc_id
-            return cls(**data)
+            model = cls(**data)
+            setattr(model, cls.__document_id__, doc_id)
+            return model
 
         return [
             _cls(doc_id, doc_dict)
@@ -147,7 +158,9 @@ class BareModel(pydantic.BaseModel, ABC):
                 f"No '{cls.__name__}' found with {cls.__document_id__} '{doc_id}'"
             )
         data[cls.__document_id__] = doc_id
-        return cls(**data)
+        model = cls(**data)
+        setattr(model, cls.__document_id__, doc_id)
+        return model
 
     @classmethod
     def truncate_collection(cls, batch_size: int = 128) -> int:
@@ -164,12 +177,7 @@ class BareModel(pydantic.BaseModel, ABC):
     @classmethod
     def _get_col_ref(cls) -> CollectionReference:
         """Returns the collection reference."""
-        if cls.__collection__ is None:
-            raise CollectionNotDefined(f"Missing collection name for {cls.__name__}")
-        collection: CollectionReference = CONFIGURATIONS["db"].collection(
-            CONFIGURATIONS["prefix"] + cls.__collection__
-        )
-        return collection
+        return _get_col_ref(cls, cls.__collection__)
 
     def _get_doc_ref(self) -> DocumentReference:
         """Returns the document reference."""
@@ -183,3 +191,66 @@ class Model(BareModel):
     @classmethod
     def get_by_id(cls: Type[TBareModel], id_: str) -> TBareModel:
         return cls.get_by_doc_id(id_)
+
+
+class BareSubCollection(ABC):
+    __collection_tpl__: Optional[str] = None
+    __document_id__: str
+
+    @classmethod
+    def model_for(cls, parent, model_class):
+        parent_props = parent.dict(by_alias=True)
+
+        name = model_class.__name__
+        ic = type(name, (model_class,), {})
+        ic.__collection_cls__ = cls
+        ic.__collection__ = cls.__collection_tpl__.format(**parent_props)
+        ic.__document_id__ = cls.__document_id__
+
+        return ic
+
+
+class BareSubModel(BareModel, ABC):
+    __collection_cls__: "BareSubCollection"
+    __collection__: Optional[str] = None
+    __document_id__: str
+
+    class Collection(BareSubCollection, ABC):
+        pass
+
+    @classmethod
+    def _create(cls, **kwargs) -> TBareSubModel:
+        return cls(  # type: ignore
+            **kwargs,
+        )
+
+    @classmethod
+    def _get_col_ref(cls) -> CollectionReference:
+        """Returns the collection reference."""
+        if cls.__collection__ is None or "{" in cls.__collection__:
+            raise CollectionNotDefined(
+                f"{cls.__name__} is not properly prepared. "
+                f"You should use {cls.__name__}.model_for(parent)"
+            )
+        return _get_col_ref(cls.__collection_cls__, cls.__collection__)
+
+    @classmethod
+    def model_for(cls, parent):
+        return cls.Collection.model_for(parent, cls)
+
+
+class SubModel(BareSubModel):
+    id: Optional[str] = None
+
+    @classmethod
+    def get_by_id(cls: Type[TBareModel], id_: str) -> TBareModel:
+        """
+        Get single item by document ID
+        :raises ModelNotFoundError:
+        """
+        return cls.get_by_doc_id(id_)
+
+
+class SubCollection(BareSubCollection, ABC):
+    __document_id__ = "id"
+    __model_cls__: Type[SubModel]

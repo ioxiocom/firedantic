@@ -153,6 +153,42 @@ if __name__ == "__main__":
     result = loop.run_until_complete(main())
 ```
 
+## Subcollections
+
+Subcollections in Firestore are basically dynamically named collections.
+
+Firedantic supports them via the `SubCollection` and `SubModel` classes, by creating dynamic classes with collection name determined based on the "parent" class it is in reference to using the `model_for()` method.
+
+```python
+from typing import Optional, Type
+
+from firedantic import AsyncModel, AsyncSubCollection, AsyncSubModel, ModelNotFoundError
+
+
+class UserStats(AsyncSubModel):
+    id: Optional[str]
+    purchases: int = 0
+
+    class Collection(AsyncSubCollection):
+        # Can use any properties of the "parent" model
+        __collection_tpl__ = "users/{id}/stats"
+
+
+class User(AsyncModel):
+    __collection__ = "users"
+    name: str
+
+
+async def get_user_purchases(user_id: str, period: str = "2021") -> int:
+    user = await User.get_by_id(user_id)
+    stats_model: Type[UserStats] = UserStats.model_for(user)
+    try:
+        stats = await stats_model.get_by_id(period)
+    except ModelNotFoundError:
+        stats = stats_model()
+    return stats.purchases
+
+```
 
 ## Development
 

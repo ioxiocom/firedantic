@@ -11,6 +11,9 @@ from firedantic.tests.tests_sync.conftest import (
     CustomIDModelExtra,
     Product,
     TodoList,
+    User,
+    UserStats,
+    get_user_purchases,
 )
 
 TEST_PRODUCTS = [
@@ -230,3 +233,41 @@ def test_extra_fields(configure_db):
     CustomIDModelExtra(foo="foo", bar="bar", baz="baz").save()
     with pytest.raises(ValidationError):
         CustomIDModel.find({})
+
+
+def test_company_stats(configure_db, create_company):
+    company: Company = create_company(company_id="1234567-8")
+    company_stats = company.stats()
+
+    stats = company_stats.get_stats()
+    stats.sales = 100
+    stats.save()
+
+    # Ensure the data can be still loaded
+    loaded = company.stats().get_stats()
+    assert loaded.sales == stats.sales
+
+    # And that we can still save
+    loaded.sales += 1
+    loaded.save()
+
+    stats = company_stats.get_stats()
+    assert stats.sales == 101
+
+
+def test_subcollection_model_safety(configure_db):
+    """
+    Ensure you shouldn't be able to use unprepared subcollection models accidentally
+    """
+    with pytest.raises(CollectionNotDefined):
+        UserStats.find({})
+
+
+def test_get_user_purchases(configure_db):
+    u = User(name="Foo")
+    u.save()
+
+    us = UserStats.model_for(u)
+    us(id="2021", purchases=42).save()
+
+    assert get_user_purchases(u.id) == 42

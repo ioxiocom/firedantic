@@ -11,6 +11,9 @@ from firedantic.tests.tests_async.conftest import (
     CustomIDModelExtra,
     Product,
     TodoList,
+    User,
+    UserStats,
+    get_user_purchases,
 )
 
 TEST_PRODUCTS = [
@@ -246,3 +249,44 @@ async def test_extra_fields(configure_db):
     await CustomIDModelExtra(foo="foo", bar="bar", baz="baz").save()
     with pytest.raises(ValidationError):
         await CustomIDModel.find({})
+
+
+@pytest.mark.asyncio
+async def test_company_stats(configure_db, create_company):
+    company: Company = await create_company(company_id="1234567-8")
+    company_stats = company.stats()
+
+    stats = await company_stats.get_stats()
+    stats.sales = 100
+    await stats.save()
+
+    # Ensure the data can be still loaded
+    loaded = await company.stats().get_stats()
+    assert loaded.sales == stats.sales
+
+    # And that we can still save
+    loaded.sales += 1
+    await loaded.save()
+
+    stats = await company_stats.get_stats()
+    assert stats.sales == 101
+
+
+@pytest.mark.asyncio
+async def test_subcollection_model_safety(configure_db):
+    """
+    Ensure you shouldn't be able to use unprepared subcollection models accidentally
+    """
+    with pytest.raises(CollectionNotDefined):
+        await UserStats.find({})
+
+
+@pytest.mark.asyncio
+async def test_get_user_purchases(configure_db):
+    u = User(name="Foo")
+    await u.save()
+
+    us = UserStats.model_for(u)
+    await us(id="2021", purchases=42).save()
+
+    assert await get_user_purchases(u.id) == 42

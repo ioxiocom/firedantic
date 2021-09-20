@@ -1,9 +1,35 @@
 import re
 from pathlib import Path
+from time import sleep
 
 from invoke import Exit, task
+from watchdog.observers import Observer
 
 DEV_ENV = {"FIRESTORE_EMULATOR_HOST": "127.0.0.1:8686"}
+SKIP_WATCH = [".idea", ".pytest_cache", "__pycache__", ".git"]
+
+
+class TestWatcher:
+    def __init__(self, ctx):
+        self.ctx = ctx
+
+    def dispatch(self, event):
+        # Ignore unwanted events
+        for skip in SKIP_WATCH:
+            if skip in event.src_path:
+                return
+
+        if event.is_directory or event.src_path[-1] == "~":
+            return
+
+        print(f"{event.src_path} {event.event_type}")
+
+        self.run_tests()
+
+    def run_tests(self):
+        result = run_test_cmd(self.ctx, "pytest", env=DEV_ENV)
+        if result:
+            print("Tests failed. Check output for details.")
 
 
 @task
@@ -23,6 +49,27 @@ def run_test_cmd(ctx, cmd, env=None) -> int:
     print("=" * 79)
     print(f"> {cmd}")
     return ctx.run(cmd, warn=True, env=env).exited
+
+
+@task
+def watch_tests(ctx):
+    handler = TestWatcher(ctx)
+    path = str(Path(".").absolute())
+    observer = Observer()
+    observer.schedule(handler, path, recursive=True)
+    observer.start()
+
+    print("Running tests")
+    handler.run_tests()
+
+    print(f"Watching {path} for changes.")
+
+    try:
+        while True:
+            sleep(1)
+    finally:
+        observer.stop()
+        observer.join()
 
 
 @task
