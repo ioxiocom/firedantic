@@ -8,7 +8,7 @@ and this project adheres to
 
 ## [Unreleased]
 
-## [0.2.7] - 2021-10-26
+## [0.2.7] - 2021-10-25
 
 ### Fixed
 - `get_by_id`/`get_by_doc_id` with an empty string raises a `ModelNotFoundError` instead
