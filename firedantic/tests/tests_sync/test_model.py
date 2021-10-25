@@ -151,6 +151,11 @@ def test_get_by_id(configure_db, create_company):
     assert c_2.owner.first_name == "John"
 
 
+def test_get_by_empty_str_id(configure_db):
+    with pytest.raises(ModelNotFoundError):
+        Company.get_by_id("")
+
+
 def test_missing_collection(configure_db):
     class User(Model):
         name: str
@@ -227,6 +232,11 @@ def test_bare_model_document_id_persistency(configure_db):
     c.save()
 
     assert len(CustomIDModel.find({})) == 1
+
+
+def test_bare_model_get_by_empty_doc_id(configure_db):
+    with pytest.raises(ModelNotFoundError):
+        CustomIDModel.get_by_doc_id("")
 
 
 def test_extra_fields(configure_db):

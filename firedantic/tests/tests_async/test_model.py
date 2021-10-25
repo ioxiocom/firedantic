@@ -160,6 +160,12 @@ async def test_get_by_id(configure_db, create_company):
 
 
 @pytest.mark.asyncio
+async def test_get_by_empty_str_id(configure_db):
+    with pytest.raises(ModelNotFoundError):
+        await Company.get_by_id("")
+
+
+@pytest.mark.asyncio
 async def test_missing_collection(configure_db):
     class User(AsyncModel):
         name: str
@@ -242,6 +248,12 @@ async def test_bare_model_document_id_persistency(configure_db):
     await c.save()
 
     assert len(await CustomIDModel.find({})) == 1
+
+
+@pytest.mark.asyncio
+async def test_bare_model_get_by_empty_doc_id(configure_db):
+    with pytest.raises(ModelNotFoundError):
+        await CustomIDModel.get_by_doc_id("")
 
 
 @pytest.mark.asyncio
