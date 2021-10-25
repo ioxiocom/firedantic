@@ -151,6 +151,14 @@ class BareModel(pydantic.BaseModel, ABC):
         :return: The model.
         :raise ModelNotFoundError: Raised if no matching document is found.
         """
+
+        if not doc_id:
+            # Getting a document with doc_id set to an empty string would raise a
+            # google.api_core.exceptions.InvalidArgument exception.
+            raise ModelNotFoundError(
+                f"No '{cls.__name__}' found with {cls.__document_id__} '{doc_id}'"
+            )
+
         document: DocumentSnapshot = cls._get_col_ref().document(doc_id).get()  # type: ignore
         data = document.to_dict()
         if data is None:

@@ -8,6 +8,12 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [0.2.7] - 2021-10-26
+
+### Fixed
+- `get_by_id`/`get_by_doc_id` with an empty string raises a `ModelNotFoundError` instead
+of leaking a `google.api_core.exceptions.InvalidArgument` exception.
+
 ## [0.2.6] - 2021-09-20
 
 ### Added
@@ -147,7 +153,8 @@ and this project adheres to
 - Update README.md
 - Update .gitignore
 
-[Unreleased]: https://github.com/digitalliving/firedantic/compare/0.2.6...HEAD
+[Unreleased]: https://github.com/digitalliving/firedantic/compare/0.2.7...HEAD
+[0.2.6]: https://github.com/digitalliving/firedantic/compare/0.2.6...0.2.7
 [0.2.6]: https://github.com/digitalliving/firedantic/compare/0.2.5...0.2.6
 [0.2.5]: https://github.com/digitalliving/firedantic/compare/0.2.4...0.2.5
 [0.2.4]: https://github.com/digitalliving/firedantic/compare/0.2.3...0.2.4
