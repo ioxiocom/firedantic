@@ -8,6 +8,14 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [0.2.8] - 2021-10-26
+
+### Fixed
+- Validate special characters in document ID and ensure `get_by_id`/`get_by_doc_id`
+  raises `ModelNotFoundError` in case of such issues. Especially an uneven number of
+  slashes could raise a ValueError. Saving a model can now raise an `InvalidDocumentID`
+  exception in case the ID is invalid.
+
 ## [0.2.7] - 2021-10-25
 
 ### Fixed
@@ -153,7 +161,8 @@ of leaking a `google.api_core.exceptions.InvalidArgument` exception.
 - Update README.md
 - Update .gitignore
 
-[Unreleased]: https://github.com/digitalliving/firedantic/compare/0.2.7...HEAD
+[Unreleased]: https://github.com/digitalliving/firedantic/compare/0.2.8...HEAD
+[0.2.8]: https://github.com/digitalliving/firedantic/compare/0.2.7...0.2.8
 [0.2.7]: https://github.com/digitalliving/firedantic/compare/0.2.6...0.2.7
 [0.2.6]: https://github.com/digitalliving/firedantic/compare/0.2.5...0.2.6
 [0.2.5]: https://github.com/digitalliving/firedantic/compare/0.2.4...0.2.5

@@ -1,9 +1,15 @@
+from uuid import uuid4
+
 import pytest
 from pydantic import Field, ValidationError
 
 import firedantic.operators as op
 from firedantic import Model
-from firedantic.exceptions import CollectionNotDefined, ModelNotFoundError
+from firedantic.exceptions import (
+    CollectionNotDefined,
+    InvalidDocumentID,
+    ModelNotFoundError,
+)
 from firedantic.tests.tests_sync.conftest import (
     Company,
     CustomIDConflictModel,
@@ -177,6 +183,72 @@ def test_model_aliases(configure_db):
     user_from_db = User.get_by_id(user.id)
     assert user_from_db.first_name == "John"
     assert user_from_db.city == "Helsinki"
+
+
+@pytest.mark.parametrize(
+    "model_id",
+    [
+        "abc",
+        pytest.param("a" * 1500, id="1500 chars"),
+        "...",
+        ".foo",
+        "..bar",
+        "f..oo",
+        "bar..",
+        "__",
+        "___",
+        "_foo_",
+        "__bar_",
+        "_baz__",
+        "b__a__r",
+        "å",
+        "😀",
+        " ",
+        '"',
+        "'",
+        '"',
+        "\x00",
+        "\x01",
+        "\x07",
+        "!:&+-*'()",
+    ],
+)
+def test_models_with_valid_custom_id(configure_db, model_id):
+    product_id = str(uuid4())
+
+    product = Product(product_id=product_id, price=123.45, stock=2)
+    product.id = model_id
+    product.save()
+
+    found = Product.get_by_id(model_id)
+    assert found.product_id == product_id
+
+    found.delete()
+
+
+@pytest.mark.parametrize(
+    "model_id",
+    [
+        "",
+        pytest.param("a" * 1501, id="1501 chars"),
+        ".",
+        "..",
+        "____",
+        "__foo__",
+        "__😀__",
+        "/",
+        "foo/bar",
+        "foo/bar/baz",
+    ],
+)
+def test_models_with_invalid_custom_id(configure_db, model_id):
+    product = Product(product_id="product 123", price=123.45, stock=2)
+    product.id = model_id
+    with pytest.raises(InvalidDocumentID):
+        product.save()
+
+    with pytest.raises(ModelNotFoundError):
+        Product.get_by_id(model_id)
 
 
 def test_truncate_collection(configure_db, create_company):
