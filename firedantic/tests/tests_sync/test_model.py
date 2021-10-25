@@ -206,7 +206,7 @@ def test_model_aliases(configure_db):
         " ",
         '"',
         "'",
-        '"',
+        "\\",
         "\x00",
         "\x01",
         "\x07",
