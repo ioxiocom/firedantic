@@ -4,6 +4,10 @@ class ModelError(Exception):
     pass
 
 
+class InvalidDocumentID(ModelError):
+    pass
+
+
 class ModelNotFoundError(ModelError):
     pass
 
