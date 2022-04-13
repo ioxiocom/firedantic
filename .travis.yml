@@ -1,6 +1,5 @@
 language: python
 python:
-  - 3.6
   - 3.7
   - 3.8
   - 3.9
@@ -42,6 +41,6 @@ deploy:
     skip_existing: true
     script: poetry publish --build
     on:
-      branch: master
+      branch: main
       tags: true
-      condition: "$TRAVIS_PYTHON_VERSION == 3.6"
+      condition: "$TRAVIS_PYTHON_VERSION == 3.7"
