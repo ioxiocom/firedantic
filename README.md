@@ -1,6 +1,6 @@
 # Firedantic
 
-[![Build Status](https://travis-ci.com/digitalliving/firedantic.svg?branch=master)](https://travis-ci.com/digitalliving/firedantic)
+[![Build Status](https://travis-ci.com/digitalliving/firedantic.svg?branch=main)](https://travis-ci.com/digitalliving/firedantic)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![PyPI](https://img.shields.io/pypi/v/firedantic)](https://pypi.org/project/firedantic/)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/firedantic)](https://pypi.org/project/firedantic/)
@@ -11,7 +11,7 @@ Database models for Firestore using Pydantic base models.
 
 ## Installation
 
-The package is available on PyPi:
+The package is available on PyPI:
 
 ```bash
 pip install firedantic
