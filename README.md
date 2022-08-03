@@ -8,7 +8,6 @@
 
 Database models for Firestore using Pydantic base models.
 
-
 ## Installation
 
 The package is available on PyPI:
@@ -17,11 +16,10 @@ The package is available on PyPI:
 pip install firedantic
 ```
 
-
 ## Usage
 
-In your application you will need to configure the firestore db client and
-optionally the collection prefix, which by default is empty.
+In your application you will need to configure the firestore db client and optionally
+the collection prefix, which by default is empty.
 
 ```python
 from os import environ
@@ -89,12 +87,13 @@ Product.find({"stock": {">=": 3}})
 Product.find({"stock": {op.GTE: 3}})
 ```
 
-The query operators are found at [https://firebase.google.com/docs/firestore/query-data/queries#query_operators](https://firebase.google.com/docs/firestore/query-data/queries#query_operators).
-
+The query operators are found at
+[https://firebase.google.com/docs/firestore/query-data/queries#query_operators](https://firebase.google.com/docs/firestore/query-data/queries#query_operators).
 
 ### Async usage
 
 Firedantic can also be used in an async way, like this:
+
 ```python
 import asyncio
 from os import environ
@@ -157,7 +156,9 @@ if __name__ == "__main__":
 
 Subcollections in Firestore are basically dynamically named collections.
 
-Firedantic supports them via the `SubCollection` and `SubModel` classes, by creating dynamic classes with collection name determined based on the "parent" class it is in reference to using the `model_for()` method.
+Firedantic supports them via the `SubCollection` and `SubModel` classes, by creating
+dynamic classes with collection name determined based on the "parent" class it is in
+reference to using the `model_for()` method.
 
 ```python
 from typing import Optional, Type
@@ -194,8 +195,6 @@ async def get_user_purchases(user_id: str, period: str = "2021") -> int:
 
 PRs are welcome!
 
-
-
 To run tests locally, you should run:
 
 ```bash
@@ -205,20 +204,25 @@ poetry run invoke test
 
 ### About sync and async versions of library
 
-Although this library provides both sync and async versions of models, please keep in mind that
-you need to explicitly maintain only async version of it. The synchronous version is generated automatically by invoke task:
+Although this library provides both sync and async versions of models, please keep in
+mind that you need to explicitly maintain only async version of it. The synchronous
+version is generated automatically by invoke task:
 
 ```bash
 poetry run invoke unasync
 ```
 
 We decided to go this way in order to:
+
 - make sure both versions have the same API
 - reduce human error factor
 - avoid working on two code bases at the same time to reduce maintenance effort
 
-Thus, please make sure you don't modify any of files under [firedantic/_sync](./firedantic/_sync) and [firedantic/tests/tests_sync](./firedantic/tests/tests_sync) by hands.
-`unasync` is also running as part of pre-commit hooks, but in order to run the latest version of tests you have to run it manually.
+Thus, please make sure you don't modify any of files under
+[firedantic/\_sync](./firedantic/_sync) and
+[firedantic/tests/tests_sync](./firedantic/tests/tests_sync) by hands. `unasync` is also
+running as part of pre-commit hooks, but in order to run the latest version of tests you
+have to run it manually.
 
 ## License
 
