@@ -1,6 +1,6 @@
 # Firedantic
 
-[![Build Status](https://travis-ci.com/digitalliving/firedantic.svg?branch=main)](https://travis-ci.com/digitalliving/firedantic)
+[![Build Status](https://travis-ci.com/ioxiocom/firedantic.svg?branch=main)](https://travis-ci.com/ioxiocom/firedantic)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![PyPI](https://img.shields.io/pypi/v/firedantic)](https://pypi.org/project/firedantic/)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/firedantic)](https://pypi.org/project/firedantic/)
