@@ -12,7 +12,7 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Changed
 
 - Update dependencies.
-- Switch from Travis to GitHub actions.
+- Switch from Travis CI to GitHub actions.
 - Update pre-commit hooks.
 - Update links to GitHub repo due to organization rename.
 - Switch to poetry-core.
