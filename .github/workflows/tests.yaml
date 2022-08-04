@@ -30,7 +30,7 @@ jobs:
 
       - name: Start Firestore emulator
         run: |
-          gcloud --quiet beta emulators firestore start --host-port 127.0.0.1:8686
+          gcloud --quiet beta emulators firestore start --host-port 127.0.0.1:8686 > /dev/null 2>&1 &
 
       - name: Install Poetry and pre-commit
         run: pip install poetry pre-commit
