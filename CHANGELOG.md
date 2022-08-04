@@ -7,6 +7,20 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.3.0] - 2022-08-04
+
+### Changed
+
+- Update dependencies.
+- Switch from Travis to GitHub actions.
+- Update pre-commit hooks.
+- Update links to GitHub repo due to organization rename.
+- Switch to poetry-core.
+
+### Added
+
+- Add pre-commit hook and configs for prettier.
+
 ## [0.2.8] - 2021-10-26
 
 ### Fixed
@@ -163,7 +177,8 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Update README.md
 - Update .gitignore
 
-[unreleased]: https://github.com/ioxiocom/firedantic/compare/0.2.8...HEAD
+[unreleased]: https://github.com/ioxiocom/firedantic/compare/0.3.0...HEAD
+[0.3.0]: https://github.com/ioxiocom/firedantic/compare/0.2.8...0.3.0
 [0.2.8]: https://github.com/ioxiocom/firedantic/compare/0.2.7...0.2.8
 [0.2.7]: https://github.com/ioxiocom/firedantic/compare/0.2.6...0.2.7
 [0.2.6]: https://github.com/ioxiocom/firedantic/compare/0.2.5...0.2.6
