@@ -16,6 +16,10 @@ pydantic = "^1.8.2"
 grpcio = "^1.39.0"
 google-cloud-firestore = "^2.0.1"
 
+[tool.skjold]
+report_only = false
+sources = ["pyup", "gemnasium"]
+
 [tool.poetry.dev-dependencies]
 isort = "^5.5.2"
 invoke = "^1.4.1"
