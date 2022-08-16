@@ -1,14 +1,22 @@
 import uuid
-from typing import List, Optional
+from typing import List, Optional, Type
 from unittest.mock import Mock
 
 import google.auth.credentials
 import pytest
 from google.cloud.firestore_v1 import Client
-from pydantic import BaseModel, Extra
+from pydantic import BaseModel, Extra, PrivateAttr
 
-from firedantic import BareModel, Model
+from firedantic import (
+    BareModel,
+    BareSubCollection,
+    BareSubModel,
+    Model,
+    SubCollection,
+    SubModel,
+)
 from firedantic.configurations import configure
+from firedantic.exceptions import ModelNotFoundError
 
 
 class CustomIDModel(BareModel):
@@ -54,6 +62,30 @@ class Owner(BaseModel):
         extra = Extra.forbid
 
 
+class CompanyStats(BareSubModel):
+    _doc_id: Optional[str] = PrivateAttr()
+    sales: int
+
+    class Collection(BareSubCollection):
+        __collection_tpl__ = "companies/{id}/Stats"
+        __document_id__ = "_doc_id"
+
+    @classmethod
+    def _get_by_id_or_empty(cls, _doc_id) -> BareSubModel:
+        try:
+            return cls.get_by_doc_id(_doc_id)
+        except ModelNotFoundError:
+            model = cls._create(  # type: ignore
+                sales=0,
+            )
+            model._doc_id = _doc_id
+            return model  # type: ignore
+
+    @classmethod
+    def get_stats(cls, period="2021"):
+        return cls._get_by_id_or_empty(period)
+
+
 class Company(Model):
     """Dummy company Firedantic model."""
 
@@ -63,6 +95,9 @@ class Company(Model):
 
     class Config:
         extra = Extra.forbid
+
+    def stats(self) -> Type[CompanyStats]:
+        return CompanyStats.model_for(self)  # type: ignore
 
 
 class Product(Model):
@@ -130,3 +165,28 @@ def create_todolist():
         return p
 
     return _create
+
+
+# Test case from README
+class UserStats(SubModel):
+    id: Optional[str]
+    purchases: int = 0
+
+    class Collection(SubCollection):
+        # Can use any properties of the "parent" model
+        __collection_tpl__ = "users/{id}/stats"
+
+
+class User(Model):
+    __collection__ = "users"
+    name: str
+
+
+def get_user_purchases(user_id: str, period: str = "2021") -> int:
+    user = User.get_by_id(user_id)
+    stats_model: Type[UserStats] = UserStats.model_for(user)
+    try:
+        stats = stats_model.get_by_id(period)
+    except ModelNotFoundError:
+        stats = stats_model()
+    return stats.purchases

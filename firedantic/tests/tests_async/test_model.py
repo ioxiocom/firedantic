@@ -1,9 +1,15 @@
+from uuid import uuid4
+
 import pytest
 from pydantic import Field, ValidationError
 
 import firedantic.operators as op
 from firedantic import AsyncModel
-from firedantic.exceptions import CollectionNotDefined, ModelNotFoundError
+from firedantic.exceptions import (
+    CollectionNotDefined,
+    InvalidDocumentID,
+    ModelNotFoundError,
+)
 from firedantic.tests.tests_async.conftest import (
     Company,
     CustomIDConflictModel,
@@ -11,6 +17,9 @@ from firedantic.tests.tests_async.conftest import (
     CustomIDModelExtra,
     Product,
     TodoList,
+    User,
+    UserStats,
+    get_user_purchases,
 )
 
 TEST_PRODUCTS = [
@@ -157,6 +166,12 @@ async def test_get_by_id(configure_db, create_company):
 
 
 @pytest.mark.asyncio
+async def test_get_by_empty_str_id(configure_db):
+    with pytest.raises(ModelNotFoundError):
+        await Company.get_by_id("")
+
+
+@pytest.mark.asyncio
 async def test_missing_collection(configure_db):
     class User(AsyncModel):
         name: str
@@ -179,6 +194,74 @@ async def test_model_aliases(configure_db):
     user_from_db = await User.get_by_id(user.id)
     assert user_from_db.first_name == "John"
     assert user_from_db.city == "Helsinki"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "model_id",
+    [
+        "abc",
+        pytest.param("a" * 1500, id="1500 chars"),
+        "...",
+        ".foo",
+        "..bar",
+        "f..oo",
+        "bar..",
+        "__",
+        "___",
+        "_foo_",
+        "__bar_",
+        "_baz__",
+        "b__a__r",
+        "å",
+        "😀",
+        " ",
+        '"',
+        "'",
+        "\\",
+        "\x00",
+        "\x01",
+        "\x07",
+        "!:&+-*'()",
+    ],
+)
+async def test_models_with_valid_custom_id(configure_db, model_id):
+    product_id = str(uuid4())
+
+    product = Product(product_id=product_id, price=123.45, stock=2)
+    product.id = model_id
+    await product.save()
+
+    found = await Product.get_by_id(model_id)
+    assert found.product_id == product_id
+
+    await found.delete()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "model_id",
+    [
+        "",
+        pytest.param("a" * 1501, id="1501 chars"),
+        ".",
+        "..",
+        "____",
+        "__foo__",
+        "__😀__",
+        "/",
+        "foo/bar",
+        "foo/bar/baz",
+    ],
+)
+async def test_models_with_invalid_custom_id(configure_db, model_id):
+    product = Product(product_id="product 123", price=123.45, stock=2)
+    product.id = model_id
+    with pytest.raises(InvalidDocumentID):
+        await product.save()
+
+    with pytest.raises(ModelNotFoundError):
+        await Product.get_by_id(model_id)
 
 
 @pytest.mark.asyncio
@@ -242,7 +325,54 @@ async def test_bare_model_document_id_persistency(configure_db):
 
 
 @pytest.mark.asyncio
+async def test_bare_model_get_by_empty_doc_id(configure_db):
+    with pytest.raises(ModelNotFoundError):
+        await CustomIDModel.get_by_doc_id("")
+
+
+@pytest.mark.asyncio
 async def test_extra_fields(configure_db):
     await CustomIDModelExtra(foo="foo", bar="bar", baz="baz").save()
     with pytest.raises(ValidationError):
         await CustomIDModel.find({})
+
+
+@pytest.mark.asyncio
+async def test_company_stats(configure_db, create_company):
+    company: Company = await create_company(company_id="1234567-8")
+    company_stats = company.stats()
+
+    stats = await company_stats.get_stats()
+    stats.sales = 100
+    await stats.save()
+
+    # Ensure the data can be still loaded
+    loaded = await company.stats().get_stats()
+    assert loaded.sales == stats.sales
+
+    # And that we can still save
+    loaded.sales += 1
+    await loaded.save()
+
+    stats = await company_stats.get_stats()
+    assert stats.sales == 101
+
+
+@pytest.mark.asyncio
+async def test_subcollection_model_safety(configure_db):
+    """
+    Ensure you shouldn't be able to use unprepared subcollection models accidentally
+    """
+    with pytest.raises(CollectionNotDefined):
+        await UserStats.find({})
+
+
+@pytest.mark.asyncio
+async def test_get_user_purchases(configure_db):
+    u = User(name="Foo")
+    await u.save()
+
+    us = UserStats.model_for(u)
+    await us(id="2021", purchases=42).save()
+
+    assert await get_user_purchases(u.id) == 42
