@@ -7,6 +7,10 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Changed
+
+- Switch tests to use new firestore emulator, improve documentation about running it.
+
 ## [0.3.0] - 2022-08-04
 
 ### Changed

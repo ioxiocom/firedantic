@@ -32,7 +32,7 @@ from google.cloud.firestore import Client
 # Firestore emulator must be running if using locally.
 if environ.get("FIRESTORE_EMULATOR_HOST"):
     client = Client(
-        project="firedantic-test",
+        project="ioxio-local-dev",
         credentials=Mock(spec=google.auth.credentials.Credentials)
     )
 else:
@@ -107,7 +107,7 @@ from firedantic import AsyncModel, configure
 # Firestore emulator must be running if using locally.
 if environ.get("FIRESTORE_EMULATOR_HOST"):
     client = AsyncClient(
-        project="firedantic-test",
+        project="ioxio-local-dev",
         credentials=Mock(spec=google.auth.credentials.Credentials),
     )
 else:
@@ -200,6 +200,26 @@ To run tests locally, you should run:
 ```bash
 poetry install
 poetry run invoke test
+```
+
+### Running Firestore emulator
+
+To run the Firestore emulator locally you will need:
+
+- [Firebase CLI](https://firebase.google.com/docs/cli)
+
+To install the `firebase` CLI run:
+
+```bash
+npm install -g firebase-tools
+```
+
+Run the Firestore emulator with a predictable port:
+
+```bash
+./start_emulator.sh
+# or on Windows run the .bat file
+start_emulator
 ```
 
 ### About sync and async versions of library

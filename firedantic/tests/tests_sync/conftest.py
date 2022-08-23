@@ -124,7 +124,7 @@ class TodoList(Model):
 @pytest.fixture
 def configure_db():
     client = Client(
-        project="firedantic-test",
+        project="ioxio-local-dev",
         credentials=Mock(spec=google.auth.credentials.Credentials),
     )
 

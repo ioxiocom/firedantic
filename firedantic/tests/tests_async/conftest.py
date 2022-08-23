@@ -124,7 +124,7 @@ class TodoList(AsyncModel):
 @pytest.fixture
 def configure_db():
     client = AsyncClient(
-        project="firedantic-test",
+        project="ioxio-local-dev",
         credentials=Mock(spec=google.auth.credentials.Credentials),
     )
 
