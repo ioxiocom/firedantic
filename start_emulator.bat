@@ -1,2 +1,2 @@
 @echo off
-firebase -P ioxio-local-dev emulators:start --only firestore
+firebase -P firedantic-test emulators:start --only firestore

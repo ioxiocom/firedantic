@@ -32,7 +32,7 @@ from google.cloud.firestore import Client
 # Firestore emulator must be running if using locally.
 if environ.get("FIRESTORE_EMULATOR_HOST"):
     client = Client(
-        project="ioxio-local-dev",
+        project="firedantic-test",
         credentials=Mock(spec=google.auth.credentials.Credentials)
     )
 else:
@@ -107,7 +107,7 @@ from firedantic import AsyncModel, configure
 # Firestore emulator must be running if using locally.
 if environ.get("FIRESTORE_EMULATOR_HOST"):
     client = AsyncClient(
-        project="ioxio-local-dev",
+        project="firedantic-test",
         credentials=Mock(spec=google.auth.credentials.Credentials),
     )
 else:
