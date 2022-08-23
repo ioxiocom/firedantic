@@ -24,7 +24,7 @@ jobs:
 
       - name: Start Firestore emulator 🚦
         run: |
-          start_emulator.sh > /dev/null 2>&1 &
+          ./start_emulator.sh > /dev/null 2>&1 &
 
       - name: Install Poetry and pre-commit 💈
         run: pip install poetry pre-commit
