@@ -20,7 +20,7 @@ jobs:
 
       - name: Install Firestore emulator 🚧
         run: |
-          npm install -g firebase-tools
+          curl -sL https://firebase.tools | bash
 
       - name: Start Firestore emulator 🚦
         run: |
