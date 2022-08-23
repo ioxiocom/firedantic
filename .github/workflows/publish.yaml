@@ -18,16 +18,13 @@ jobs:
         with:
           python-version: "3.9"
 
-      - name: Setup GCloud SDK 📦
-        uses: google-github-actions/setup-gcloud@v0.6.0
-
       - name: Install Firestore emulator 🚧
         run: |
-          gcloud components install beta cloud-firestore-emulator
+          curl -sL https://firebase.tools | bash
 
       - name: Start Firestore emulator 🚦
         run: |
-          gcloud --quiet beta emulators firestore start --host-port 127.0.0.1:8686 > /dev/null 2>&1 &
+          ./start_emulator.sh > /dev/null 2>&1 &
 
       - name: Install Poetry and pre-commit 💈
         run: pip install poetry pre-commit

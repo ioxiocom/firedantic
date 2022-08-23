@@ -202,6 +202,26 @@ poetry install
 poetry run invoke test
 ```
 
+### Running Firestore emulator
+
+To run the Firestore emulator locally you will need:
+
+- [Firebase CLI](https://firebase.google.com/docs/cli)
+
+To install the `firebase` CLI run:
+
+```bash
+npm install -g firebase-tools
+```
+
+Run the Firestore emulator with a predictable port:
+
+```bash
+./start_emulator.sh
+# or on Windows run the .bat file
+start_emulator
+```
+
 ### About sync and async versions of library
 
 Although this library provides both sync and async versions of models, please keep in
