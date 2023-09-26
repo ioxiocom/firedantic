@@ -8,6 +8,7 @@ from firedantic._async.model import (
     AsyncSubCollection,
     AsyncSubModel,
 )
+from firedantic._async.utils import set_up_ttl_policies as async_set_up_ttl_policies
 from firedantic._sync.helpers import truncate_collection
 from firedantic._sync.model import (
     BareModel,
@@ -17,5 +18,6 @@ from firedantic._sync.model import (
     SubCollection,
     SubModel,
 )
+from firedantic._sync.utils import set_up_ttl_policies
 from firedantic.configurations import CONFIGURATIONS, configure
 from firedantic.exceptions import *

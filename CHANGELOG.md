@@ -7,9 +7,20 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.4.0] - 2023-XX-XX
+
+### Added
+
+- Support for TTL policies and specifying a `__ttl_field__` in the model classes.
+
 ### Changed
 
 - Switch tests to use new firestore emulator, improve documentation about running it.
+- Update dependencies.
+- Update pre-commit hooks.
+- Remove support for Python 3.7, which is EOL, now requires 3.8.1 or newer.
+- Run tests on Python 3.11 in addition to older versions.
+- Update authors (company was renamed to IOXIO Ltd).
 
 ## [0.3.0] - 2022-08-04
 
@@ -181,7 +192,8 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Update README.md
 - Update .gitignore
 
-[unreleased]: https://github.com/ioxiocom/firedantic/compare/0.3.0...HEAD
+[unreleased]: https://github.com/ioxiocom/firedantic/compare/0.4.0...HEAD
+[0.4.0]: https://github.com/ioxiocom/firedantic/compare/0.3.0...0.4.0
 [0.3.0]: https://github.com/ioxiocom/firedantic/compare/0.2.8...0.3.0
 [0.2.8]: https://github.com/ioxiocom/firedantic/compare/0.2.7...0.2.8
 [0.2.7]: https://github.com/ioxiocom/firedantic/compare/0.2.6...0.2.7
