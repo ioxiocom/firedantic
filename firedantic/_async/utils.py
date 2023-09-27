@@ -1,6 +1,7 @@
 from logging import getLogger
-from typing import Iterable
+from typing import Iterable, List
 
+from google.api_core.operation_async import AsyncOperation
 from google.cloud.firestore_admin_v1.services.firestore_admin import (
     FirestoreAdminAsyncClient,
 )
@@ -15,20 +16,24 @@ async def set_up_ttl_policies(
     gcloud_project: str,
     models: Iterable[TAsyncBareModel],
     database: str = "(default)",
-):
+) -> List[AsyncOperation]:
+    """
+    Set up TTL policies for models.
+
+    :param gcloud_project: The technical name of the project in Google Cloud.
+    :param models: Models for which to set up the TTL policy.
+    :param database: The Firestore database instance (it now supports multiple).
+    :return: List of operations that were launched to enable the policies.
+    """
+
     client = FirestoreAdminAsyncClient()
 
+    operations = []
     for model in models:
         if not model.__ttl_field__:
             continue
 
-        logger.debug(
-            'Checking TTL config for "%s", collection: %s, field: "%s"',
-            model.__name__,
-            model.get_collection_name(),
-            model.__ttl_field__,
-        )
-
+        # Get current details of the field
         path = client.field_path(
             project=gcloud_project,
             database=database,
@@ -52,10 +57,13 @@ async def set_up_ttl_policies(
             field_obj.ttl_config = Field.TtlConfig(
                 {"state": Field.TtlConfig.State.CREATING}
             )
-            await client.update_field({"field": field_obj})
+            operation = await client.update_field({"field": field_obj})
+            operations.append(operation)
         elif field_obj.ttl_config.state == Field.TtlConfig.State.CREATING:
             logger.info("TTL config is still being created: " + log_str, *log_params)
         elif field_obj.ttl_config.state == Field.TtlConfig.State.NEEDS_REPAIR:
             logger.error("TTL config needs repair: " + log_str, *log_params)
         elif field_obj.ttl_config.state == Field.TtlConfig.State.ACTIVE:
             logger.debug("TTL config is active: " + log_str, *log_params)
+
+    return operations

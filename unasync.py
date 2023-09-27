@@ -26,6 +26,7 @@ SUBS = [
     ("@pytest.mark.asyncio", ""),
     ("firedantic._async.model", "firedantic._sync.model"),
     ("FirestoreAdminAsyncClient", "FirestoreAdminClient"),
+    ("google.api_core.operation_async", "google.api_core.operation"),
 ]
 COMPILED_SUBS = [
     (re.compile(r"(^|\b)" + regex + r"($|\b)"), repl) for regex, repl in SUBS
