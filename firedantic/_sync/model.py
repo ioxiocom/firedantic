@@ -38,11 +38,11 @@ FIND_TYPES = {
 }
 
 
-def get_collection_name(cls, name) -> str:
-    if name is None:
+def get_collection_name(cls, name: Optional[str]) -> str:
+    if not name:
         raise CollectionNotDefined(f"Missing collection name for {cls.__name__}")
 
-    return CONFIGURATIONS["prefix"] + name
+    return f"{CONFIGURATIONS['prefix']}{name}"
 
 
 def _get_col_ref(cls, name) -> CollectionReference:

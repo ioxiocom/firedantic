@@ -7,14 +7,14 @@ from google.cloud.firestore_admin_v1.services.firestore_admin import (
 )
 from google.cloud.firestore_admin_v1.types.field import Field
 
-from firedantic._async.model import TAsyncBareModel
+from firedantic._async.model import AsyncBareModel
 
 logger = getLogger("firedantic")
 
 
 async def set_up_ttl_policies(
     gcloud_project: str,
-    models: Iterable[TAsyncBareModel],
+    models: Iterable[AsyncBareModel],
     database: str = "(default)",
 ) -> List[AsyncOperation]:
     """
@@ -46,7 +46,7 @@ async def set_up_ttl_policies(
         readable_state = str(field_obj.ttl_config.state).removeprefix("State.")
         log_str = '"%s", collection: "%s", field: "%s", state: "%s"'
         log_params = [
-            model.__name__,
+            model.__class__.__name__,
             model.get_collection_name(),
             model.__ttl_field__,
             readable_state,
