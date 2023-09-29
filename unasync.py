@@ -19,6 +19,7 @@ SUBS = [
     ("async for", "for"),
     ("async with", "with"),
     ("async_truncate_collection", "truncate_collection"),
+    ("async_set_up_ttl_policies", "set_up_ttl_policies"),
     ("await ", ""),
     ("__aenter__", "__enter__"),
     ("__aexit__", "__exit__"),

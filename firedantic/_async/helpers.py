@@ -6,6 +6,7 @@ async def truncate_collection(
 ) -> int:
     """Removes all documents inside a collection.
 
+    :param col_ref: A collection reference to the collection to be truncated.
     :param batch_size: Batch size for listing documents.
     :return: Number of removed documents.
     """

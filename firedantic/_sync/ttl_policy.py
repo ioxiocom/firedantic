@@ -2,10 +2,10 @@ from logging import getLogger
 from typing import Iterable, List
 
 from google.api_core.operation import Operation
+from google.cloud.firestore_admin_v1 import Field
 from google.cloud.firestore_admin_v1.services.firestore_admin import (
     FirestoreAdminClient,
 )
-from google.cloud.firestore_admin_v1.types.field import Field
 
 from firedantic._sync.model import BareModel
 

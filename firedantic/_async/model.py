@@ -45,7 +45,7 @@ def get_collection_name(cls, name: Optional[str]) -> str:
     return f"{CONFIGURATIONS['prefix']}{name}"
 
 
-def _get_col_ref(cls, name) -> AsyncCollectionReference:
+def _get_col_ref(cls, name: Optional[str]) -> AsyncCollectionReference:
     collection: AsyncCollectionReference = CONFIGURATIONS["db"].collection(
         get_collection_name(cls, name)
     )

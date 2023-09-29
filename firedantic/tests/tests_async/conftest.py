@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from typing import List, Optional, Type
 from unittest.mock import Mock
 
@@ -119,6 +120,14 @@ class TodoList(AsyncModel):
 
     class Config:
         extra = Extra.forbid
+
+
+class ExpiringModel(AsyncModel):
+    __collection__ = "expiringModel"
+    __ttl_field__ = "expire"
+
+    expire: datetime
+    content: str
 
 
 @pytest.fixture
