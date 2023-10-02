@@ -13,15 +13,14 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 - Support for TTL policies and specifying a `__ttl_field__` in the model classes.
 
+### Removed
+
+- Remove support for Python 3.7, which is EOL, require 3.8.1 or newer.
+
 ### Changed
 
 - Switch tests to use new firestore emulator, improve documentation about running it.
-- Update dependencies.
-- Update pre-commit hooks.
-- Remove support for Python 3.7, which is EOL, now requires 3.8.1 or newer.
-- Run tests on Python 3.11 in addition to older versions.
 - Update authors (company was renamed to IOXIO Ltd).
-- Add skjold to pre-commit hooks.
 
 ## [0.3.0] - 2022-08-04
 
