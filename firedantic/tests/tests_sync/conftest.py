@@ -5,6 +5,7 @@ from unittest.mock import Mock
 
 import google.auth.credentials
 import pytest
+from google.cloud.firestore_admin_v1 import Field, FirestoreAdminClient
 from google.cloud.firestore_v1 import Client
 from pydantic import BaseModel, Extra, PrivateAttr
 
@@ -199,3 +200,49 @@ def get_user_purchases(user_id: str, period: str = "2021") -> int:
     except ModelNotFoundError:
         stats = stats_model()
     return stats.purchases
+
+
+class MockOperation:
+    pass
+
+
+class MockFirestoreAdminClient:
+    """
+    Really minimal mock version of the Firestore Admin Client
+    """
+
+    # Copy implementation from the real class
+    field_path = staticmethod(FirestoreAdminClient.field_path)
+
+    def __init__(self):
+        self.field_state: Field.TtlConfig.State = (
+            Field.TtlConfig.State.STATE_UNSPECIFIED
+        )
+        self.updated_field = None
+
+    def get_field_state(self) -> Field.TtlConfig.State:
+        return self.field_state
+
+    class MockField:
+        class MockTTLConfig:
+            def __init__(self, state_getter):
+                self.state_getter = state_getter
+
+            @property
+            def state(self):
+                return self.state_getter()
+
+        def __init__(self, state_getter):
+            self.ttl_config = self.MockTTLConfig(state_getter)
+
+    def get_field(self, *args, **kwargs) -> MockField:
+        return self.MockField(self.get_field_state)
+
+    def update_field(self, data) -> MockOperation:
+        self.updated_field = data
+        return MockOperation()
+
+
+@pytest.fixture()
+def mock_admin_client():
+    return MockFirestoreAdminClient()
