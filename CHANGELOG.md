@@ -21,6 +21,7 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Remove support for Python 3.7, which is EOL, now requires 3.8.1 or newer.
 - Run tests on Python 3.11 in addition to older versions.
 - Update authors (company was renamed to IOXIO Ltd).
+- Add skjold to pre-commit hooks.
 
 ## [0.3.0] - 2022-08-04
 
