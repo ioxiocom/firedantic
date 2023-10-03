@@ -1,6 +1,6 @@
 from abc import ABC
 from logging import getLogger
-from typing import Any, Dict, List, Optional, Type, TypeVar, Union
+from typing import Any, Dict, List, Type, TypeVar, Union
 
 import pydantic
 from google.cloud.firestore_v1 import (
@@ -38,14 +38,14 @@ FIND_TYPES = {
 }
 
 
-def get_collection_name(cls, name: Optional[str]) -> str:
+def get_collection_name(cls, name: str | None = None) -> str:
     if not name:
         raise CollectionNotDefined(f"Missing collection name for {cls.__name__}")
 
     return f"{CONFIGURATIONS['prefix']}{name}"
 
 
-def _get_col_ref(cls, name: Optional[str]) -> AsyncCollectionReference:
+def _get_col_ref(cls, name: str | None = None) -> AsyncCollectionReference:
     collection: AsyncCollectionReference = CONFIGURATIONS["db"].collection(
         get_collection_name(cls, name)
     )
@@ -58,9 +58,9 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
     Implements basic functionality for Pydantic models, such as save, delete, find etc.
     """
 
-    __collection__: Optional[str] = None
+    __collection__: str | None = None
     __document_id__: str
-    __ttl_field__: Optional[str] = None
+    __ttl_field__: str | None = None
 
     async def save(self) -> None:
         """
@@ -97,7 +97,7 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
 
     @classmethod
     async def find(
-        cls: Type[TAsyncBareModel], filter_: Optional[dict] = None
+        cls: Type[TAsyncBareModel], filter_: dict | None = None
     ) -> List[TAsyncBareModel]:
         """Returns a list of models from the database based on a filter.
 
@@ -155,7 +155,7 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
 
     @classmethod
     async def find_one(
-        cls: Type[TAsyncBareModel], filter_: Optional[dict] = None
+        cls: Type[TAsyncBareModel], filter_: dict | None = None
     ) -> TAsyncBareModel:
         """Returns one model from the DB based on a filter.
 
@@ -266,7 +266,7 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
 
 class AsyncModel(AsyncBareModel):
     __document_id__: str = "id"
-    id: Optional[str] = None
+    id: str | None = None
 
     @classmethod
     async def get_by_id(cls: Type[TAsyncBareModel], id_: str) -> TAsyncBareModel:
@@ -274,7 +274,7 @@ class AsyncModel(AsyncBareModel):
 
 
 class AsyncBareSubCollection(ABC):
-    __collection_tpl__: Optional[str] = None
+    __collection_tpl__: str | None = None
     __document_id__: str
 
     @classmethod
@@ -292,7 +292,7 @@ class AsyncBareSubCollection(ABC):
 
 class AsyncBareSubModel(AsyncBareModel, ABC):
     __collection_cls__: "AsyncBareSubCollection"
-    __collection__: Optional[str] = None
+    __collection__: str | None = None
     __document_id__: str
 
     class Collection(AsyncBareSubCollection, ABC):
@@ -320,7 +320,7 @@ class AsyncBareSubModel(AsyncBareModel, ABC):
 
 
 class AsyncSubModel(AsyncBareSubModel):
-    id: Optional[str] = None
+    id: str | None = None
 
     @classmethod
     async def get_by_id(cls: Type[TAsyncBareModel], id_: str) -> TAsyncBareModel:

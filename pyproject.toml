@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "firedantic"
-version = "0.4.0"
+version = "0.4.1"
 description = "Pydantic base models for Firestore"
 authors = ["IOXIO Ltd"]
 license = "BSD-3-Clause"
@@ -12,7 +12,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = ">=3.8.1,<4.0"
-pydantic = "^1.10.13"
+pydantic = "^2.4.2"
 grpcio = "^1.59.0"
 google-cloud-firestore = "^2.12.0"
 

@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import Iterable, List, Optional, Type
+from typing import Iterable, List, Type
 
 from google.api_core.operation_async import AsyncOperation
 from google.cloud.firestore_admin_v1 import Field
@@ -17,7 +17,7 @@ async def set_up_ttl_policies(
     gcloud_project: str,
     models: Iterable[Type[AsyncBareModel]],
     database: str = "(default)",
-    client: Optional[FirestoreAdminAsyncClient] = None,
+    client: FirestoreAdminAsyncClient | None = None,
 ) -> List[AsyncOperation]:
     """
     Set up TTL policies for models.

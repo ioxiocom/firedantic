@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import List, Optional, Type
+from typing import List, Type
 from unittest.mock import Mock
 
 import google.auth.credentials
@@ -25,7 +25,7 @@ class CustomIDModel(AsyncBareModel):
     __collection__ = "custom"
     __document_id__ = "foo"
 
-    foo: Optional[str]
+    foo: str = None
     bar: str
 
     class Config:
@@ -36,7 +36,7 @@ class CustomIDModelExtra(AsyncBareModel):
     __collection__ = "custom"
     __document_id__ = "foo"
 
-    foo: Optional[str]
+    foo: str = None
     bar: str
     baz: str
 
@@ -65,7 +65,7 @@ class Owner(BaseModel):
 
 
 class CompanyStats(AsyncBareSubModel):
-    _doc_id: Optional[str] = PrivateAttr()
+    _doc_id: str | None = PrivateAttr()
     sales: int
 
     class Collection(AsyncBareSubCollection):
@@ -157,9 +157,7 @@ def create_company():
 
 @pytest.fixture
 def create_product():
-    async def _create(
-        product_id: Optional[str] = None, price: float = 1.23, stock: int = 3
-    ):
+    async def _create(product_id: str = None, price: float = 1.23, stock: int = 3):
         if not product_id:
             product_id = str(uuid.uuid4())
         p = Product(product_id=product_id, price=price, stock=stock)
@@ -181,7 +179,7 @@ def create_todolist():
 
 # Test case from README
 class UserStats(AsyncSubModel):
-    id: Optional[str]
+    id: str = None
     purchases: int = 0
 
     class Collection(AsyncSubCollection):
