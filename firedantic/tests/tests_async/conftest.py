@@ -1,9 +1,11 @@
 import uuid
+from datetime import datetime
 from typing import List, Optional, Type
 from unittest.mock import Mock
 
 import google.auth.credentials
 import pytest
+from google.cloud.firestore_admin_v1 import Field, FirestoreAdminClient
 from google.cloud.firestore_v1 import AsyncClient
 from pydantic import BaseModel, Extra, PrivateAttr
 
@@ -121,6 +123,14 @@ class TodoList(AsyncModel):
         extra = Extra.forbid
 
 
+class ExpiringModel(AsyncModel):
+    __collection__ = "expiringModel"
+    __ttl_field__ = "expire"
+
+    expire: datetime
+    content: str
+
+
 @pytest.fixture
 def configure_db():
     client = AsyncClient(
@@ -147,7 +157,9 @@ def create_company():
 
 @pytest.fixture
 def create_product():
-    async def _create(product_id: str = None, price: float = 1.23, stock: int = 3):
+    async def _create(
+        product_id: Optional[str] = None, price: float = 1.23, stock: int = 3
+    ):
         if not product_id:
             product_id = str(uuid.uuid4())
         p = Product(product_id=product_id, price=price, stock=stock)
@@ -190,3 +202,49 @@ async def get_user_purchases(user_id: str, period: str = "2021") -> int:
     except ModelNotFoundError:
         stats = stats_model()
     return stats.purchases
+
+
+class MockOperation:
+    pass
+
+
+class AsyncMockFirestoreAdminClient:
+    """
+    Really minimal mock version of the Firestore Admin Client
+    """
+
+    # Copy implementation from the real class
+    field_path = staticmethod(FirestoreAdminClient.field_path)
+
+    def __init__(self):
+        self.field_state: Field.TtlConfig.State = (
+            Field.TtlConfig.State.STATE_UNSPECIFIED
+        )
+        self.updated_field = None
+
+    def get_field_state(self) -> Field.TtlConfig.State:
+        return self.field_state
+
+    class MockField:
+        class MockTTLConfig:
+            def __init__(self, state_getter):
+                self.state_getter = state_getter
+
+            @property
+            def state(self):
+                return self.state_getter()
+
+        def __init__(self, state_getter):
+            self.ttl_config = self.MockTTLConfig(state_getter)
+
+    async def get_field(self, *args, **kwargs) -> MockField:
+        return self.MockField(self.get_field_state)
+
+    async def update_field(self, data) -> MockOperation:
+        self.updated_field = data
+        return MockOperation()
+
+
+@pytest.fixture()
+def mock_admin_client():
+    return AsyncMockFirestoreAdminClient()

@@ -38,12 +38,16 @@ FIND_TYPES = {
 }
 
 
-def _get_col_ref(cls, name) -> CollectionReference:
-    if name is None:
+def get_collection_name(cls, name: Optional[str]) -> str:
+    if not name:
         raise CollectionNotDefined(f"Missing collection name for {cls.__name__}")
 
+    return f"{CONFIGURATIONS['prefix']}{name}"
+
+
+def _get_col_ref(cls, name: Optional[str]) -> CollectionReference:
     collection: CollectionReference = CONFIGURATIONS["db"].collection(
-        CONFIGURATIONS["prefix"] + name
+        get_collection_name(cls, name)
     )
     return collection
 
@@ -56,6 +60,7 @@ class BareModel(pydantic.BaseModel, ABC):
 
     __collection__: Optional[str] = None
     __document_id__: str
+    __ttl_field__: Optional[str] = None
 
     def save(self) -> None:
         """
@@ -208,6 +213,10 @@ class BareModel(pydantic.BaseModel, ABC):
     def _get_col_ref(cls) -> CollectionReference:
         """Returns the collection reference."""
         return _get_col_ref(cls, cls.__collection__)
+
+    @classmethod
+    def get_collection_name(cls) -> str:
+        return get_collection_name(cls, cls.__collection__)
 
     def _get_doc_ref(self) -> DocumentReference:
         """

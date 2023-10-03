@@ -19,11 +19,15 @@ SUBS = [
     ("async for", "for"),
     ("async with", "with"),
     ("async_truncate_collection", "truncate_collection"),
+    ("async_set_up_ttl_policies", "set_up_ttl_policies"),
     ("await ", ""),
     ("__aenter__", "__enter__"),
     ("__aexit__", "__exit__"),
     ("__aiter__", "__iter__"),
     ("@pytest.mark.asyncio", ""),
+    ("firedantic._async.model", "firedantic._sync.model"),
+    ("FirestoreAdminAsyncClient", "FirestoreAdminClient"),
+    ("google.api_core.operation_async", "google.api_core.operation"),
 ]
 COMPILED_SUBS = [
     (re.compile(r"(^|\b)" + regex + r"($|\b)"), repl) for regex, repl in SUBS
