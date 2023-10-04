@@ -157,7 +157,7 @@ def create_company():
 
 @pytest.fixture
 def create_product():
-    def _create(product_id: str = None, price: float = 1.23, stock: int = 3):
+    def _create(product_id: Optional[str] = None, price: float = 1.23, stock: int = 3):
         if not product_id:
             product_id = str(uuid.uuid4())
         p = Product(product_id=product_id, price=price, stock=stock)
