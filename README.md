@@ -156,13 +156,13 @@ dynamic classes with collection name determined based on the "parent" class it i
 reference to using the `model_for()` method.
 
 ```python
-from typing import Type
+from typing import Optional, Type
 
 from firedantic import AsyncModel, AsyncSubCollection, AsyncSubModel, ModelNotFoundError
 
 
 class UserStats(AsyncSubModel):
-    id: str = None
+    id: Optional[str] = None
     purchases: int = 0
 
     class Collection(AsyncSubCollection):
