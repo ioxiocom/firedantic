@@ -1,6 +1,6 @@
 from abc import ABC
 from logging import getLogger
-from typing import Any, Dict, List, Type, TypeVar, Union
+from typing import Any, Dict, List, Optional, Type, TypeVar, Union
 
 import pydantic
 from google.cloud.firestore_v1 import (
@@ -38,14 +38,14 @@ FIND_TYPES = {
 }
 
 
-def get_collection_name(cls, name: str | None = None) -> str:
+def get_collection_name(cls, name: Optional[str] = None) -> str:
     if not name:
         raise CollectionNotDefined(f"Missing collection name for {cls.__name__}")
 
     return f"{CONFIGURATIONS['prefix']}{name}"
 
 
-def _get_col_ref(cls, name: str | None = None) -> CollectionReference:
+def _get_col_ref(cls, name: Optional[str] = None) -> CollectionReference:
     collection: CollectionReference = CONFIGURATIONS["db"].collection(
         get_collection_name(cls, name)
     )
@@ -58,9 +58,9 @@ class BareModel(pydantic.BaseModel, ABC):
     Implements basic functionality for Pydantic models, such as save, delete, find etc.
     """
 
-    __collection__: str | None = None
+    __collection__: Optional[str] = None
     __document_id__: str
-    __ttl_field__: str | None = None
+    __ttl_field__: Optional[str] = None
 
     def save(self) -> None:
         """
@@ -96,7 +96,7 @@ class BareModel(pydantic.BaseModel, ABC):
         return getattr(self, self.__document_id__, None)
 
     @classmethod
-    def find(cls: Type[TBareModel], filter_: dict | None = None) -> List[TBareModel]:
+    def find(cls: Type[TBareModel], filter_: Optional[dict] = None) -> List[TBareModel]:
         """Returns a list of models from the database based on a filter.
 
         Example: `Company.find({"company_id": "1234567-8"})`.
@@ -152,7 +152,7 @@ class BareModel(pydantic.BaseModel, ABC):
             return query
 
     @classmethod
-    def find_one(cls: Type[TBareModel], filter_: dict | None = None) -> TBareModel:
+    def find_one(cls: Type[TBareModel], filter_: Optional[dict] = None) -> TBareModel:
         """Returns one model from the DB based on a filter.
 
         :param filter_: The filter criteria.
@@ -262,7 +262,7 @@ class BareModel(pydantic.BaseModel, ABC):
 
 class Model(BareModel):
     __document_id__: str = "id"
-    id: str | None = None
+    id: Optional[str] = None
 
     @classmethod
     def get_by_id(cls: Type[TBareModel], id_: str) -> TBareModel:
@@ -270,7 +270,7 @@ class Model(BareModel):
 
 
 class BareSubCollection(ABC):
-    __collection_tpl__: str | None = None
+    __collection_tpl__: Optional[str] = None
     __document_id__: str
 
     @classmethod
@@ -288,7 +288,7 @@ class BareSubCollection(ABC):
 
 class BareSubModel(BareModel, ABC):
     __collection_cls__: "BareSubCollection"
-    __collection__: str | None = None
+    __collection__: Optional[str] = None
     __document_id__: str
 
     class Collection(BareSubCollection, ABC):
@@ -316,7 +316,7 @@ class BareSubModel(BareModel, ABC):
 
 
 class SubModel(BareSubModel):
-    id: str | None = None
+    id: Optional[str] = None
 
     @classmethod
     def get_by_id(cls: Type[TBareModel], id_: str) -> TBareModel:

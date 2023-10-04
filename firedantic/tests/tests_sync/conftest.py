@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import List, Type
+from typing import List, Optional, Type
 from unittest.mock import Mock
 
 import google.auth.credentials
@@ -25,7 +25,7 @@ class CustomIDModel(BareModel):
     __collection__ = "custom"
     __document_id__ = "foo"
 
-    foo: str | None = None
+    foo: Optional[str] = None
     bar: str
 
     class Config:
@@ -36,7 +36,7 @@ class CustomIDModelExtra(BareModel):
     __collection__ = "custom"
     __document_id__ = "foo"
 
-    foo: str | None = None
+    foo: Optional[str] = None
     bar: str
     baz: str
 
@@ -65,7 +65,7 @@ class Owner(BaseModel):
 
 
 class CompanyStats(BareSubModel):
-    _doc_id: str | None = PrivateAttr()
+    _doc_id: Optional[str] = PrivateAttr()
     sales: int
 
     class Collection(BareSubCollection):
@@ -179,7 +179,7 @@ def create_todolist():
 
 # Test case from README
 class UserStats(SubModel):
-    id: str | None = None
+    id: Optional[str] = None
     purchases: int = 0
 
     class Collection(SubCollection):
