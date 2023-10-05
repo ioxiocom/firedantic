@@ -45,7 +45,7 @@ def get_collection_name(cls, name: Optional[str] = None) -> str:
     return f"{CONFIGURATIONS['prefix']}{name}"
 
 
-def _get_col_ref(cls, name: Optional[str] = None) -> CollectionReference:
+def _get_col_ref(cls, name: Optional[str]) -> CollectionReference:
     collection: CollectionReference = CONFIGURATIONS["db"].collection(
         get_collection_name(cls, name)
     )

@@ -7,7 +7,7 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
-## [0.4.1] - 2023-10-04
+## [0.5.0] - 2023-10-05
 
 Update `pydantic` to ^2.4.2
 
@@ -196,7 +196,8 @@ Update `pydantic` to ^2.4.2
 - Update README.md
 - Update .gitignore
 
-[unreleased]: https://github.com/ioxiocom/firedantic/compare/0.4.0...HEAD
+[unreleased]: https://github.com/ioxiocom/firedantic/compare/0.5.0...HEAD
+[0.5.0]: https://github.com/ioxiocom/firedantic/compare/0.4.0...0.5.0
 [0.4.0]: https://github.com/ioxiocom/firedantic/compare/0.3.0...0.4.0
 [0.3.0]: https://github.com/ioxiocom/firedantic/compare/0.2.8...0.3.0
 [0.2.8]: https://github.com/ioxiocom/firedantic/compare/0.2.7...0.2.8
