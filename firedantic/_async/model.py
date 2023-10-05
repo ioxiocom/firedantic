@@ -38,7 +38,7 @@ FIND_TYPES = {
 }
 
 
-def get_collection_name(cls, name: Optional[str] = None) -> str:
+def get_collection_name(cls, name: Optional[str]) -> str:
     if not name:
         raise CollectionNotDefined(f"Missing collection name for {cls.__name__}")
 
@@ -68,7 +68,7 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
 
         :raise DocumentIDError: If the document ID is not valid.
         """
-        data = self.dict(by_alias=True)
+        data = self.model_dump(by_alias=True)
         if self.__document_id__ in data:
             del data[self.__document_id__]
 
