@@ -275,7 +275,7 @@ class BareSubCollection(ABC):
 
     @classmethod
     def model_for(cls, parent, model_class):
-        parent_props = parent.dict(by_alias=True)
+        parent_props = parent.model_dump(by_alias=True)
 
         name = model_class.__name__
         ic = type(name, (model_class,), {})
