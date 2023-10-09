@@ -162,7 +162,7 @@ from firedantic import AsyncModel, AsyncSubCollection, AsyncSubModel, ModelNotFo
 
 
 class UserStats(AsyncSubModel):
-    id: Optional[str]
+    id: Optional[str] = None
     purchases: int = 0
 
     class Collection(AsyncSubCollection):

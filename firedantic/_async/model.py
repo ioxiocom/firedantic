@@ -68,7 +68,7 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
 
         :raise DocumentIDError: If the document ID is not valid.
         """
-        data = self.dict(by_alias=True)
+        data = self.model_dump(by_alias=True)
         if self.__document_id__ in data:
             del data[self.__document_id__]
 
@@ -279,7 +279,7 @@ class AsyncBareSubCollection(ABC):
 
     @classmethod
     def model_for(cls, parent, model_class):
-        parent_props = parent.dict(by_alias=True)
+        parent_props = parent.model_dump(by_alias=True)
 
         name = model_class.__name__
         ic = type(name, (model_class,), {})

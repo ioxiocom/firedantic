@@ -25,7 +25,7 @@ class CustomIDModel(BareModel):
     __collection__ = "custom"
     __document_id__ = "foo"
 
-    foo: Optional[str]
+    foo: Optional[str] = None
     bar: str
 
     class Config:
@@ -36,7 +36,7 @@ class CustomIDModelExtra(BareModel):
     __collection__ = "custom"
     __document_id__ = "foo"
 
-    foo: Optional[str]
+    foo: Optional[str] = None
     bar: str
     baz: str
 
@@ -179,7 +179,7 @@ def create_todolist():
 
 # Test case from README
 class UserStats(SubModel):
-    id: Optional[str]
+    id: Optional[str] = None
     purchases: int = 0
 
     class Collection(SubCollection):
