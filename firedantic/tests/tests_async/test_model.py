@@ -151,6 +151,20 @@ async def test_find_array_contains_any(configure_db, create_todolist):
 
 
 @pytest.mark.asyncio
+async def test_find_limit(configure_db, create_company):
+    ids = ["1234555-1", "1234567-8", "2131232-4", "4124432-4"]
+    for company_id in ids:
+        await create_company(company_id=company_id)
+
+    companies_all = await Company.find({})
+    assert len(companies_all) == 4
+
+    limit = 2
+    companies_2 = await Company.find({}, limit=limit)
+    assert len(companies_2) == limit
+
+
+@pytest.mark.asyncio
 async def test_get_by_id(configure_db, create_company):
     c: Company = await create_company(company_id="1234567-8")
 
