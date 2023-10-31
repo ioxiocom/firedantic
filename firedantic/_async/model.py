@@ -1,7 +1,7 @@
 from abc import ABC
 from enum import StrEnum
 from logging import getLogger
-from typing import Any, Dict, List, Optional, Type, TypeVar, Union
+from typing import Any, Dict, List, Literal, Optional, Type, TypeVar, Union
 
 import pydantic
 from google.cloud.firestore_v1 import (
@@ -19,10 +19,6 @@ from firedantic.exceptions import (
     InvalidDocumentID,
     ModelNotFoundError,
 )
-
-class OrderDirection(StrEnum):
-    ASCENDING = AsyncQuery.ASCENDING
-    DESCENDING = AsyncQuery.DESCENDING
 
 TAsyncBareModel = TypeVar("TAsyncBareModel", bound="AsyncBareModel")
 TAsyncBareSubModel = TypeVar("TAsyncBareSubModel", bound="AsyncBareSubModel")
@@ -104,7 +100,7 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
     async def find(
         cls: Type[TAsyncBareModel],
         filter_: Optional[dict[str, str | dict]] = None,
-        order_by: Optional[tuple[str, OrderDirection]] = None,
+        order_by: Optional[tuple[str, Union[Literal["ASCENDING"], Literal["DESCENDING"]]]] = None,
         limit: Optional[int] = None
     ) -> List[TAsyncBareModel]:
         """Returns a list of models from the database based on a filter.

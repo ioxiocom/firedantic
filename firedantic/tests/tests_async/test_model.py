@@ -2,7 +2,7 @@ from uuid import uuid4
 
 import pytest
 from pydantic import Field, ValidationError
-from firedantic._async.model import OrderDirection
+from google.cloud.firestore_v1.async_query import AsyncQuery #order-by constants
 
 import firedantic.operators as op
 from firedantic import AsyncModel
@@ -177,11 +177,11 @@ async def test_find_orderby(configure_db, create_company):
             company_id=company_id,
             last_name=lastname
         )
-    companies_ascending = await Company.find(order_by=('owner.last_name', OrderDirection.ASCENDING))
+    companies_ascending = await Company.find(order_by=('owner.last_name', AsyncQuery.ASCENDING))
     for i, company in enumerate(companies_ascending):
         assert company.owner.last_name == ids_and_lastnames[i][1]
 
-    companies_descending = await Company.find(order_by=('owner.last_name', OrderDirection.DESCENDING))
+    companies_descending = await Company.find(order_by=('owner.last_name', AsyncQuery.DESCENDING))
     for i, company in enumerate(companies_descending):
         neg_idx = i + 1
         assert company.owner.last_name == ids_and_lastnames[-neg_idx][1]

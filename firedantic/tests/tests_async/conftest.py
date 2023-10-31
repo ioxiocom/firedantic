@@ -1,3 +1,4 @@
+import os
 import uuid
 from datetime import datetime
 from typing import List, Optional, Type
@@ -20,6 +21,7 @@ from firedantic import (
 from firedantic.configurations import configure
 from firedantic.exceptions import ModelNotFoundError
 
+os.environ['FIRESTORE_EMULATOR_HOST'] = "localhost:8686"
 
 class CustomIDModel(AsyncBareModel):
     __collection__ = "custom"
@@ -134,7 +136,7 @@ class ExpiringModel(AsyncModel):
 @pytest.fixture
 def configure_db():
     client = AsyncClient(
-        project="ioxio-local-dev",
+        project="imaginedesign-e8e3d",
         credentials=Mock(spec=google.auth.credentials.Credentials),
     )
 
