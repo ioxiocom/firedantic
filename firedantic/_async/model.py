@@ -1,4 +1,5 @@
 from abc import ABC
+from enum import StrEnum
 from logging import getLogger
 from typing import Any, Dict, List, Optional, Type, TypeVar, Union
 
@@ -18,6 +19,10 @@ from firedantic.exceptions import (
     InvalidDocumentID,
     ModelNotFoundError,
 )
+
+class OrderDirection(StrEnum):
+    ASCENDING = AsyncQuery.ASCENDING
+    DESCENDING = AsyncQuery.DESCENDING
 
 TAsyncBareModel = TypeVar("TAsyncBareModel", bound="AsyncBareModel")
 TAsyncBareSubModel = TypeVar("TAsyncBareSubModel", bound="AsyncBareSubModel")
@@ -97,7 +102,10 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
 
     @classmethod
     async def find(
-        cls: Type[TAsyncBareModel], filter_: Optional[dict[str, str | dict]] = None
+        cls: Type[TAsyncBareModel],
+        filter_: Optional[dict[str, str | dict]] = None,
+        order_by: Optional[tuple[str, OrderDirection]] = None,
+        limit: Optional[int] = None
     ) -> List[TAsyncBareModel]:
         """Returns a list of models from the database based on a filter.
 
@@ -107,13 +115,19 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
         :param filter_: The filter criteria.
         :return: List of found models.
         """
-        if not filter_:
-            filter_ = {}
+        colref: AsyncCollectionReference = cls._get_col_ref()
 
-        query: Union[AsyncQuery, AsyncCollectionReference] = cls._get_col_ref()
+        maybe_query: Union[AsyncCollectionReference, AsyncQuery] | None = None
+        if filter_:
+            for key, value in filter_.items():
+                maybe_query = cls._add_filter(colref, key, value)
+        query: Union[AsyncCollectionReference, AsyncQuery] = maybe_query or colref
 
-        for key, value in filter_.items():
-            query = cls._add_filter(query, key, value)
+        if order_by is not None:
+            field, direction = order_by
+            query = query.order_by(field, direction=direction)
+        if limit is not None:
+            query = query.limit(limit)
 
         def _cls(doc_id: str, data: Dict[str, Any]) -> TAsyncBareModel:
             if cls.__document_id__ in data:
@@ -139,18 +153,19 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
 
     @classmethod
     def _add_filter(
-        cls, query: Union[AsyncQuery, AsyncCollectionReference], field: str, value: Any
+        cls, colref: AsyncCollectionReference, field: str, value: Any
     ) -> Union[AsyncQuery, AsyncCollectionReference]:
         if type(value) is dict:
+            query_or_colref: Union[AsyncQuery, AsyncCollectionReference] = colref
             for f_type in value:
                 if f_type not in FIND_TYPES:
                     raise ValueError(
                         f"Unsupported filter type: {f_type}. Supported types are: {', '.join(FIND_TYPES)}"
                     )
-                query: AsyncQuery = query.where(field, f_type, value[f_type])  # type: ignore
-            return query
+                query_or_colref = query_or_colref.where(field, f_type, value[f_type])
+            return query_or_colref
         else:
-            query: AsyncQuery = query.where(field, "==", value)  # type: ignore
+            query: AsyncQuery = colref.where(field, "==", value)
             return query
 
     @classmethod
@@ -163,7 +178,7 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
         :return: The model instance.
         :raise ModelNotFoundError: If the entry is not found.
         """
-        models = await cls.find(filter_)
+        models = await cls.find(filter_) #TODO: use limit=1 here
         try:
             return models[0]
         except IndexError:
