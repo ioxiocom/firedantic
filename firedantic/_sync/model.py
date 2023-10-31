@@ -96,7 +96,7 @@ class BareModel(pydantic.BaseModel, ABC):
         return getattr(self, self.__document_id__, None)
 
     @classmethod
-    def find(cls: Type[TBareModel], filter_: Optional[dict] = None) -> List[TBareModel]:
+    def find(cls: Type[TBareModel], filter_: Optional[dict[str, str | dict]] = None) -> List[TBareModel]:
         """Returns a list of models from the database based on a filter.
 
         Example: `Company.find({"company_id": "1234567-8"})`.
@@ -152,7 +152,7 @@ class BareModel(pydantic.BaseModel, ABC):
             return query
 
     @classmethod
-    def find_one(cls: Type[TBareModel], filter_: Optional[dict] = None) -> TBareModel:
+    def find_one(cls: Type[TBareModel], filter_: Optional[dict[str, str | dict]] = None) -> TBareModel:
         """Returns one model from the DB based on a filter.
 
         :param filter_: The filter criteria.
