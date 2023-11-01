@@ -168,7 +168,7 @@ async def test_find_multiple(configure_db, create_company):
     find_id, find_lastname = to_find
     c = await Company.find({
         "company_id": find_id,
-        "owner.lastname": find_lastname
+        "owner.last_name": find_lastname
     })
     company = c[0]
     assert company.company_id == find_id

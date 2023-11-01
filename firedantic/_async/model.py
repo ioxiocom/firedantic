@@ -116,8 +116,9 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
         maybe_query: Union[AsyncCollectionReference, AsyncQuery] | None = None
         print("[find]", filter_)
         if filter_:
+            maybe_query = colref
             for key, value in filter_.items():
-                maybe_query = cls._add_filter(colref, key, value)
+                maybe_query = cls._add_filter(maybe_query, key, value)
         query: Union[AsyncCollectionReference, AsyncQuery] = maybe_query or colref
 
         if order_by is not None:
@@ -150,20 +151,19 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
 
     @classmethod
     def _add_filter(
-        cls, colref: AsyncCollectionReference, field: str, value: Any
+        cls, query: Union[AsyncQuery, AsyncCollectionReference], field: str, value: Any
     ) -> Union[AsyncQuery, AsyncCollectionReference]:
+        print("[_add_filter] field & value:", field, value)
         if type(value) is dict:
-            print("[_add_filter] value", value)
-            query_or_colref: Union[AsyncQuery, AsyncCollectionReference] = colref
             for f_type in value:
                 if f_type not in FIND_TYPES:
                     raise ValueError(
                         f"Unsupported filter type: {f_type}. Supported types are: {', '.join(FIND_TYPES)}"
                     )
-                query_or_colref = query_or_colref.where(field, f_type, value[f_type])
-            return query_or_colref
+                query = query.where(field, f_type, value[f_type])
+            return query
         else:
-            query: AsyncQuery = colref.where(field, "==", value)
+            query = query.where(field, "==", value)
             return query
 
     @classmethod
