@@ -114,6 +114,7 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
         colref: AsyncCollectionReference = cls._get_col_ref()
 
         maybe_query: Union[AsyncCollectionReference, AsyncQuery] | None = None
+        print("[find]", filter_)
         if filter_:
             for key, value in filter_.items():
                 maybe_query = cls._add_filter(colref, key, value)
@@ -152,6 +153,7 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
         cls, colref: AsyncCollectionReference, field: str, value: Any
     ) -> Union[AsyncQuery, AsyncCollectionReference]:
         if type(value) is dict:
+            print("[_add_filter] value", value)
             query_or_colref: Union[AsyncQuery, AsyncCollectionReference] = colref
             for f_type in value:
                 if f_type not in FIND_TYPES:
