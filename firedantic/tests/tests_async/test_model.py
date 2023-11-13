@@ -192,6 +192,22 @@ async def test_find_orderby(configure_db, create_company):
 
 
 @pytest.mark.asyncio
+async def test_find_offset(configure_db, create_company):
+    ids_and_lastnames = (
+        ("1234555-1", "A"),
+        ("1234567-8", "B"),
+        ("2131232-4", "C"),
+        ("4124432-4", "D"),
+    )
+    for company_id, lastname in ids_and_lastnames:
+        await create_company(company_id=company_id, last_name=lastname)
+    companies_ascending = await Company.find(
+        order_by=("owner.last_name", Query.ASCENDING), offset=2
+    )
+    assert companies_ascending[0].owner.last_name == "C"
+
+
+@pytest.mark.asyncio
 async def test_get_by_id(configure_db, create_company):
     c: Company = await create_company(company_id="1234567-8")
 

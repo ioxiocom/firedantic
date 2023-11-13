@@ -178,6 +178,21 @@ def test_find_orderby(configure_db, create_company):
         assert company.owner.last_name == ids_and_lastnames[-neg_idx][1]
 
 
+def test_find_offset(configure_db, create_company):
+    ids_and_lastnames = (
+        ("1234555-1", "A"),
+        ("1234567-8", "B"),
+        ("2131232-4", "C"),
+        ("4124432-4", "D"),
+    )
+    for company_id, lastname in ids_and_lastnames:
+        create_company(company_id=company_id, last_name=lastname)
+    companies_ascending = Company.find(
+        order_by=("owner.last_name", Query.ASCENDING), offset=2
+    )
+    assert companies_ascending[0].owner.last_name == "C"
+
+
 def test_get_by_id(configure_db, create_company):
     c: Company = create_company(company_id="1234567-8")
 

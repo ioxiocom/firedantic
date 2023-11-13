@@ -103,6 +103,7 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
             tuple[str, Union[Literal["ASCENDING"], Literal["DESCENDING"]]]
         ] = None,
         limit: Optional[int] = None,
+        offset: Optional[int] = None,
     ) -> List[TAsyncBareModel]:
         """Returns a list of models from the database based on a filter.
 
@@ -122,6 +123,8 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
             query = query.order_by(field, direction=direction)
         if limit is not None:
             query = query.limit(limit)
+        if offset is not None:
+            query = query.offset(offset)
 
         def _cls(doc_id: str, data: Dict[str, Any]) -> TAsyncBareModel:
             if cls.__document_id__ in data:
@@ -155,10 +158,10 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
                     raise ValueError(
                         f"Unsupported filter type: {f_type}. Supported types are: {', '.join(FIND_TYPES)}"
                     )
-                query: AsyncQuery = query.where(field, f_type, value[f_type])
+                query: AsyncQuery = query.where(field, f_type, value[f_type])  # type: ignore
             return query
         else:
-            query: AsyncQuery = query.where(field, "==", value)
+            query: AsyncQuery = query.where(field, "==", value)  # type: ignore
             return query
 
     @classmethod
