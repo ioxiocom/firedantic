@@ -146,9 +146,8 @@ class BareModel(pydantic.BaseModel, ABC):
                     raise ValueError(
                         f"Unsupported filter type: {f_type}. Supported types are: {', '.join(FIND_TYPES)}"
                     )
-                query: BaseQuery = query.where(
-                    filter=FieldFilter(field, f_type, value[f_type])  # type: ignore
-                )
+                _filter = FieldFilter(field, f_type, value[f_type])
+                query: BaseQuery = query.where(filter=_filter)  # type: ignore
             return query
         else:
             query: BaseQuery = query.where(field, "==", value)  # type: ignore
@@ -189,7 +188,9 @@ class BareModel(pydantic.BaseModel, ABC):
                 f"No '{cls.__name__}' found with {cls.__document_id__} '{doc_id}'"
             )
 
-        document: DocumentSnapshot = cls._get_col_ref().document(doc_id).get()  # type: ignore
+        document: DocumentSnapshot = (
+            cls._get_col_ref().document(doc_id).get()
+        )  # type: ignore
         data = document.to_dict()
         if data is None:
             raise ModelNotFoundError(

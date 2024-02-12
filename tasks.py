@@ -1,5 +1,7 @@
+import datetime
 import re
 from pathlib import Path
+from textwrap import dedent
 from time import sleep
 
 from invoke import Exit, task
@@ -104,3 +106,52 @@ def unasync(ctx):
 
     unasync.main()
     ctx.run("poetry run black .")
+
+
+@task
+def make_changelog(ctx):
+    """
+    Generate changelog placeholder when bumping a version
+    """
+    pyproject = (Path(__file__).parent / "pyproject.toml").read_text()
+    changelog_path = Path(__file__).parent / "CHANGELOG.md"
+    changelog = changelog_path.read_text()
+
+    match = re.search(r'version = "(.*?)"', pyproject)
+    if not match:
+        raise Exit("Can't determine the library version")
+    version = match.group(1)
+    match = re.search(r"## \[Unreleased].*?## \[(.*?)]", changelog, re.DOTALL)
+    if not match:
+        raise Exit("Can't determine previous library version")
+    old_version = match.group(1)
+    today = datetime.datetime.now().strftime("%Y-%m-%d")
+
+    changes = f"""
+    ## [Unreleased]
+
+    ## [{version}] - {today}
+
+    ### Added
+
+    - Describe what's been added or remove if not applicable
+
+    ### Changed
+
+    - Describe what's been changed or remove if not applicable
+
+    ### Removed
+
+    - Describe what's been removed or remove this section if not applicable"""
+    new_changelog = changelog.replace("## [Unreleased]", dedent(changes).strip())
+
+    repo_link = "https://github.com/ioxiocom/firedantic"
+    links = f"""
+    [unreleased]: {repo_link}/compare/{version}...HEAD
+    [{version}]: {repo_link}/compare/{old_version}...{version}"""
+    new_changelog = re.sub(
+        r"\[unreleased]:.*?HEAD", dedent(links).strip(), new_changelog
+    )
+
+    changelog_path.write_text(new_changelog)
+    print(f"{changelog_path} was updated, please fill in release information")
