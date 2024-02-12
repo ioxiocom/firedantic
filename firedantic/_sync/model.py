@@ -7,6 +7,7 @@ from google.cloud.firestore_v1 import (
     CollectionReference,
     DocumentReference,
     DocumentSnapshot,
+    FieldFilter,
 )
 from google.cloud.firestore_v1.base_query import BaseQuery
 
@@ -145,7 +146,9 @@ class BareModel(pydantic.BaseModel, ABC):
                     raise ValueError(
                         f"Unsupported filter type: {f_type}. Supported types are: {', '.join(FIND_TYPES)}"
                     )
-                query: BaseQuery = query.where(field, f_type, value[f_type])  # type: ignore
+                query: BaseQuery = query.where(
+                    filter=FieldFilter(field, f_type, value[f_type])  # type: ignore
+                )
             return query
         else:
             query: BaseQuery = query.where(field, "==", value)  # type: ignore

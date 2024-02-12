@@ -73,6 +73,11 @@ def watch_tests(ctx):
 
 
 @task
+def unit_tests(ctx):
+    ctx.run("pytest", env=DEV_ENV)
+
+
+@task
 def test(ctx):
     failed_commands = []
 

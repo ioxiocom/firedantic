@@ -7,6 +7,13 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.5.1] - 2024-02-12
+
+### Changed
+
+- Fix pytest warnings in console output
+- Update CI pipeline to use trusted PyPI publisher instead of a token
+
 ## [0.5.0] - 2023-10-09
 
 ### Changed

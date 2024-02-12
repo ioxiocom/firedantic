@@ -7,6 +7,7 @@ from google.cloud.firestore_v1 import (
     AsyncCollectionReference,
     AsyncDocumentReference,
     DocumentSnapshot,
+    FieldFilter,
 )
 from google.cloud.firestore_v1.async_query import AsyncQuery
 
@@ -147,7 +148,9 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
                     raise ValueError(
                         f"Unsupported filter type: {f_type}. Supported types are: {', '.join(FIND_TYPES)}"
                     )
-                query: AsyncQuery = query.where(field, f_type, value[f_type])  # type: ignore
+                query: AsyncQuery = query.where(
+                    filter=FieldFilter(field, f_type, value[f_type])  # type: ignore
+                )
             return query
         else:
             query: AsyncQuery = query.where(field, "==", value)  # type: ignore
