@@ -111,7 +111,7 @@ def unasync(ctx):
 @task
 def make_changelog(ctx):
     """
-    Generate changelog placeholder when bumping a version
+    Generate a changelog placeholder after bumping version in pyproject.toml
     """
     pyproject = (Path(__file__).parent / "pyproject.toml").read_text()
     changelog_path = Path(__file__).parent / "CHANGELOG.md"

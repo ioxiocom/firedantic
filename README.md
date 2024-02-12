@@ -324,8 +324,9 @@ have to run it manually.
 
 ### Generating changelog
 
-After you increase the project version, please run the following command to generate a
-changelog placeholder and fill in the relevant information about the release:
+After you have increased the version number in [pyproject.toml](pyproject.toml), please
+run the following command to generate a changelog placeholder and fill in the relevant
+information about the release in [CHANGELOG.md](CHANGELOG.md):
 
 ```bash
 poetry run invoke make-changelog
