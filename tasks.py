@@ -142,13 +142,15 @@ def make_changelog(ctx):
 
     ### Removed
 
-    - Describe what's been removed or remove this section if not applicable"""
+    - Describe what's been removed or remove this section if not applicable
+    """
     new_changelog = changelog.replace("## [Unreleased]", dedent(changes).strip())
 
     repo_link = "https://github.com/ioxiocom/firedantic"
     links = f"""
     [unreleased]: {repo_link}/compare/{version}...HEAD
-    [{version}]: {repo_link}/compare/{old_version}...{version}"""
+    [{version}]: {repo_link}/compare/{old_version}...{version}
+    """
     new_changelog = re.sub(
         r"\[unreleased]:.*?HEAD", dedent(links).strip(), new_changelog
     )
