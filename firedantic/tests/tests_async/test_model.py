@@ -1,10 +1,9 @@
+from operator import attrgetter
 from uuid import uuid4
 
 import pytest
+from google.cloud.firestore import Query
 from pydantic import Field, ValidationError
-from google.cloud.firestore import (
-    Query,
-)  # just for the ASCENDING / DESCENDING constants
 
 import firedantic.operators as op
 from firedantic import AsyncModel
@@ -159,61 +158,61 @@ async def test_find_limit(configure_db, create_company):
     for company_id in ids:
         await create_company(company_id=company_id)
 
-    companies_all = await Company.find({})
+    companies_all = await Company.find()
     assert len(companies_all) == 4
 
-    limit = 2
-    companies_2 = await Company.find({}, limit=limit)
-    assert len(companies_2) == limit
+    companies_2 = await Company.find(limit=2)
+    assert len(companies_2) == 2
 
 
 @pytest.mark.asyncio
 async def test_find_orderby(configure_db, create_company):
-    ids_and_lastnames = (
-        ("1234555-1", "A"),
-        ("1234567-8", "B"),
-        ("2131232-4", "C"),
-        ("4124432-4", "D"),
-    )
-    for company_id, lastname in ids_and_lastnames:
-        await create_company(company_id=company_id, last_name=lastname)
+    companies_and_owners = [
+        {"company_id": "1234555-1", "last_name": "A", "first_name": "A"},
+        {"company_id": "1234555-2", "last_name": "A", "first_name": "B"},
+        {"company_id": "1234567-8", "last_name": "B", "first_name": "C"},
+        {"company_id": "1234567-9", "last_name": "B", "first_name": "D"},
+        {"company_id": "2131232-4", "last_name": "C", "first_name": "E"},
+        {"company_id": "2131232-5", "last_name": "C", "first_name": "F"},
+        {"company_id": "4124432-4", "last_name": "D", "first_name": "G"},
+        {"company_id": "4124432-5", "last_name": "D", "first_name": "H"},
+    ]
+
+    companies_and_owners = [
+        await create_company(**item) for item in companies_and_owners
+    ]
+
     companies_ascending = await Company.find(
-        order_by=("owner.last_name", Query.ASCENDING)
+        order_by=[("owner.first_name", Query.ASCENDING)]
     )
-    for i, company in enumerate(companies_ascending):
-        assert company.owner.last_name == ids_and_lastnames[i][1]
+    assert companies_ascending == companies_and_owners
 
     companies_descending = await Company.find(
-        order_by=("owner.last_name", Query.DESCENDING)
+        order_by=[("owner.first_name", Query.DESCENDING)]
     )
-    for i, company in enumerate(companies_descending):
-        neg_idx = i + 1
-        assert company.owner.last_name == ids_and_lastnames[-neg_idx][1]
+    reversed_companies_and_owners = list(reversed(companies_and_owners))
+    assert companies_descending == reversed_companies_and_owners
 
-
-@pytest.mark.asyncio
-async def test_find_multiple(configure_db, create_company):
-    ids_and_lastnames = ( 
-        ("1234555-1", "A"),
-        ("1234567-8", "B"),
-        ("2131232-4", "C"),
-        ("4124432-4", "D")
+    lastname_ascending_firstname_descending = await Company.find(
+        order_by=[
+            ("owner.last_name", Query.ASCENDING),
+            ("owner.first_name", Query.DESCENDING),
+        ]
     )
-    for company_id, last_name in ids_and_lastnames:
-        await create_company(
-            company_id=company_id,
-            last_name=last_name
-        )
+    expected = sorted(
+        companies_and_owners, key=attrgetter("owner.first_name"), reverse=True
+    )
+    expected = sorted(expected, key=attrgetter("owner.last_name"))
+    assert expected == lastname_ascending_firstname_descending
 
-    to_find = ids_and_lastnames[2]
-    find_id, find_lastname = to_find
-    c = await Company.find({
-        "company_id": find_id,
-        "owner.last_name": find_lastname
-    })
-    company = c[0]
-    assert company.company_id == find_id
-    assert company.owner.last_name == find_lastname
+    lastname_ascending_firstname_ascending = await Company.find(
+        order_by=[
+            ("owner.last_name", Query.ASCENDING),
+            ("owner.first_name", Query.ASCENDING),
+        ]
+    )
+    assert companies_and_owners == lastname_ascending_firstname_ascending
+
 
 @pytest.mark.asyncio
 async def test_find_offset(configure_db, create_company):
@@ -226,11 +225,13 @@ async def test_find_offset(configure_db, create_company):
     for company_id, lastname in ids_and_lastnames:
         await create_company(company_id=company_id, last_name=lastname)
     companies_ascending = await Company.find(
-        order_by=("owner.last_name", Query.ASCENDING), offset=2
+        order_by=[("owner.last_name", Query.ASCENDING)], offset=2
     )
     assert companies_ascending[0].owner.last_name == "C"
+    assert companies_ascending[1].owner.last_name == "D"
+    assert len(companies_ascending) == 2
 
-    
+
 @pytest.mark.asyncio
 async def test_get_by_id(configure_db, create_company):
     c: Company = await create_company(company_id="1234567-8")
