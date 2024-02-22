@@ -95,13 +95,14 @@ class BareModel(pydantic.BaseModel, ABC):
             self._validate_document_id(doc_id)
         return getattr(self, self.__document_id__, None)
 
+    _OrderDirection = Union[Literal["ASCENDING"], Literal["DESCENDING"]]
+    _OrderBy = List[tuple[str, _OrderDirection]]
+
     @classmethod
     def find(
         cls: Type[TBareModel],
         filter_: Optional[dict] = None,
-        order_by: Optional[
-            tuple[str, Union[Literal["ASCENDING"], Literal["DESCENDING"]]]
-        ] = None,
+        order_by: Optional[_OrderBy] = None,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
     ) -> List[TBareModel]:
@@ -109,6 +110,8 @@ class BareModel(pydantic.BaseModel, ABC):
 
         Example: `Company.find({"company_id": "1234567-8"})`.
         Example: `Product.find({"stock": {">=": 1}})`.
+        Example: `Product.find(order_by=[('unit_value', Query.ASCENDING), ('stock', Query.DESCENDING)], limit=2)`.
+        Example: `Product.find({"stock": {">=": 3}}, order_by=[('unit_value', Query.ASCENDING)], limit=2, offset=3)`.
 
         :param filter_: The filter criteria.
         :return: List of found models.
@@ -119,12 +122,13 @@ class BareModel(pydantic.BaseModel, ABC):
                 query = cls._add_filter(query, key, value)
 
         if order_by is not None:
-            field, direction = order_by
-            query = query.order_by(field, direction=direction)
+            for order_by_item in order_by:
+                field, direction = order_by_item
+                query = query.order_by(field, direction=direction)  # type: ignore
         if limit is not None:
-            query = query.limit(limit)
+            query = query.limit(limit)  # type: ignore
         if offset is not None:
-            query = query.offset(offset)
+            query = query.offset(offset)  # type: ignore
 
         def _cls(doc_id: str, data: Dict[str, Any]) -> TBareModel:
             if cls.__document_id__ in data:
