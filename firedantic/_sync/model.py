@@ -111,8 +111,8 @@ class BareModel(pydantic.BaseModel, ABC):
 
         Example: `Company.find({"company_id": "1234567-8"})`.
         Example: `Product.find({"stock": {">=": 1}})`.
-        Example: `Product.find(order_by=[('unit_value', Query.ASCENDING), ('stock', Query.DESCENDING)], limit=2)`.
-        Example: `Product.find({"stock": {">=": 3}}, order_by=[('unit_value', Query.ASCENDING)], limit=2, offset=3)`.
+        Example: `Product.find(order_by=[('unit_value', "ASCENDING"), ('stock', "DESCENDING")], limit=2)`.
+        Example: `Product.find({"stock": {">=": 3}}, order_by=[('unit_value', "ASCENDING")], limit=2, offset=3)`.
 
         :param filter_: The filter criteria.
         :return: List of found models.
