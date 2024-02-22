@@ -12,6 +12,13 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Added
 
 - Add support for order_by, limit and offset in find queries
+## [0.5.1] - 2024-02-12
+
+### Changed
+
+- Fix pytest warnings in console output
+- Update CI pipeline to use trusted PyPI publisher instead of a token
+- Add make-changelog invoke command
 
 ## [0.5.0] - 2023-10-09
 
@@ -206,6 +213,8 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 [unreleased]: https://github.com/ioxiocom/firedantic/compare/0.6.0...HEAD
 [0.6.0]: https://github.com/ioxiocom/firedantic/compare/0.5.0...0.6.0
+[unreleased]: https://github.com/ioxiocom/firedantic/compare/0.5.1...HEAD
+[0.5.1]: https://github.com/ioxiocom/firedantic/compare/0.5.0...0.5.1
 [0.5.0]: https://github.com/ioxiocom/firedantic/compare/0.4.0...0.5.0
 [0.4.0]: https://github.com/ioxiocom/firedantic/compare/0.3.0...0.4.0
 [0.3.0]: https://github.com/ioxiocom/firedantic/compare/0.2.8...0.3.0
