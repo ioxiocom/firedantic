@@ -108,11 +108,12 @@ class BareModel(pydantic.BaseModel, ABC):
         offset: Optional[int] = None,
     ) -> List[TBareModel]:
         """Returns a list of models from the database based on a filter.
+        The list can be sorted with the order_by parameter, limits and offets can also be applied.
 
         Example: `Company.find({"company_id": "1234567-8"})`.
         Example: `Product.find({"stock": {">=": 1}})`.
-        Example: `Product.find(order_by=[('unit_value', "ASCENDING"), ('stock', "DESCENDING")], limit=2)`.
-        Example: `Product.find({"stock": {">=": 3}}, order_by=[('unit_value', "ASCENDING")], limit=2, offset=3)`.
+        Example: `Product.find(order_by=[('unit_value', Query.ASCENDING), ('stock', Query.DESCENDING)], limit=2)`.
+        Example: `Product.find({"stock": {">=": 3}}, order_by=[('unit_value', Query.ASCENDING)], limit=2, offset=3)`.
 
         :param filter_: The filter criteria.
         :return: List of found models.

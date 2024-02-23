@@ -2,6 +2,7 @@ from operator import attrgetter
 from uuid import uuid4
 
 import pytest
+from google.cloud.firestore import Query
 from pydantic import Field, ValidationError
 
 import firedantic.operators as op
@@ -182,20 +183,20 @@ async def test_find_orderby(configure_db, create_company):
     ]
 
     companies_ascending = await Company.find(
-        order_by=[("owner.first_name", "ASCENDING")]
+        order_by=[("owner.first_name", Query.ASCENDING)]
     )
     assert companies_ascending == companies_and_owners
 
     companies_descending = await Company.find(
-        order_by=[("owner.first_name", "DESCENDING")]
+        order_by=[("owner.first_name", Query.DESCENDING)]
     )
     reversed_companies_and_owners = list(reversed(companies_and_owners))
     assert companies_descending == reversed_companies_and_owners
 
     lastname_ascending_firstname_descending = await Company.find(
         order_by=[
-            ("owner.last_name", "ASCENDING"),
-            ("owner.first_name", "DESCENDING"),
+            ("owner.last_name", Query.ASCENDING),
+            ("owner.first_name", Query.DESCENDING),
         ]
     )
     expected = sorted(
@@ -206,8 +207,8 @@ async def test_find_orderby(configure_db, create_company):
 
     lastname_ascending_firstname_ascending = await Company.find(
         order_by=[
-            ("owner.last_name", "ASCENDING"),
-            ("owner.first_name", "ASCENDING"),
+            ("owner.last_name", Query.ASCENDING),
+            ("owner.first_name", Query.ASCENDING),
         ]
     )
     assert companies_and_owners == lastname_ascending_firstname_ascending
@@ -224,7 +225,7 @@ async def test_find_offset(configure_db, create_company):
     for company_id, lastname in ids_and_lastnames:
         await create_company(company_id=company_id, last_name=lastname)
     companies_ascending = await Company.find(
-        order_by=[("owner.last_name", "ASCENDING")], offset=2
+        order_by=[("owner.last_name", Query.ASCENDING)], offset=2
     )
     assert companies_ascending[0].owner.last_name == "C"
     assert companies_ascending[1].owner.last_name == "D"
