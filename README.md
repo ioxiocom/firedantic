@@ -322,6 +322,16 @@ Thus, please make sure you don't modify any of files under
 running as part of pre-commit hooks, but in order to run the latest version of tests you
 have to run it manually.
 
+### Generating changelog
+
+After you have increased the version number in [pyproject.toml](pyproject.toml), please
+run the following command to generate a changelog placeholder and fill in the relevant
+information about the release in [CHANGELOG.md](CHANGELOG.md):
+
+```bash
+poetry run invoke make-changelog
+```
+
 ## License
 
 This code is released under the BSD 3-Clause license. Details in the
