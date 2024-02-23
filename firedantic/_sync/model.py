@@ -115,7 +115,10 @@ class BareModel(pydantic.BaseModel, ABC):
         Example: `Product.find(order_by=[('unit_value', Query.ASCENDING), ('stock', Query.DESCENDING)], limit=2)`.
         Example: `Product.find({"stock": {">=": 3}}, order_by=[('unit_value', Query.ASCENDING)], limit=2, offset=3)`.
 
-        :param filter_: The filter criteria.
+        :param filter_: The filter criterion.
+        :param order_by: The order by criterion to sort the results.
+        :param limit: The limit criterion to set maximum number of results to return.
+        :param offset: The offset criterion to skip the first n results.
         :return: List of found models.
         """
         query: Union[BaseQuery, CollectionReference] = cls._get_col_ref()
