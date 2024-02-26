@@ -98,7 +98,7 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
 
     @classmethod
     async def find(
-        cls: Type[TAsyncBareModel], filter_: Optional[dict] = None
+        cls: Type[TAsyncBareModel], filter_: Optional[dict[str, str | dict]] = None
     ) -> List[TAsyncBareModel]:
         """Returns a list of models from the database based on a filter.
 
@@ -157,7 +157,7 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
 
     @classmethod
     async def find_one(
-        cls: Type[TAsyncBareModel], filter_: Optional[dict] = None
+        cls: Type[TAsyncBareModel], filter_: Optional[dict[str, str | dict]] = None
     ) -> TAsyncBareModel:
         """Returns one model from the DB based on a filter.
 
