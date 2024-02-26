@@ -74,17 +74,21 @@ Querying is done via a MongoDB-like `find()`:
 ```python
 from firedantic import Model
 import firedantic.operators as op
+from google.cloud.firestore import Query
 
 class Product(Model):
     __collection__ = "products"
     product_id: str
     stock: int
+    unit_value: int
 
 
 Product.find({"product_id": "abc-123"})
 Product.find({"stock": {">=": 3}})
 # or
 Product.find({"stock": {op.GTE: 3}})
+Product.find({"stock": {">=": 1}}, order_by=[('unit_value', Query.ASCENDING)], limit=25, offset=50)
+Product.find(order_by=[('unit_value', Query.ASCENDING), ('stock', Query.DESCENDING)], limit=2)
 ```
 
 The query operators are found at
