@@ -1,5 +1,11 @@
 # flake8: noqa
 from firedantic._async.helpers import truncate_collection as async_truncate_collection
+from firedantic._async.indexes import (
+    set_up_composite_indexes as async_set_up_composite_indexes,
+)
+from firedantic._async.indexes import (
+    set_up_composite_indexes_and_ttl_policies as async_set_up_composite_indexes_and_ttl_policies,
+)
 from firedantic._async.model import (
     AsyncBareModel,
     AsyncBareSubCollection,
@@ -7,11 +13,17 @@ from firedantic._async.model import (
     AsyncModel,
     AsyncSubCollection,
     AsyncSubModel,
+    collection_group_index,
+    collection_index,
 )
 from firedantic._async.ttl_policy import (
     set_up_ttl_policies as async_set_up_ttl_policies,
 )
 from firedantic._sync.helpers import truncate_collection
+from firedantic._sync.indexes import (
+    set_up_composite_indexes,
+    set_up_composite_indexes_and_ttl_policies,
+)
 from firedantic._sync.model import (
     BareModel,
     BareSubCollection,

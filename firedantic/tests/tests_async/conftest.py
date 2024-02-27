@@ -1,7 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import List, Optional, Type
-from unittest.mock import Mock
+from typing import Any, List, Optional, Type
 
 import google.auth.credentials
 import pytest
@@ -19,6 +18,8 @@ from firedantic import (
 )
 from firedantic.configurations import configure
 from firedantic.exceptions import ModelNotFoundError
+
+from unittest.mock import AsyncMock, Mock  # noqa isort: skip
 
 
 class CustomIDModel(AsyncBareModel):
@@ -131,7 +132,7 @@ class ExpiringModel(AsyncModel):
     content: str
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def configure_db():
     client = AsyncClient(
         project="ioxio-local-dev",
@@ -208,6 +209,26 @@ class MockOperation:
     pass
 
 
+class MockListIndexPages:
+    def __init__(self, pages: List[Any]):
+        self._pages = pages
+        self._i = 0
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        if self._i == len(self._pages):
+            raise StopAsyncIteration
+        self._i += 1
+        return self._pages[self._i - 1]
+
+
+class MockListIndexOperation:
+    def __init__(self, pages: List[Any]):
+        self.pages = MockListIndexPages(pages)
+
+
 class AsyncMockFirestoreAdminClient:
     """
     Really minimal mock version of the Firestore Admin Client
@@ -243,6 +264,9 @@ class AsyncMockFirestoreAdminClient:
     async def update_field(self, data) -> MockOperation:
         self.updated_field = data
         return MockOperation()
+
+    list_indexes = AsyncMock(return_value=MockListIndexOperation([]))
+    create_index = AsyncMock()
 
 
 @pytest.fixture()

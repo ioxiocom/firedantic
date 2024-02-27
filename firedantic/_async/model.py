@@ -1,6 +1,6 @@
 from abc import ABC
 from logging import getLogger
-from typing import Any, Dict, List, Optional, Type, TypeVar, Union
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Type, TypeVar, Union
 
 import pydantic
 from google.cloud.firestore_v1 import (
@@ -38,6 +38,11 @@ FIND_TYPES = {
     op.NOT_IN,
 }
 
+IndexField = NamedTuple("IndexField", [("name", str), ("order", str)])
+IndexDef = NamedTuple(
+    "IndexDef", [("query_scope", str), ("fields", Tuple[IndexField, ...])]
+)
+
 
 def get_collection_name(cls, name: Optional[str]) -> str:
     if not name:
@@ -53,6 +58,14 @@ def _get_col_ref(cls, name: Optional[str]) -> AsyncCollectionReference:
     return collection
 
 
+def collection_index(*fields: IndexField) -> IndexDef:
+    return IndexDef(query_scope="COLLECTION", fields=fields)
+
+
+def collection_group_index(*fields: IndexField) -> IndexDef:
+    return IndexDef(query_scope="COLLECTION_GROUP", fields=fields)
+
+
 class AsyncBareModel(pydantic.BaseModel, ABC):
     """Base model class.
 
@@ -62,6 +75,7 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
     __collection__: Optional[str] = None
     __document_id__: str
     __ttl_field__: Optional[str] = None
+    __composite_indexes__: Optional[List[IndexDef]]
 
     async def save(self) -> None:
         """
