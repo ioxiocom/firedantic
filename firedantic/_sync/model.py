@@ -43,6 +43,9 @@ IndexDef = NamedTuple(
     "IndexDef", [("query_scope", str), ("fields", Tuple[IndexField, ...])]
 )
 
+("COLLECTION", (("foo", "ASCENDING"), ("bar", "DESCENDING")))
+IndexDef(query_scope="COLLECTION", fields=(("foo", "ASCENDING"), ("bar", "DESCENDING")))
+
 
 def get_collection_name(cls, name: Optional[str]) -> str:
     if not name:

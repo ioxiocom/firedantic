@@ -191,16 +191,40 @@ async def get_user_purchases(user_id: str, period: str = "2021") -> int:
 Firedantic has support for defining composite indexes and TTL policies as well as
 creating them.
 
+### Composite indexes
+
+Composite indexes of a collection are defined in `__composite_indexes__`, which is a
+list of all indexes to be created.
+
+To define an index, you can use `collection_index` or `collection_group_index`,
+depending on the query scope of the index. Each of these takes in an arbitrary amount of
+tuples, where the first element is the field name and the second is the order
+(`ASCENDING`/`DESCENDING`).
+
+The `set_up_composite_indexes` and `async_set_up_composite_indexes` functions are used
+to create indexes.
+
+For more details, see the example further down.
+
+### TTL Policies
+
 The field used for the TTL policy should be a datetime field and the name of the field
 should be defined in `__ttl_field__`. The `set_up_ttl_policies` and
 `async_set_up_ttl_policies` functions are used to set up the policies.
 
+Note: The TTL policies can not be set up in the Firestore emulator.
+
+### Examples
+
 Below are examples (both sync and async) to show how to use Firedantic to set up
 composite indexes and TTL policies.
 
-Note: The TTL policies can not be set up in the Firestore emulator.
+The examples use `async_set_up_composite_indexes_and_ttl_policies` and
+`set_up_composite_indexes_and_ttl_policies` functions to set up both composite indexes
+and TTL policies. However, you can use separate functions to set up only either one of
+them.
 
-### Composite Index and TTL Policy Example (sync)
+#### Composite Index and TTL Policy Example (sync)
 
 ```python
 from datetime import datetime
@@ -243,7 +267,7 @@ if __name__ == "__main__":
     main()
 ```
 
-### Composite Index and TTL Policy Example (async)
+#### Composite Index and TTL Policy Example (async)
 
 ```python
 import asyncio
