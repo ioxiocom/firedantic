@@ -11,7 +11,7 @@ from google.cloud.firestore_admin_v1.services.firestore_admin import (
     FirestoreAdminAsyncClient,
 )
 
-from firedantic._async.model import AsyncBareModel, IndexDef
+from firedantic._async.model import AsyncBareModel, IndexDef, IndexField
 from firedantic._async.ttl_policy import set_up_ttl_policies
 
 logger = getLogger("firedantic")
@@ -38,7 +38,7 @@ async def list_existing_indexes(
     for raw_index in raw_indexes:
         query_scope = raw_index.query_scope.name
         fields = tuple(
-            (f.field_path, f.order.name)
+            IndexField(name=f.field_path, order=f.order.name)
             for f in raw_index.fields
             if f.field_path != "__name__"
         )
