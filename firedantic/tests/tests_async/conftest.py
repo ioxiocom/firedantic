@@ -242,6 +242,8 @@ class AsyncMockFirestoreAdminClient:
             Field.TtlConfig.State.STATE_UNSPECIFIED
         )
         self.updated_field = None
+        self.list_indexes = AsyncMock(return_value=MockListIndexOperation([]))
+        self.create_index = AsyncMock()
 
     def get_field_state(self) -> Field.TtlConfig.State:
         return self.field_state
@@ -264,9 +266,6 @@ class AsyncMockFirestoreAdminClient:
     async def update_field(self, data) -> MockOperation:
         self.updated_field = data
         return MockOperation()
-
-    list_indexes = AsyncMock(return_value=MockListIndexOperation([]))
-    create_index = AsyncMock()
 
 
 @pytest.fixture()

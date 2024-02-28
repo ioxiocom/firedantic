@@ -241,7 +241,7 @@ from firedantic import (
     Model,
     set_up_composite_indexes_and_ttl_policies,
 )
-from google.cloud.firestore import Client
+from google.cloud.firestore import Client, Query
 from google.cloud.firestore_admin_v1 import FirestoreAdminClient
 
 
@@ -249,8 +249,8 @@ class ExpiringModel(Model):
     __collection__ = "expiringModel"
     __ttl_field__ = "expire"
     __composite_indexes__ = [
-        collection_index(('content', "ASCENDING"), ('expire', "DESCENDING")),
-        collection_group_index(('content', "DESCENDING"), ('expire', "ASCENDING")),
+        collection_index(("content", Query.ASCENDING), ("expire", Query.DESCENDING)),
+        collection_group_index(("content", Query.DESCENDING), ("expire", Query.ASCENDING)),
     ]
 
     expire: datetime
@@ -285,7 +285,7 @@ from firedantic import (
     configure,
     get_all_subclasses,
 )
-from google.cloud.firestore import AsyncClient
+from google.cloud.firestore import AsyncClient, Query
 from google.cloud.firestore_admin_v1.services.firestore_admin import (
     FirestoreAdminAsyncClient,
 )
@@ -295,8 +295,8 @@ class ExpiringModel(AsyncModel):
     __collection__ = "expiringModel"
     __ttl_field__ = "expire"
     __composite_indexes__ = [
-        collection_index(('content', "ASCENDING"), ('expire', "DESCENDING")),
-        collection_group_index(('content', "DESCENDING"), ('expire', "ASCENDING")),
+        collection_index(("content", Query.ASCENDING), ("expire", Query.DESCENDING)),
+        collection_group_index(("content", Query.DESCENDING), ("expire", Query.ASCENDING)),
     ]
 
     expire: datetime

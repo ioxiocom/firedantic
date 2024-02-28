@@ -11,15 +11,18 @@ from google.cloud.firestore_admin_v1.services.firestore_admin import (
     FirestoreAdminClient,
 )
 
-from firedantic._sync.model import BareModel, IndexDef, IndexField
+from firedantic._sync.model import BareModel
 from firedantic._sync.ttl_policy import set_up_ttl_policies
+from firedantic.common import IndexDefinition, IndexField
 
 logger = getLogger("firedantic")
 
 
-def list_existing_indexes(client: FirestoreAdminClient, path: str) -> Set[IndexDef]:
+def get_existing_indexes(
+    client: FirestoreAdminClient, path: str
+) -> Set[IndexDefinition]:
     """
-    List existing database indexes and return a set of them
+    Get existing database indexes and return a set of them
     for easy comparison with other indexes
 
     :param client: The Firestore admin client.
@@ -40,13 +43,13 @@ def list_existing_indexes(client: FirestoreAdminClient, path: str) -> Set[IndexD
             for f in raw_index.fields
             if f.field_path != "__name__"
         )
-        indexes.add(IndexDef(query_scope=query_scope, fields=fields))
+        indexes.add(IndexDefinition(query_scope=query_scope, fields=fields))
     return indexes
 
 
-def create_compose_index(
+def create_composite_index(
     client: FirestoreAdminClient,
-    index: IndexDef,
+    index: IndexDefinition,
     path: str,
 ) -> Operation:
     """
@@ -100,7 +103,7 @@ def set_up_composite_indexes(
             f"projects/{gcloud_project}/databases/{database}/"
             f"collectionGroups/{model.__collection__}"
         )
-        indexes_in_db = list_existing_indexes(client, path=path)
+        indexes_in_db = get_existing_indexes(client, path=path)
         model_indexes = set(model.__composite_indexes__)
         existing_indexes = indexes_in_db.intersection(model_indexes)
         new_indexes = model_indexes.difference(indexes_in_db)
@@ -112,7 +115,7 @@ def set_up_composite_indexes(
         for index in new_indexes:
             log_str = "Creating new composite index: %s, collection: %s"
             logger.info(log_str, index, model.get_collection_name())
-            operation = create_compose_index(client, index, path)
+            operation = create_composite_index(client, index, path)
             operations.append(operation)
 
     return operations

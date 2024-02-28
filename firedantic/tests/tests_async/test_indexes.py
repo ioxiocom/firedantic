@@ -1,5 +1,6 @@
 from unittest.mock import AsyncMock
 
+from google.cloud.firestore import Query
 from google.cloud.firestore_admin_v1 import ListIndexesResponse
 
 from firedantic import (
@@ -26,10 +27,9 @@ class BaseModelWithIndexes(AsyncModel):
 async def test_set_up_composite_index(mock_admin_client):
     class ModelWithIndexes(BaseModelWithIndexes):
         __composite_indexes__ = (
-            collection_index(("name", "ASCENDING"), ("age", "DESCENDING")),
+            collection_index(("name", Query.ASCENDING), ("age", Query.DESCENDING)),
         )
 
-    mock_admin_client.create_index.reset_mock()
     result = await async_set_up_composite_indexes(
         gcloud_project="proj",
         models=[ModelWithIndexes],
@@ -45,19 +45,20 @@ async def test_set_up_composite_index(mock_admin_client):
     assert index.query_scope.name == "COLLECTION"
     assert len(index.fields) == 2
     assert index.fields[0].field_path == "name"
-    assert index.fields[0].order.name == "ASCENDING"
+    assert index.fields[0].order.name == Query.ASCENDING
     assert index.fields[1].field_path == "age"
-    assert index.fields[1].order.name == "DESCENDING"
+    assert index.fields[1].order.name == Query.DESCENDING
 
 
 @pytest.mark.asyncio
 async def test_set_up_collection_group_index(mock_admin_client):
     class ModelWithIndexes(BaseModelWithIndexes):
         __composite_indexes__ = (
-            collection_group_index(("name", "ASCENDING"), ("age", "DESCENDING")),
+            collection_group_index(
+                ("name", Query.ASCENDING), ("age", Query.DESCENDING)
+            ),
         )
 
-    mock_admin_client.create_index.reset_mock()
     result = await async_set_up_composite_indexes(
         gcloud_project="proj",
         models=[ModelWithIndexes],
@@ -78,10 +79,9 @@ async def test_set_up_collection_group_index(mock_admin_client):
 async def test_set_up_composite_indexes_and_policies(mock_admin_client):
     class ModelWithIndexes(BaseModelWithIndexes):
         __composite_indexes__ = (
-            collection_index(("name", "ASCENDING"), ("age", "DESCENDING")),
+            collection_index(("name", Query.ASCENDING), ("age", Query.DESCENDING)),
         )
 
-    mock_admin_client.create_index.reset_mock()
     result = await async_set_up_composite_indexes_and_ttl_policies(
         gcloud_project="proj",
         models=[ModelWithIndexes],
@@ -97,12 +97,12 @@ async def test_set_up_composite_indexes_and_policies(mock_admin_client):
 async def test_set_up_many_composite_indexes(mock_admin_client):
     class ModelWithIndexes(BaseModelWithIndexes):
         __composite_indexes__ = (
-            collection_index(("name", "ASCENDING"), ("age", "DESCENDING")),
-            collection_index(("age", "ASCENDING"), ("status", "DESCENDING")),
+            collection_index(("name", Query.ASCENDING), ("age", Query.DESCENDING)),
+            collection_index(("age", Query.ASCENDING), ("status", Query.DESCENDING)),
             collection_index(
-                ("age", "ASCENDING"),
-                ("status", "DESCENDING"),
-                ("name", "DESCENDING"),
+                ("age", Query.ASCENDING),
+                ("status", Query.DESCENDING),
+                ("name", Query.DESCENDING),
             ),
         )
 
@@ -122,17 +122,17 @@ async def test_existing_indexes_are_skipped(mock_admin_client):
                 {
                     "query_scope": "COLLECTION",
                     "fields": [
-                        {"field_path": "name", "order": "ASCENDING"},
-                        {"field_path": "age", "order": "DESCENDING"},
-                        {"field_path": "__name__", "order": "ASCENDING"},
+                        {"field_path": "name", "order": Query.ASCENDING},
+                        {"field_path": "age", "order": Query.DESCENDING},
+                        {"field_path": "__name__", "order": Query.ASCENDING},
                     ],
                 },
                 {
                     "query_scope": "COLLECTION",
                     "fields": [
-                        {"field_path": "age", "order": "ASCENDING"},
-                        {"field_path": "name", "order": "DESCENDING"},
-                        {"field_path": "__name__", "order": "ASCENDING"},
+                        {"field_path": "age", "order": Query.ASCENDING},
+                        {"field_path": "name", "order": Query.DESCENDING},
+                        {"field_path": "__name__", "order": Query.ASCENDING},
                     ],
                 },
             ]
@@ -144,8 +144,8 @@ async def test_existing_indexes_are_skipped(mock_admin_client):
 
     class ModelWithIndexes(BaseModelWithIndexes):
         __composite_indexes__ = (
-            collection_index(("name", "ASCENDING"), ("age", "DESCENDING")),
-            collection_index(("age", "ASCENDING"), ("name", "DESCENDING")),
+            collection_index(("name", Query.ASCENDING), ("age", Query.DESCENDING)),
+            collection_index(("age", Query.ASCENDING), ("name", Query.DESCENDING)),
         )
 
     result = await async_set_up_composite_indexes(

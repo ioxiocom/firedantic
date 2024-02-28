@@ -3,9 +3,9 @@ from logging import getLogger
 from typing import (
     Any,
     Dict,
+    Iterable,
     List,
     Literal,
-    NamedTuple,
     Optional,
     Tuple,
     Type,
@@ -24,6 +24,7 @@ from google.cloud.firestore_v1.async_query import AsyncQuery
 
 import firedantic.operators as op
 from firedantic import async_truncate_collection
+from firedantic.common import IndexDefinition
 from firedantic.configurations import CONFIGURATIONS
 from firedantic.exceptions import (
     CollectionNotDefined,
@@ -49,11 +50,6 @@ FIND_TYPES = {
     op.NOT_IN,
 }
 
-IndexField = NamedTuple("IndexField", [("name", str), ("order", str)])
-IndexDef = NamedTuple(
-    "IndexDef", [("query_scope", str), ("fields", Tuple[IndexField, ...])]
-)
-
 
 def get_collection_name(cls, name: Optional[str]) -> str:
     if not name:
@@ -69,14 +65,6 @@ def _get_col_ref(cls, name: Optional[str]) -> AsyncCollectionReference:
     return collection
 
 
-def collection_index(*fields: IndexField) -> IndexDef:
-    return IndexDef(query_scope="COLLECTION", fields=fields)
-
-
-def collection_group_index(*fields: IndexField) -> IndexDef:
-    return IndexDef(query_scope="COLLECTION_GROUP", fields=fields)
-
-
 class AsyncBareModel(pydantic.BaseModel, ABC):
     """Base model class.
 
@@ -86,7 +74,7 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
     __collection__: Optional[str] = None
     __document_id__: str
     __ttl_field__: Optional[str] = None
-    __composite_indexes__: Optional[List[IndexDef]]
+    __composite_indexes__: Optional[Iterable[IndexDefinition]]
 
     async def save(self) -> None:
         """
