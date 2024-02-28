@@ -1,6 +1,17 @@
 from abc import ABC
 from logging import getLogger
-from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Type, TypeVar, Union
+from typing import (
+    Any,
+    Dict,
+    List,
+    Literal,
+    NamedTuple,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 import pydantic
 from google.cloud.firestore_v1 import (
@@ -113,25 +124,44 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
             self._validate_document_id(doc_id)
         return getattr(self, self.__document_id__, None)
 
+    _OrderDirection = Union[Literal["ASCENDING"], Literal["DESCENDING"]]
+    _OrderBy = List[Tuple[str, _OrderDirection]]
+
     @classmethod
     async def find(
-        cls: Type[TAsyncBareModel], filter_: Optional[dict] = None
+        cls: Type[TAsyncBareModel],
+        filter_: Optional[dict] = None,
+        order_by: Optional[_OrderBy] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
     ) -> List[TAsyncBareModel]:
         """Returns a list of models from the database based on a filter.
+        The list can be sorted with the order_by parameter, limits and offets can also be applied.
 
         Example: `Company.find({"company_id": "1234567-8"})`.
         Example: `Product.find({"stock": {">=": 1}})`.
+        Example: `Product.find(order_by=[('unit_value', Query.ASCENDING), ('stock', Query.DESCENDING)], limit=2)`.
+        Example: `Product.find({"stock": {">=": 3}}, order_by=[('unit_value', Query.ASCENDING)], limit=2, offset=3)`.
 
         :param filter_: The filter criteria.
+        :param order_by: List of columns and direction to order results by.
+        :param limit: Maximum results to return.
+        :param offset: Skip the first n results.
         :return: List of found models.
         """
-        if not filter_:
-            filter_ = {}
-
         query: Union[AsyncQuery, AsyncCollectionReference] = cls._get_col_ref()
+        if filter_:
+            for key, value in filter_.items():
+                query = cls._add_filter(query, key, value)
 
-        for key, value in filter_.items():
-            query = cls._add_filter(query, key, value)
+        if order_by is not None:
+            for order_by_item in order_by:
+                field, direction = order_by_item
+                query = query.order_by(field, direction=direction)  # type: ignore
+        if limit is not None:
+            query = query.limit(limit)  # type: ignore
+        if offset is not None:
+            query = query.offset(offset)  # type: ignore
 
         def _cls(doc_id: str, data: Dict[str, Any]) -> TAsyncBareModel:
             if cls.__document_id__ in data:
@@ -174,17 +204,20 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
 
     @classmethod
     async def find_one(
-        cls: Type[TAsyncBareModel], filter_: Optional[dict] = None
+        cls: Type[TAsyncBareModel],
+        filter_: Optional[dict] = None,
+        order_by: Optional[_OrderBy] = None,
     ) -> TAsyncBareModel:
         """Returns one model from the DB based on a filter.
 
         :param filter_: The filter criteria.
+        :param order_by: List of columns and direction to order results by.
         :return: The model instance.
         :raise ModelNotFoundError: If the entry is not found.
         """
-        models = await cls.find(filter_)
+        model = await cls.find(filter_, limit=1, order_by=order_by)
         try:
-            return models[0]
+            return model[0]
         except IndexError:
             raise ModelNotFoundError(f"No '{cls.__name__}' found")
 
