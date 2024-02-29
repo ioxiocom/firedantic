@@ -1,6 +1,8 @@
-from typing import NamedTuple, Tuple
+from typing import Literal, NamedTuple, Tuple, Union
 
-IndexField = NamedTuple("IndexField", [("name", str), ("order", str)])
+OrderDirection = Union[Literal["ASCENDING"], Literal["DESCENDING"]]
+
+IndexField = NamedTuple("IndexField", [("name", str), ("order", OrderDirection)])
 
 IndexDefinition = NamedTuple(
     "IndexDefinition", [("query_scope", str), ("fields", Tuple[IndexField, ...])]

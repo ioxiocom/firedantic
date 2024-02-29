@@ -1,17 +1,6 @@
 from abc import ABC
 from logging import getLogger
-from typing import (
-    Any,
-    Dict,
-    Iterable,
-    List,
-    Literal,
-    Optional,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, TypeVar, Union
 
 import pydantic
 from google.cloud.firestore_v1 import (
@@ -24,7 +13,7 @@ from google.cloud.firestore_v1.async_query import AsyncQuery
 
 import firedantic.operators as op
 from firedantic import async_truncate_collection
-from firedantic.common import IndexDefinition
+from firedantic.common import IndexDefinition, OrderDirection
 from firedantic.configurations import CONFIGURATIONS
 from firedantic.exceptions import (
     CollectionNotDefined,
@@ -109,8 +98,7 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
             self._validate_document_id(doc_id)
         return getattr(self, self.__document_id__, None)
 
-    _OrderDirection = Union[Literal["ASCENDING"], Literal["DESCENDING"]]
-    _OrderBy = List[Tuple[str, _OrderDirection]]
+    _OrderBy = List[Tuple[str, OrderDirection]]
 
     @classmethod
     async def find(
