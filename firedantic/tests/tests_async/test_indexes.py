@@ -120,6 +120,10 @@ async def test_existing_indexes_are_skipped(mock_admin_client):
         {
             "indexes": [
                 {
+                    "name": (
+                        "projects/fake-project/databases/(default)/collectionGroups/"
+                        "modelWithIndexes/123456"
+                    ),
                     "query_scope": "COLLECTION",
                     "fields": [
                         {"field_path": "name", "order": Query.ASCENDING},
@@ -128,6 +132,10 @@ async def test_existing_indexes_are_skipped(mock_admin_client):
                     ],
                 },
                 {
+                    "name": (
+                        "projects/fake-project/databases/(default)/collectionGroups/"
+                        "modelWithIndexes/67889"
+                    ),
                     "query_scope": "COLLECTION",
                     "fields": [
                         {"field_path": "age", "order": Query.ASCENDING},
@@ -154,3 +162,42 @@ async def test_existing_indexes_are_skipped(mock_admin_client):
         client=mock_admin_client,
     )
     assert len(result) == 0
+
+
+@pytest.mark.asyncio
+async def test_same_fields_in_another_collection(mock_admin_client):
+    # Test that when another collection has an index with exactly the same fields,
+    #   it won't affect creating an index in the target collection
+    resp = ListIndexesResponse(
+        {
+            "indexes": [
+                {
+                    "name": (
+                        "projects/fake-project/databases/(default)/collectionGroups/"
+                        "anotherModel/123456"
+                    ),
+                    "query_scope": "COLLECTION",
+                    "fields": [
+                        {"field_path": "name", "order": Query.ASCENDING},
+                        {"field_path": "age", "order": Query.DESCENDING},
+                        {"field_path": "__name__", "order": Query.ASCENDING},
+                    ],
+                },
+            ]
+        }
+    )
+    mock_admin_client.list_indexes = AsyncMock(
+        return_value=MockListIndexOperation([resp])
+    )
+
+    class ModelWithIndexes(BaseModelWithIndexes):
+        __composite_indexes__ = (
+            collection_index(("name", Query.ASCENDING), ("age", Query.DESCENDING)),
+        )
+
+    result = await async_set_up_composite_indexes(
+        gcloud_project="fake-project",
+        models=[ModelWithIndexes],
+        client=mock_admin_client,
+    )
+    assert len(result) == 1

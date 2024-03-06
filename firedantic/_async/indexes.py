@@ -37,9 +37,12 @@ async def get_existing_indexes(
 
     indexes = set()
     for raw_index in raw_indexes:
+        # apparently `list_indexes` returns all indexes in all collections
+        if not raw_index.name.startswith(path):
+            continue
         query_scope = raw_index.query_scope.name
         fields = tuple(
-            IndexField(name=f.field_path, order=f.order.name)
+            IndexField(name=f.field_path, order=f.order.name)  # noqa
             for f in raw_index.fields
             if f.field_path != "__name__"
         )
