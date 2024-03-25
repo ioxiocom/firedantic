@@ -159,7 +159,7 @@ def test_existing_indexes_are_skipped(mock_admin_client):
 
 def test_same_fields_in_another_collection(mock_admin_client):
     # Test that when another collection has an index with exactly the same fields,
-    #   it won't affect creating an index in the target collection
+    # it won't affect creating an index in the target collection
     resp = ListIndexesResponse(
         {
             "indexes": [

@@ -27,7 +27,7 @@ mypy = "^0.971"
 flake8 = "^6.1.0"
 pytest = "^7.4.2"
 pytest-asyncio = "^0.21.1"
-black = "^23.9.1"
+black = "^24.3.0"
 watchdog = "^3.0.0"
 
 [build-system]
