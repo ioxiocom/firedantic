@@ -23,14 +23,15 @@ jobs:
 
       - name: Install Firestore emulator 🚧
         run: |
-          curl -sL https://firebase.tools | bash
+          npm install -g firebase-tools@13.4.0
 
       - name: Start Firestore emulator 🚦
         run: |
           ./start_emulator.sh > /dev/null 2>&1 &
 
       - name: Install Poetry and pre-commit 💈
-        run: pip install poetry pre-commit
+        #        run: pip install poetry pre-commit
+        run: pip install poetry
 
       - name: Install dependencies 🛠
         run: poetry install
