@@ -190,32 +190,68 @@ async def get_user_purchases(user_id: str, period: str = "2021") -> int:
 
 ```
 
-## TTL Policies
+## Composite Indexes and TTL Policies
 
-Firedantic has support for defining TTL policies and creating the policies.
+Firedantic has support for defining composite indexes and TTL policies as well as
+creating them.
+
+### Composite indexes
+
+Composite indexes of a collection are defined in `__composite_indexes__`, which is a
+list of all indexes to be created.
+
+To define an index, you can use `collection_index` or `collection_group_index`,
+depending on the query scope of the index. Each of these takes in an arbitrary amount of
+tuples, where the first element is the field name and the second is the order
+(`ASCENDING`/`DESCENDING`).
+
+The `set_up_composite_indexes` and `async_set_up_composite_indexes` functions are used
+to create indexes.
+
+For more details, see the example further down.
+
+### TTL Policies
 
 The field used for the TTL policy should be a datetime field and the name of the field
 should be defined in `__ttl_field__`. The `set_up_ttl_policies` and
 `async_set_up_ttl_policies` functions are used to set up the policies.
 
-Below are examples (both sync and async) to show how to use Firedantic to set up the TTL
-policies.
-
 Note: The TTL policies can not be set up in the Firestore emulator.
 
-### TTL Policy Example (sync)
+### Examples
+
+Below are examples (both sync and async) to show how to use Firedantic to set up
+composite indexes and TTL policies.
+
+The examples use `async_set_up_composite_indexes_and_ttl_policies` and
+`set_up_composite_indexes_and_ttl_policies` functions to set up both composite indexes
+and TTL policies. However, you can use separate functions to set up only either one of
+them.
+
+#### Composite Index and TTL Policy Example (sync)
 
 ```python
 from datetime import datetime
 
-from firedantic import Model, configure, get_all_subclasses, set_up_ttl_policies
-from google.cloud.firestore import Client
+from firedantic import (
+    collection_index,
+    collection_group_index,
+    configure,
+    get_all_subclasses,
+    Model,
+    set_up_composite_indexes_and_ttl_policies,
+)
+from google.cloud.firestore import Client, Query
 from google.cloud.firestore_admin_v1 import FirestoreAdminClient
 
 
 class ExpiringModel(Model):
     __collection__ = "expiringModel"
     __ttl_field__ = "expire"
+    __composite_indexes__ = [
+        collection_index(("content", Query.ASCENDING), ("expire", Query.DESCENDING)),
+        collection_group_index(("content", Query.DESCENDING), ("expire", Query.ASCENDING)),
+    ]
 
     expire: datetime
     content: str
@@ -223,18 +259,19 @@ class ExpiringModel(Model):
 
 def main():
     configure(Client(), prefix="firedantic-test-")
-    set_up_ttl_policies(
+    set_up_composite_indexes_and_ttl_policies(
         gcloud_project="my-project",
         models=get_all_subclasses(Model),
         client=FirestoreAdminClient(),
     )
+    # or use set_up_composite_indexes / set_up_ttl_policies functions separately
 
 
 if __name__ == "__main__":
     main()
 ```
 
-### TTL Policy Example (async)
+#### Composite Index and TTL Policy Example (async)
 
 ```python
 import asyncio
@@ -242,11 +279,13 @@ from datetime import datetime
 
 from firedantic import (
     AsyncModel,
-    async_set_up_ttl_policies,
+    async_set_up_composite_indexes_and_ttl_policies,
+    collection_index,
+    collection_group_index,
     configure,
     get_all_subclasses,
 )
-from google.cloud.firestore import AsyncClient
+from google.cloud.firestore import AsyncClient, Query
 from google.cloud.firestore_admin_v1.services.firestore_admin import (
     FirestoreAdminAsyncClient,
 )
@@ -255,6 +294,10 @@ from google.cloud.firestore_admin_v1.services.firestore_admin import (
 class ExpiringModel(AsyncModel):
     __collection__ = "expiringModel"
     __ttl_field__ = "expire"
+    __composite_indexes__ = [
+        collection_index(("content", Query.ASCENDING), ("expire", Query.DESCENDING)),
+        collection_group_index(("content", Query.DESCENDING), ("expire", Query.ASCENDING)),
+    ]
 
     expire: datetime
     content: str
@@ -262,11 +305,12 @@ class ExpiringModel(AsyncModel):
 
 async def main():
     configure(AsyncClient(), prefix="firedantic-test-")
-    await async_set_up_ttl_policies(
+    await async_set_up_composite_indexes_and_ttl_policies(
         gcloud_project="my-project",
         models=get_all_subclasses(AsyncModel),
         client=FirestoreAdminAsyncClient(),
     )
+    # or await async_set_up_composite_indexes / async_set_up_ttl_policies separately
 
 
 if __name__ == "__main__":

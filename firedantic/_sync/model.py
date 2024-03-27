@@ -1,6 +1,6 @@
 from abc import ABC
 from logging import getLogger
-from typing import Any, Dict, List, Literal, Optional, Tuple, Type, TypeVar, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, TypeVar, Union
 
 import pydantic
 from google.cloud.firestore_v1 import (
@@ -13,6 +13,7 @@ from google.cloud.firestore_v1.base_query import BaseQuery
 
 import firedantic.operators as op
 from firedantic import truncate_collection
+from firedantic.common import IndexDefinition, OrderDirection
 from firedantic.configurations import CONFIGURATIONS
 from firedantic.exceptions import (
     CollectionNotDefined,
@@ -62,6 +63,7 @@ class BareModel(pydantic.BaseModel, ABC):
     __collection__: Optional[str] = None
     __document_id__: str
     __ttl_field__: Optional[str] = None
+    __composite_indexes__: Optional[Iterable[IndexDefinition]]
 
     def save(self) -> None:
         """
@@ -96,8 +98,7 @@ class BareModel(pydantic.BaseModel, ABC):
             self._validate_document_id(doc_id)
         return getattr(self, self.__document_id__, None)
 
-    _OrderDirection = Union[Literal["ASCENDING"], Literal["DESCENDING"]]
-    _OrderBy = List[Tuple[str, _OrderDirection]]
+    _OrderBy = List[Tuple[str, OrderDirection]]
 
     @classmethod
     def find(

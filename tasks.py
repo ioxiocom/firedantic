@@ -106,6 +106,7 @@ def unasync(ctx):
 
     unasync.main()
     ctx.run("poetry run black .")
+    ctx.run("poetry run isort .")
 
 
 @task
