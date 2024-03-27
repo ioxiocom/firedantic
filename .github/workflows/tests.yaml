@@ -22,7 +22,8 @@ jobs:
 
       - name: Install Firestore emulator 🚧
         run: |
-          curl -sL https://firebase.tools | bash
+          # with at least 13.5.1 and 13.6.0 tests can't connect to the emulator
+          npm install -g firebase-tools@13.4.0
 
       - name: Start Firestore emulator 🚦
         run: |
