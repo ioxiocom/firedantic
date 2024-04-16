@@ -65,13 +65,13 @@ class BareModel(pydantic.BaseModel, ABC):
     __ttl_field__: Optional[str] = None
     __composite_indexes__: Optional[Iterable[IndexDefinition]]
 
-    def save(self) -> None:
+    def save(self, by_alias: bool = True, exclude_unset: bool = False, exclude_none: bool = False) -> None:
         """
         Saves this model in the database.
 
         :raise DocumentIDError: If the document ID is not valid.
         """
-        data = self.model_dump(by_alias=True)
+        data = self.model_dump(by_alias=by_alias, exclude_unset=exclude_unset, exclude_none=exclude_none)
         if self.__document_id__ in data:
             del data[self.__document_id__]
 
