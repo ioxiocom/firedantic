@@ -13,7 +13,11 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 - Don't raise an `AttributeError` when setting up indexes for models if there's a model
   without any indexes (i.e. a model does not at all define the `__composite_indexes__`).
-- Fix bug that the configured prefix was not used when creating indexes.
+- Fix bug that the configured prefix was not used when creating indexes. Please note
+  that if you have been using indexes and a collection name prefix, the indexes created
+  before this fix will be for the wrong collection names (i.e. missing the prefix)! Thus
+  please go through your indexes and remove the accidentally created ones after updating
+  to this version.
 
 ## [0.7.0] - 2024-03-27
 
