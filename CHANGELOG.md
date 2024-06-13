@@ -7,12 +7,13 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
-## [0.7.1] - 2024-06-13
+## [0.7.1] - 2024-06-14
 
-### Changed
+### Fixed
 
 - Don't raise an `AttributeError` when setting up indexes for models if there's a model
   without any indexes (i.e. a model does not at all define the `__composite_indexes__`).
+- Fix bug that the configured prefix was not used when creating indexes.
 
 ## [0.7.0] - 2024-03-27
 
