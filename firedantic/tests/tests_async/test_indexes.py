@@ -115,6 +115,24 @@ async def test_set_up_many_composite_indexes(mock_admin_client):
 
 
 @pytest.mark.asyncio
+async def test_set_up_indexes_model_without_indexes(mock_admin_client):
+    class ModelWithoutIndexes(AsyncModel):
+        __collection__ = "modelWithoutIndexes"
+
+        name: str
+
+    result = await async_set_up_composite_indexes(
+        gcloud_project="proj",
+        models=[ModelWithoutIndexes],
+        client=mock_admin_client,
+    )
+    assert len(result) == 0
+
+    call_list = mock_admin_client.create_index.call_args_list
+    assert len(call_list) == 0
+
+
+@pytest.mark.asyncio
 async def test_existing_indexes_are_skipped(mock_admin_client):
     resp = ListIndexesResponse(
         {

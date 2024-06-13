@@ -63,7 +63,7 @@ class BareModel(pydantic.BaseModel, ABC):
     __collection__: Optional[str] = None
     __document_id__: str
     __ttl_field__: Optional[str] = None
-    __composite_indexes__: Optional[Iterable[IndexDefinition]]
+    __composite_indexes__: Optional[Iterable[IndexDefinition]] = None
 
     def save(self) -> None:
         """

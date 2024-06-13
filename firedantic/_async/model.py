@@ -63,7 +63,7 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
     __collection__: Optional[str] = None
     __document_id__: str
     __ttl_field__: Optional[str] = None
-    __composite_indexes__: Optional[Iterable[IndexDefinition]]
+    __composite_indexes__: Optional[Iterable[IndexDefinition]] = None
 
     async def save(self) -> None:
         """
