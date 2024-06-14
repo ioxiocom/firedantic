@@ -4,6 +4,7 @@ from google.cloud.firestore import Query
 from google.cloud.firestore_admin_v1 import ListIndexesResponse
 
 from firedantic import (
+    CONFIGURATIONS,
     Model,
     collection_group_index,
     collection_index,
@@ -39,7 +40,10 @@ def test_set_up_composite_index(mock_admin_client):
     call_list = mock_admin_client.create_index.call_args_list
     # index is a protobuf structure sent via Google Cloud Admin
     path = call_list[0][1]["request"].parent
-    assert path == "projects/proj/databases/(default)/collectionGroups/modelWithIndexes"
+    assert (
+        path
+        == f"projects/proj/databases/(default)/collectionGroups/{CONFIGURATIONS['prefix']}modelWithIndexes"
+    )
     index = call_list[0][1]["request"].index
     assert index.query_scope.name == "COLLECTION"
     assert len(index.fields) == 2
@@ -67,7 +71,10 @@ def test_set_up_collection_group_index(mock_admin_client):
     call_list = mock_admin_client.create_index.call_args_list
     # index is a protobuf structure sent via Google Cloud Admin
     path = call_list[0][1]["request"].parent
-    assert path == "projects/proj/databases/(default)/collectionGroups/modelWithIndexes"
+    assert (
+        path
+        == f"projects/proj/databases/(default)/collectionGroups/{CONFIGURATIONS['prefix']}modelWithIndexes"
+    )
     index = call_list[0][1]["request"].index
     assert index.query_scope.name == "COLLECTION_GROUP"
     assert len(index.fields) == 2
@@ -110,6 +117,23 @@ def test_set_up_many_composite_indexes(mock_admin_client):
     assert len(result) == 3
 
 
+def test_set_up_indexes_model_without_indexes(mock_admin_client):
+    class ModelWithoutIndexes(Model):
+        __collection__ = "modelWithoutIndexes"
+
+        name: str
+
+    result = set_up_composite_indexes(
+        gcloud_project="proj",
+        models=[ModelWithoutIndexes],
+        client=mock_admin_client,
+    )
+    assert len(result) == 0
+
+    call_list = mock_admin_client.create_index.call_args_list
+    assert len(call_list) == 0
+
+
 def test_existing_indexes_are_skipped(mock_admin_client):
     resp = ListIndexesResponse(
         {
@@ -117,7 +141,7 @@ def test_existing_indexes_are_skipped(mock_admin_client):
                 {
                     "name": (
                         "projects/fake-project/databases/(default)/collectionGroups/"
-                        "modelWithIndexes/123456"
+                        f"{CONFIGURATIONS['prefix']}modelWithIndexes/123456"
                     ),
                     "query_scope": "COLLECTION",
                     "fields": [
@@ -129,7 +153,7 @@ def test_existing_indexes_are_skipped(mock_admin_client):
                 {
                     "name": (
                         "projects/fake-project/databases/(default)/collectionGroups/"
-                        "modelWithIndexes/67889"
+                        f"{CONFIGURATIONS['prefix']}modelWithIndexes/67889"
                     ),
                     "query_scope": "COLLECTION",
                     "fields": [
@@ -166,7 +190,7 @@ def test_same_fields_in_another_collection(mock_admin_client):
                 {
                     "name": (
                         "projects/fake-project/databases/(default)/collectionGroups/"
-                        "anotherModel/123456"
+                        f"{CONFIGURATIONS['prefix']}anotherModel/123456"
                     ),
                     "query_scope": "COLLECTION",
                     "fields": [

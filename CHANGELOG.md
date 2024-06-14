@@ -7,6 +7,18 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.7.1] - 2024-06-14
+
+### Fixed
+
+- Don't raise an `AttributeError` when setting up indexes for models if there's a model
+  without any indexes (i.e. a model does not at all define the `__composite_indexes__`).
+- Fix bug that the configured prefix was not used when creating indexes. Please note
+  that if you have been using indexes and a collection name prefix, the indexes created
+  before this fix will be for the wrong collection names (i.e. missing the prefix)! Thus
+  please go through your indexes and remove the accidentally created ones after updating
+  to this version.
+
 ## [0.7.0] - 2024-03-27
 
 ### Added
@@ -218,7 +230,8 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Update README.md
 - Update .gitignore
 
-[unreleased]: https://github.com/ioxiocom/firedantic/compare/0.7.0...HEAD
+[unreleased]: https://github.com/ioxiocom/firedantic/compare/0.7.1...HEAD
+[0.7.1]: https://github.com/ioxiocom/firedantic/compare/0.7.0...0.7.1
 [0.7.0]: https://github.com/ioxiocom/firedantic/compare/0.6.0...0.7.0
 [0.6.0]: https://github.com/ioxiocom/firedantic/compare/0.5.1...0.6.0
 [0.5.1]: https://github.com/ioxiocom/firedantic/compare/0.5.0...0.5.1

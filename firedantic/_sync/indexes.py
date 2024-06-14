@@ -104,7 +104,7 @@ def set_up_composite_indexes(
             continue
         path = (
             f"projects/{gcloud_project}/databases/{database}/"
-            f"collectionGroups/{model.__collection__}"
+            f"collectionGroups/{model.get_collection_name()}"
         )
         indexes_in_db = get_existing_indexes(client, path=path)
         model_indexes = set(model.__composite_indexes__)
