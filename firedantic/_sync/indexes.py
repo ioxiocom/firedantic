@@ -139,6 +139,7 @@ def set_up_composite_indexes_and_ttl_policies(
     :param client: The Firestore admin client.
     :return: List of operations that were launched.
     """
+    models = list(models)
     ops = set_up_composite_indexes(gcloud_project, models, database, client)
     ops.extend(set_up_ttl_policies(gcloud_project, models, database, client))
     return ops

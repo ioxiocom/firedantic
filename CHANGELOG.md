@@ -7,6 +7,14 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.7.2] - 2024-06-17
+
+### Fixed
+
+- Ensure TTL policies are created by `async_set_up_composite_indexes_and_ttl_policies`
+  and `set_up_composite_indexes_and_ttl_policies` also when passing in the models as a
+  generator, for example when using `get_all_subclasses()`.
+
 ## [0.7.1] - 2024-06-14
 
 ### Fixed
@@ -230,7 +238,8 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Update README.md
 - Update .gitignore
 
-[unreleased]: https://github.com/ioxiocom/firedantic/compare/0.7.1...HEAD
+[unreleased]: https://github.com/ioxiocom/firedantic/compare/0.7.2...HEAD
+[0.7.2]: https://github.com/ioxiocom/firedantic/compare/0.7.1...0.7.2
 [0.7.1]: https://github.com/ioxiocom/firedantic/compare/0.7.0...0.7.1
 [0.7.0]: https://github.com/ioxiocom/firedantic/compare/0.6.0...0.7.0
 [0.6.0]: https://github.com/ioxiocom/firedantic/compare/0.5.1...0.6.0
