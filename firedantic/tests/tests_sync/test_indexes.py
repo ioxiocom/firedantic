@@ -1,3 +1,4 @@
+from datetime import datetime
 from unittest.mock import Mock
 
 from google.cloud.firestore import Query
@@ -86,12 +87,15 @@ def test_set_up_composite_indexes_and_policies(mock_admin_client):
             collection_index(("name", Query.ASCENDING), ("age", Query.DESCENDING)),
         )
 
+        __ttl_field__ = "expire"
+        expire: datetime
+
     result = set_up_composite_indexes_and_ttl_policies(
         gcloud_project="proj",
-        models=[ModelWithIndexes],
+        models=(model for model in [ModelWithIndexes]),  # Test with a generator
         client=mock_admin_client,
     )
-    assert len(result) == 1
+    assert len(result) == 2
 
     call_list = mock_admin_client.create_index.call_args_list
     assert len(call_list) == 1
