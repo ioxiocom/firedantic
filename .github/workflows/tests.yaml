@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
     steps:
       - name: Checkout 🔁
         uses: actions/checkout@v3
@@ -22,8 +22,7 @@ jobs:
 
       - name: Install Firestore emulator 🚧
         run: |
-          # with at least 13.5.1 and 13.6.0 tests can't connect to the emulator
-          npm install -g firebase-tools@13.4.0
+          npm install -g firebase-tools
 
       - name: Start Firestore emulator 🚦
         run: |
