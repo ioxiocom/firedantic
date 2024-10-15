@@ -87,6 +87,22 @@ class BareModel(pydantic.BaseModel, ABC):
         """
         self._get_doc_ref().delete()
 
+    def reload(self) -> None:
+        """
+        Reloads this model from the database.
+
+        :raise ModelNotFoundError: If the document ID is missing in the model.
+        """
+        doc_id = self.__dict__.get(self.__document_id__)
+        if doc_id is None:
+            raise ModelNotFoundError("Can not reload unsaved model")
+
+        updated_model = self.get_by_doc_id(doc_id)
+        updated_model_doc_id = updated_model.__dict__[self.__document_id__]
+        assert doc_id == updated_model_doc_id
+
+        self.__dict__.update(updated_model.__dict__)
+
     def get_document_id(self):
         """
         Get the document ID for this model instance

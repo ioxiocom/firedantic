@@ -434,3 +434,21 @@ def test_get_user_purchases(configure_db):
     us(id="2021", purchases=42).save()
 
     assert get_user_purchases(u.id) == 42
+
+
+def test_reload(configure_db):
+    u = User(name="Foo")
+    u.save()
+
+    # change the value in the database
+    u_ = User.find_one({"name": "Foo"})
+    u_.name = "Bar"
+    u_.save()
+
+    assert u.name == "Foo"
+    u.reload()
+    assert u.name == "Bar"
+
+    another_user = User(name="Another")
+    with pytest.raises(ModelNotFoundError):
+        another_user.reload()

@@ -466,3 +466,22 @@ async def test_get_user_purchases(configure_db):
     await us(id="2021", purchases=42).save()
 
     assert await get_user_purchases(u.id) == 42
+
+
+@pytest.mark.asyncio
+async def test_reload(configure_db):
+    u = User(name="Foo")
+    await u.save()
+
+    # change the value in the database
+    u_ = await User.find_one({"name": "Foo"})
+    u_.name = "Bar"
+    await u_.save()
+
+    assert u.name == "Foo"
+    await u.reload()
+    assert u.name == "Bar"
+
+    another_user = User(name="Another")
+    with pytest.raises(ModelNotFoundError):
+        await another_user.reload()
