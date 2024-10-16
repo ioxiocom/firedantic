@@ -7,6 +7,12 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.8.0] - 2024-10-16
+
+### Added
+
+- New `reload` method to refresh model state from the database.
+
 ## [0.7.2] - 2024-06-17
 
 ### Fixed
@@ -238,7 +244,8 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Update README.md
 - Update .gitignore
 
-[unreleased]: https://github.com/ioxiocom/firedantic/compare/0.7.2...HEAD
+[unreleased]: https://github.com/ioxiocom/firedantic/compare/0.8.0...HEAD
+[0.8.0]: https://github.com/ioxiocom/firedantic/compare/0.7.2...0.8.0
 [0.7.2]: https://github.com/ioxiocom/firedantic/compare/0.7.1...0.7.2
 [0.7.1]: https://github.com/ioxiocom/firedantic/compare/0.7.0...0.7.1
 [0.7.0]: https://github.com/ioxiocom/firedantic/compare/0.6.0...0.7.0

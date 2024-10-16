@@ -67,6 +67,9 @@ company.save()
 
 # Prints out the firestore ID of the Company model
 print(company.id)
+
+# Reloads model data from the database
+company.reload()
 ```
 
 Querying is done via a MongoDB-like `find()`:
