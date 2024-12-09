@@ -1,6 +1,8 @@
+from operator import attrgetter
 from uuid import uuid4
 
 import pytest
+from google.cloud.firestore import Query
 from pydantic import Field, ValidationError
 
 import firedantic.operators as op
@@ -72,6 +74,12 @@ def test_find_one(configure_db, create_company):
     random_company = Company.find_one()
     assert random_company.company_id in {a.company_id, b.company_id}
 
+    first_asc = Company.find_one(order_by=[("owner.first_name", Query.ASCENDING)])
+    assert first_asc.owner.first_name == "Bar"
+
+    first_desc = Company.find_one(order_by=[("owner.first_name", Query.DESCENDING)])
+    assert first_desc.owner.first_name == "Foo"
+
 
 def test_find(configure_db, create_company, create_product):
     ids = ["1234555-1", "1234567-8", "2131232-4", "4124432-4"]
@@ -141,6 +149,79 @@ def test_find_array_contains_any(configure_db, create_todolist):
     assert len(found) == 2
     for lst in found:
         assert lst.name in (list_1.name, list_2.name)
+
+
+def test_find_limit(configure_db, create_company):
+    ids = ["1234555-1", "1234567-8", "2131232-4", "4124432-4"]
+    for company_id in ids:
+        create_company(company_id=company_id)
+
+    companies_all = Company.find()
+    assert len(companies_all) == 4
+
+    companies_2 = Company.find(limit=2)
+    assert len(companies_2) == 2
+
+
+def test_find_order_by(configure_db, create_company):
+    companies_and_owners = [
+        {"company_id": "1234555-1", "last_name": "A", "first_name": "A"},
+        {"company_id": "1234555-2", "last_name": "A", "first_name": "B"},
+        {"company_id": "1234567-8", "last_name": "B", "first_name": "C"},
+        {"company_id": "1234567-9", "last_name": "B", "first_name": "D"},
+        {"company_id": "2131232-4", "last_name": "C", "first_name": "E"},
+        {"company_id": "2131232-5", "last_name": "C", "first_name": "F"},
+        {"company_id": "4124432-4", "last_name": "D", "first_name": "G"},
+        {"company_id": "4124432-5", "last_name": "D", "first_name": "H"},
+    ]
+
+    companies_and_owners = [create_company(**item) for item in companies_and_owners]
+
+    companies_ascending = Company.find(order_by=[("owner.first_name", Query.ASCENDING)])
+    assert companies_ascending == companies_and_owners
+
+    companies_descending = Company.find(
+        order_by=[("owner.first_name", Query.DESCENDING)]
+    )
+    reversed_companies_and_owners = list(reversed(companies_and_owners))
+    assert companies_descending == reversed_companies_and_owners
+
+    lastname_ascending_firstname_descending = Company.find(
+        order_by=[
+            ("owner.last_name", Query.ASCENDING),
+            ("owner.first_name", Query.DESCENDING),
+        ]
+    )
+    expected = sorted(
+        companies_and_owners, key=attrgetter("owner.first_name"), reverse=True
+    )
+    expected = sorted(expected, key=attrgetter("owner.last_name"))
+    assert expected == lastname_ascending_firstname_descending
+
+    lastname_ascending_firstname_ascending = Company.find(
+        order_by=[
+            ("owner.last_name", Query.ASCENDING),
+            ("owner.first_name", Query.ASCENDING),
+        ]
+    )
+    assert companies_and_owners == lastname_ascending_firstname_ascending
+
+
+def test_find_offset(configure_db, create_company):
+    ids_and_lastnames = (
+        ("1234555-1", "A"),
+        ("1234567-8", "B"),
+        ("2131232-4", "C"),
+        ("4124432-4", "D"),
+    )
+    for company_id, lastname in ids_and_lastnames:
+        create_company(company_id=company_id, last_name=lastname)
+    companies_ascending = Company.find(
+        order_by=[("owner.last_name", Query.ASCENDING)], offset=2
+    )
+    assert companies_ascending[0].owner.last_name == "C"
+    assert companies_ascending[1].owner.last_name == "D"
+    assert len(companies_ascending) == 2
 
 
 def test_get_by_id(configure_db, create_company):
@@ -353,3 +434,21 @@ def test_get_user_purchases(configure_db):
     us(id="2021", purchases=42).save()
 
     assert get_user_purchases(u.id) == 42
+
+
+def test_reload(configure_db):
+    u = User(name="Foo")
+    u.save()
+
+    # change the value in the database
+    u_ = User.find_one({"name": "Foo"})
+    u_.name = "Bar"
+    u_.save()
+
+    assert u.name == "Foo"
+    u.reload()
+    assert u.name == "Bar"
+
+    another_user = User(name="Another")
+    with pytest.raises(ModelNotFoundError):
+        another_user.reload()

@@ -1,17 +1,19 @@
 from abc import ABC
 from logging import getLogger
-from typing import Any, Dict, List, Optional, Type, TypeVar, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, TypeVar, Union
 
 import pydantic
 from google.cloud.firestore_v1 import (
     CollectionReference,
     DocumentReference,
     DocumentSnapshot,
+    FieldFilter,
 )
 from google.cloud.firestore_v1.base_query import BaseQuery
 
 import firedantic.operators as op
 from firedantic import truncate_collection
+from firedantic.common import IndexDefinition, OrderDirection
 from firedantic.configurations import CONFIGURATIONS
 from firedantic.exceptions import (
     CollectionNotDefined,
@@ -61,6 +63,7 @@ class BareModel(pydantic.BaseModel, ABC):
     __collection__: Optional[str] = None
     __document_id__: str
     __ttl_field__: Optional[str] = None
+    __composite_indexes__: Optional[Iterable[IndexDefinition]] = None
 
     def save(self) -> None:
         """
@@ -84,6 +87,22 @@ class BareModel(pydantic.BaseModel, ABC):
         """
         self._get_doc_ref().delete()
 
+    def reload(self) -> None:
+        """
+        Reloads this model from the database.
+
+        :raise ModelNotFoundError: If the document ID is missing in the model.
+        """
+        doc_id = self.__dict__.get(self.__document_id__)
+        if doc_id is None:
+            raise ModelNotFoundError("Can not reload unsaved model")
+
+        updated_model = self.get_by_doc_id(doc_id)
+        updated_model_doc_id = updated_model.__dict__[self.__document_id__]
+        assert doc_id == updated_model_doc_id
+
+        self.__dict__.update(updated_model.__dict__)
+
     def get_document_id(self):
         """
         Get the document ID for this model instance
@@ -95,23 +114,43 @@ class BareModel(pydantic.BaseModel, ABC):
             self._validate_document_id(doc_id)
         return getattr(self, self.__document_id__, None)
 
+    _OrderBy = List[Tuple[str, OrderDirection]]
+
     @classmethod
-    def find(cls: Type[TBareModel], filter_: Optional[dict[str, str | dict]] = None) -> List[TBareModel]:
+    def find(
+        cls: Type[TBareModel],
+        filter_: Optional[dict[str, str | dict]] = None,
+        order_by: Optional[_OrderBy] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+    ) -> List[TBareModel]:
         """Returns a list of models from the database based on a filter.
+        The list can be sorted with the order_by parameter, limits and offets can also be applied.
 
         Example: `Company.find({"company_id": "1234567-8"})`.
         Example: `Product.find({"stock": {">=": 1}})`.
+        Example: `Product.find(order_by=[('unit_value', Query.ASCENDING), ('stock', Query.DESCENDING)], limit=2)`.
+        Example: `Product.find({"stock": {">=": 3}}, order_by=[('unit_value', Query.ASCENDING)], limit=2, offset=3)`.
 
         :param filter_: The filter criteria.
+        :param order_by: List of columns and direction to order results by.
+        :param limit: Maximum results to return.
+        :param offset: Skip the first n results.
         :return: List of found models.
         """
-        if not filter_:
-            filter_ = {}
-
         query: Union[BaseQuery, CollectionReference] = cls._get_col_ref()
+        if filter_:
+            for key, value in filter_.items():
+                query = cls._add_filter(query, key, value)
 
-        for key, value in filter_.items():
-            query = cls._add_filter(query, key, value)
+        if order_by is not None:
+            for order_by_item in order_by:
+                field, direction = order_by_item
+                query = query.order_by(field, direction=direction)  # type: ignore
+        if limit is not None:
+            query = query.limit(limit)  # type: ignore
+        if offset is not None:
+            query = query.offset(offset)  # type: ignore
 
         def _cls(doc_id: str, data: Dict[str, Any]) -> TBareModel:
             if cls.__document_id__ in data:
@@ -145,23 +184,29 @@ class BareModel(pydantic.BaseModel, ABC):
                     raise ValueError(
                         f"Unsupported filter type: {f_type}. Supported types are: {', '.join(FIND_TYPES)}"
                     )
-                query: BaseQuery = query.where(field, f_type, value[f_type])  # type: ignore
+                _filter = FieldFilter(field, f_type, value[f_type])
+                query: BaseQuery = query.where(filter=_filter)  # type: ignore
             return query
         else:
             query: BaseQuery = query.where(field, "==", value)  # type: ignore
             return query
 
     @classmethod
-    def find_one(cls: Type[TBareModel], filter_: Optional[dict[str, str | dict]] = None) -> TBareModel:
+    def find_one(
+        cls: Type[TBareModel],
+        filter_: Optional[dict[str, str | dict]] = None,
+        order_by: Optional[_OrderBy] = None,
+    ) -> TBareModel:
         """Returns one model from the DB based on a filter.
 
         :param filter_: The filter criteria.
+        :param order_by: List of columns and direction to order results by.
         :return: The model instance.
         :raise ModelNotFoundError: If the entry is not found.
         """
-        models = cls.find(filter_)
+        model = cls.find(filter_, limit=1, order_by=order_by)
         try:
-            return models[0]
+            return model[0]
         except IndexError:
             raise ModelNotFoundError(f"No '{cls.__name__}' found")
 
@@ -186,7 +231,9 @@ class BareModel(pydantic.BaseModel, ABC):
                 f"No '{cls.__name__}' found with {cls.__document_id__} '{doc_id}'"
             )
 
-        document: DocumentSnapshot = cls._get_col_ref().document(doc_id).get()  # type: ignore
+        document: DocumentSnapshot = (
+            cls._get_col_ref().document(doc_id).get()
+        )  # type: ignore
         data = document.to_dict()
         if data is None:
             raise ModelNotFoundError(

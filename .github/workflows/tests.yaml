@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
     steps:
       - name: Checkout 🔁
         uses: actions/checkout@v3
@@ -22,7 +22,7 @@ jobs:
 
       - name: Install Firestore emulator 🚧
         run: |
-          curl -sL https://firebase.tools | bash
+          npm install -g firebase-tools
 
       - name: Start Firestore emulator 🚦
         run: |
@@ -33,9 +33,6 @@ jobs:
 
       - name: Install dependencies 🛠
         run: poetry install
-
-      - name: Run pre-commit 🤔
-        run: pre-commit run --all-files
 
       - name: Run tests 🌈
         run: poetry run invoke test

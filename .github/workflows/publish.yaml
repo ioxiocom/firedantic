@@ -1,4 +1,4 @@
-name: Build and upload to PyPI
+name: Build and publish to PyPI
 
 on:
   push:
@@ -6,21 +6,21 @@ on:
       - "*"
 
 jobs:
-  build_and_upload:
-    name: Build and upload
+  build:
+    name: Test and build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 🔁
-        uses: actions/checkout@v3
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 #v4.1.1
 
       - name: Set up Python 🐍
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@65d7f2d534ac1bc67fcd62888c5f4f3d2cb2b236 #v4.7.1
         with:
           python-version: "3.9"
 
       - name: Install Firestore emulator 🚧
         run: |
-          curl -sL https://firebase.tools | bash
+          npm install -g firebase-tools
 
       - name: Start Firestore emulator 🚦
         run: |
@@ -38,10 +38,28 @@ jobs:
       - name: Run tests 🌈
         run: poetry run invoke test
 
+      - name: Build the package 📦
+        run: poetry build
+
+      - name: Publish build artifact ⬆️
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        with:
+          name: package-dist
+          path: dist
+  publish:
+    name: Publish
+    needs: build
+    runs-on: ubuntu-latest
+    environment: PyPI
+    permissions:
+      # this permission is mandatory for trusted publishing
+      id-token: write
+    steps:
+      - name: Download build artifact ⬇️
+        uses: actions/download-artifact@eaceaf801fd36c7dee90939fad912460b18a1ffe #v4.1.2
+        with:
+          name: package-dist
+          path: dist
+
       - name: Publish package to PyPI 🙌
-        run: |
-          set -e
-          poetry config http-basic.pypi "__token__" "${PYPI_TOKEN}"
-          poetry publish --build
-        env:
-          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+        uses: pypa/gh-action-pypi-publish@2f6f737ca5f74c637829c0f5c3acd0e29ea5e8bf #v1.8.11
