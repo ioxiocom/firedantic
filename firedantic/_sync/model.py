@@ -119,7 +119,7 @@ class BareModel(pydantic.BaseModel, ABC):
     @classmethod
     def find(
         cls: Type[TBareModel],
-        filter_: Optional[dict] = None,
+        filter_: Optional[Dict[str, Union[str, dict]]] = None,
         order_by: Optional[_OrderBy] = None,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
@@ -194,7 +194,7 @@ class BareModel(pydantic.BaseModel, ABC):
     @classmethod
     def find_one(
         cls: Type[TBareModel],
-        filter_: Optional[dict] = None,
+        filter_: Optional[Dict[str, Union[str, dict]]] = None,
         order_by: Optional[_OrderBy] = None,
     ) -> TBareModel:
         """Returns one model from the DB based on a filter.
