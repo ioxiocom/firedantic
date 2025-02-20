@@ -7,6 +7,12 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## Fixed
+
+- Switched Firestore `query.where()` to use the 'filter' keyword argument instead of
+  positional arguments. This eliminates a UserWarning that was introduced in
+  `google-cloud-firestore` 2.11.0.
+
 ## [0.8.1] - 2024-12-09
 
 ### Changed
