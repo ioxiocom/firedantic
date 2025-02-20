@@ -18,6 +18,7 @@ from firedantic.tests.tests_async.conftest import (
     CustomIDModel,
     CustomIDModelExtra,
     Product,
+    Profile,
     TodoList,
     User,
     UserStats,
@@ -485,3 +486,47 @@ async def test_reload(configure_db):
     another_user = User(name="Another")
     with pytest.raises(ModelNotFoundError):
         await another_user.reload()
+
+
+@pytest.mark.asyncio
+async def test_save_with_exclude_none(configure_db):
+    p = Profile(name="Foo")
+    await p.save(exclude_none=True)
+
+    document_id = p.get_document_id()
+    assert document_id
+
+    # pylint: disable=protected-access
+    document = await Profile._get_col_ref().document(document_id).get()
+
+    data = document.to_dict()
+    assert data == {"name": "Foo"}
+    await p.save()
+
+    # pylint: disable=protected-access
+    document = await Profile._get_col_ref().document(document_id).get()
+
+    data = document.to_dict()
+    assert data == {"name": "Foo", "photo_url": None}
+
+
+@pytest.mark.asyncio
+async def test_save_with_exclude_unset(configure_db):
+    p = Profile(photo_url=None)
+    await p.save(exclude_unset=True)
+
+    document_id = p.get_document_id()
+    assert document_id
+
+    # pylint: disable=protected-access
+    document = await Profile._get_col_ref().document(document_id).get()
+
+    data = document.to_dict()
+    assert data == {"photo_url": None}
+    await p.save()
+
+    # pylint: disable=protected-access
+    document = await Profile._get_col_ref().document(document_id).get()
+
+    data = document.to_dict()
+    assert data == {"name": "", "photo_url": None}
