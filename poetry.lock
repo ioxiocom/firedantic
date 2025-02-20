@@ -11,9 +11,6 @@ files = [
     {file = "annotated_types-0.5.0.tar.gz", hash = "sha256:47cdc3490d9ac1506ce92c7aaa76c579dc3509ff11e098fc867e5130ab7be802"},
 ]
 
-[package.dependencies]
-typing-extensions = {version = ">=4.0.0", markers = "python_version < \"3.9\""}
-
 [[package]]
 name = "black"
 version = "24.3.0"
@@ -901,5 +898,5 @@ watchmedo = ["PyYAML (>=3.10)"]
 
 [metadata]
 lock-version = "2.0"
-python-versions = ">=3.8.1,<4.0"
-content-hash = "726f987432f60b05f01083f00814b9692ff207cb9207cc5f6e94014a218764fd"
+python-versions = "^3.9"
+content-hash = "e08261945614962465fb6a8ccc63f31f4b360ac50b0008bcd9168061a06d7008"

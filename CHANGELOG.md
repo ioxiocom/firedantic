@@ -7,6 +7,10 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Removed
+
+- Removed support for Python 3.8, it was end of life on 2024-10-07.
+
 ## [0.8.1] - 2024-12-09
 
 ### Changed
