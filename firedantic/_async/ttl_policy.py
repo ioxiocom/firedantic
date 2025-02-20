@@ -8,7 +8,6 @@ from google.cloud.firestore_admin_v1.services.firestore_admin import (
 )
 
 from firedantic._async.model import AsyncBareModel
-from firedantic.utils import remove_prefix
 
 logger = getLogger("firedantic")
 
@@ -46,7 +45,7 @@ async def set_up_ttl_policies(
         field_obj = await client.get_field({"name": path})
 
         # Variables for logging
-        readable_state = remove_prefix(str(field_obj.ttl_config.state), "State.")
+        readable_state = str(field_obj.ttl_config.state).removeprefix("State.")
         log_str = '"%s", collection: "%s", field: "%s", state: "%s"'
         log_params = [
             model.__class__.__name__,
