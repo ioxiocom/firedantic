@@ -65,13 +65,19 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
     __ttl_field__: Optional[str] = None
     __composite_indexes__: Optional[Iterable[IndexDefinition]] = None
 
-    async def save(self) -> None:
+    async def save(
+        self, *, exclude_unset: bool = False, exclude_none: bool = False
+    ) -> None:
         """
         Saves this model in the database.
 
+        :param exclude_unset: Whether to exclude fields that have not been explicitly set.
+        :param exclude_none: Whether to exclude fields that have a value of `None`.
         :raise DocumentIDError: If the document ID is not valid.
         """
-        data = self.model_dump(by_alias=True)
+        data = self.model_dump(
+            by_alias=True, exclude_unset=exclude_unset, exclude_none=exclude_none
+        )
         if self.__document_id__ in data:
             del data[self.__document_id__]
 

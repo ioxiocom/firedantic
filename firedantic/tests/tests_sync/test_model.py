@@ -18,6 +18,7 @@ from firedantic.tests.tests_sync.conftest import (
     CustomIDModel,
     CustomIDModelExtra,
     Product,
+    Profile,
     TodoList,
     User,
     UserStats,
@@ -452,3 +453,45 @@ def test_reload(configure_db):
     another_user = User(name="Another")
     with pytest.raises(ModelNotFoundError):
         another_user.reload()
+
+
+def test_save_with_exclude_none(configure_db):
+    p = Profile(name="Foo")
+    p.save(exclude_none=True)
+
+    document_id = p.get_document_id()
+    assert document_id
+
+    # pylint: disable=protected-access
+    document = Profile._get_col_ref().document(document_id).get()
+
+    data = document.to_dict()
+    assert data == {"name": "Foo"}
+    p.save()
+
+    # pylint: disable=protected-access
+    document = Profile._get_col_ref().document(document_id).get()
+
+    data = document.to_dict()
+    assert data == {"name": "Foo", "photo_url": None}
+
+
+def test_save_with_exclude_unset(configure_db):
+    p = Profile(photo_url=None)
+    p.save(exclude_unset=True)
+
+    document_id = p.get_document_id()
+    assert document_id
+
+    # pylint: disable=protected-access
+    document = Profile._get_col_ref().document(document_id).get()
+
+    data = document.to_dict()
+    assert data == {"photo_url": None}
+    p.save()
+
+    # pylint: disable=protected-access
+    document = Profile._get_col_ref().document(document_id).get()
+
+    data = document.to_dict()
+    assert data == {"name": "", "photo_url": None}

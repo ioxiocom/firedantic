@@ -67,6 +67,7 @@ class Owner(BaseModel):
 
 class CompanyStats(BareSubModel):
     _doc_id: Optional[str] = PrivateAttr()
+
     sales: int
 
     class Collection(BareSubCollection):
@@ -93,6 +94,7 @@ class Company(Model):
     """Dummy company Firedantic model."""
 
     __collection__ = "companies"
+
     company_id: str
     owner: Owner
 
@@ -107,6 +109,7 @@ class Product(Model):
     """Dummy product Firedantic model."""
 
     __collection__ = "products"
+
     product_id: str
     price: float
     stock: int
@@ -115,8 +118,23 @@ class Product(Model):
         extra = Extra.forbid
 
 
+class Profile(Model):
+    """Dummy profile Firedantic model."""
+
+    __collection__ = "profiles"
+
+    name: Optional[str] = ""
+    photo_url: Optional[str] = None
+
+    class Config:
+        extra = Extra.forbid
+
+
 class TodoList(Model):
+    """Dummy todo list Firedantic model."""
+
     __collection__ = "todoLists"
+
     name: str
     items: List[str]
 
@@ -125,6 +143,8 @@ class TodoList(Model):
 
 
 class ExpiringModel(Model):
+    """Dummy expiring model Firedantic model."""
+
     __collection__ = "expiringModel"
     __ttl_field__ = "expire"
 
@@ -171,9 +191,9 @@ def create_product():
 @pytest.fixture
 def create_todolist():
     def _create(name: str, items: List[str]):
-        p = TodoList(name=name, items=items)
-        p.save()
-        return p
+        t = TodoList(name=name, items=items)
+        t.save()
+        return t
 
     return _create
 

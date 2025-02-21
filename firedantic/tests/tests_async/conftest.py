@@ -67,6 +67,7 @@ class Owner(BaseModel):
 
 class CompanyStats(AsyncBareSubModel):
     _doc_id: Optional[str] = PrivateAttr()
+
     sales: int
 
     class Collection(AsyncBareSubCollection):
@@ -93,6 +94,7 @@ class Company(AsyncModel):
     """Dummy company Firedantic model."""
 
     __collection__ = "companies"
+
     company_id: str
     owner: Owner
 
@@ -107,6 +109,7 @@ class Product(AsyncModel):
     """Dummy product Firedantic model."""
 
     __collection__ = "products"
+
     product_id: str
     price: float
     stock: int
@@ -115,8 +118,23 @@ class Product(AsyncModel):
         extra = Extra.forbid
 
 
+class Profile(AsyncModel):
+    """Dummy profile Firedantic model."""
+
+    __collection__ = "profiles"
+
+    name: Optional[str] = ""
+    photo_url: Optional[str] = None
+
+    class Config:
+        extra = Extra.forbid
+
+
 class TodoList(AsyncModel):
+    """Dummy todo list Firedantic model."""
+
     __collection__ = "todoLists"
+
     name: str
     items: List[str]
 
@@ -125,6 +143,8 @@ class TodoList(AsyncModel):
 
 
 class ExpiringModel(AsyncModel):
+    """Dummy expiring model Firedantic model."""
+
     __collection__ = "expiringModel"
     __ttl_field__ = "expire"
 
@@ -173,9 +193,9 @@ def create_product():
 @pytest.fixture
 def create_todolist():
     async def _create(name: str, items: List[str]):
-        p = TodoList(name=name, items=items)
-        await p.save()
-        return p
+        t = TodoList(name=name, items=items)
+        await t.save()
+        return t
 
     return _create
 
