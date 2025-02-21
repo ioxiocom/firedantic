@@ -192,7 +192,8 @@ class BareModel(pydantic.BaseModel, ABC):
                 query: BaseQuery = query.where(filter=_filter)  # type: ignore
             return query
         else:
-            query: BaseQuery = query.where(field, "==", value)  # type: ignore
+            _filter = FieldFilter(field, "==", value)
+            query: BaseQuery = query.where(filter=_filter)  # type: ignore
             return query
 
     @classmethod
