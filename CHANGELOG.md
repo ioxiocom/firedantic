@@ -7,6 +7,10 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+
+- Added support for `exclude_none` and `exclude_unset` in `save` method.
+
 ## Fixed
 
 - Switched Firestore `query.where()` to use the 'filter' keyword argument instead of
