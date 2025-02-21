@@ -18,6 +18,10 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Switched Firestore `query.where()` to use the 'filter' keyword argument instead of
   positional arguments. This eliminates a UserWarning that was introduced in
   `google-cloud-firestore` 2.11.0.
+- Internal, for builds only: Locked poetry in GitHub workflows to version 1.8.5, as
+  version 2.0.0 and later create METADATA files with version 2.3 instead of 2.2 and the
+  action to publish the package failed with an error about supported metadata versions
+  being 1.0, 1.1, 1.2, 2.0, 2.1, 2.2.
 
 ## [0.8.1] - 2024-12-09
 
