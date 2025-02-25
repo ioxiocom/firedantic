@@ -7,13 +7,22 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.10.0] - 2025-02-26
+
 ### Added
 
 - Added support for Python 3.13.
 
+### Changed
+
+- Updated underlying libraries, such as pydantic, grpcio and google-cloud-firestore, as
+  well as dev dependencies.
+- Updates to pre-commit hooks.
+
 ### Removed
 
 - Removed support for Python 3.8, it was end of life on 2024-10-07.
+- Removed the `remove_prefix` from `firedantic.utils` (needed only for Python 3.8).
 
 ## [0.9.0] - 2025-02-21
 
@@ -274,7 +283,8 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Update README.md
 - Update .gitignore
 
-[unreleased]: https://github.com/ioxiocom/firedantic/compare/0.9.0...HEAD
+[unreleased]: https://github.com/ioxiocom/firedantic/compare/0.10.0...HEAD
+[0.10.0]: https://github.com/ioxiocom/firedantic/compare/0.9.0...0.10.0
 [0.9.0]: https://github.com/ioxiocom/firedantic/compare/0.8.1...0.9.0
 [0.8.1]: https://github.com/ioxiocom/firedantic/compare/0.8.0...0.8.1
 [0.8.0]: https://github.com/ioxiocom/firedantic/compare/0.7.2...0.8.0
