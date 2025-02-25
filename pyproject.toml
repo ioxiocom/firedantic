@@ -24,9 +24,9 @@ sources = ["pyup", "gemnasium"]
 isort = "^5.12.0"
 invoke = "^2.2.0"
 mypy = "^1.15.0"
-flake8 = "^6.1.0"
-pytest = "^7.4.2"
-pytest-asyncio = "^0.21.1"
+flake8 = "^7.1.2"
+pytest = "^8.3.4"
+pytest-asyncio = "^0.25.3"
 black = "^24.3.0"
 watchdog = "^6.0.0"
 
