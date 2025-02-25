@@ -219,7 +219,7 @@ def get_user_purchases(user_id: str, period: str = "2021") -> int:
     try:
         stats = stats_model.get_by_id(period)
     except ModelNotFoundError:
-        stats = stats_model()
+        stats = stats_model()  # type: ignore
     return stats.purchases
 
 
