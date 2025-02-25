@@ -255,9 +255,9 @@ class MockFirestoreAdminClient:
     # Copy implementation from the real class
     field_path = staticmethod(FirestoreAdminClient.field_path)
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.field_state: Field.TtlConfig.State = (
-            Field.TtlConfig.State.STATE_UNSPECIFIED
+            Field.TtlConfig.State.STATE_UNSPECIFIED  # type: ignore
         )
         self.updated_field = None
         self.list_indexes = Mock(return_value=MockListIndexOperation([]))
