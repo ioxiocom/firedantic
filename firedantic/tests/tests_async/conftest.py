@@ -221,7 +221,7 @@ async def get_user_purchases(user_id: str, period: str = "2021") -> int:
     try:
         stats = await stats_model.get_by_id(period)
     except ModelNotFoundError:
-        stats = stats_model()
+        stats = stats_model()  # type: ignore
     return stats.purchases
 
 
@@ -257,9 +257,9 @@ class AsyncMockFirestoreAdminClient:
     # Copy implementation from the real class
     field_path = staticmethod(FirestoreAdminClient.field_path)
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.field_state: Field.TtlConfig.State = (
-            Field.TtlConfig.State.STATE_UNSPECIFIED
+            Field.TtlConfig.State.STATE_UNSPECIFIED  # type: ignore
         )
         self.updated_field = None
         self.list_indexes = AsyncMock(return_value=MockListIndexOperation([]))

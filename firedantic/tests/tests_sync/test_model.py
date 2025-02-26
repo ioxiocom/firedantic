@@ -33,7 +33,7 @@ TEST_PRODUCTS = [
 ]
 
 
-def test_save_model(configure_db, create_company):
+def test_save_model(configure_db, create_company) -> None:
     company = create_company()
 
     assert company.id is not None
@@ -41,12 +41,13 @@ def test_save_model(configure_db, create_company):
     assert company.owner.last_name == "Doe"
 
 
-def test_delete_model(configure_db, create_company):
+def test_delete_model(configure_db, create_company) -> None:
     company: Company = create_company(
         company_id="11223344-5", first_name="Jane", last_name="Doe"
     )
 
     _id = company.id
+    assert _id
 
     company.delete()
 
@@ -54,7 +55,7 @@ def test_delete_model(configure_db, create_company):
         Company.get_by_id(_id)
 
 
-def test_find_one(configure_db, create_company):
+def test_find_one(configure_db, create_company) -> None:
     with pytest.raises(ModelNotFoundError):
         Company.find_one()
 
@@ -82,7 +83,7 @@ def test_find_one(configure_db, create_company):
     assert first_desc.owner.first_name == "Foo"
 
 
-def test_find(configure_db, create_company, create_product):
+def test_find(configure_db, create_company, create_product) -> None:
     ids = ["1234555-1", "1234567-8", "2131232-4", "4124432-4"]
     for company_id in ids:
         create_company(company_id=company_id)
@@ -112,7 +113,7 @@ def test_find(configure_db, create_company, create_product):
         Product.find({"product_id": {"<>": "a"}})
 
 
-def test_find_not_in(configure_db, create_company):
+def test_find_not_in(configure_db, create_company) -> None:
     ids = ["1234555-1", "1234567-8", "2131232-4", "4124432-4"]
     for company_id in ids:
         create_company(company_id=company_id)
@@ -132,7 +133,7 @@ def test_find_not_in(configure_db, create_company):
         assert company.company_id in ("2131232-4", "4124432-4")
 
 
-def test_find_array_contains(configure_db, create_todolist):
+def test_find_array_contains(configure_db, create_todolist) -> None:
     list_1 = create_todolist("list_1", ["Work", "Eat", "Sleep"])
     create_todolist("list_2", ["Learn Python", "Walk the dog"])
 
@@ -141,7 +142,7 @@ def test_find_array_contains(configure_db, create_todolist):
     assert found[0].name == list_1.name
 
 
-def test_find_array_contains_any(configure_db, create_todolist):
+def test_find_array_contains_any(configure_db, create_todolist) -> None:
     list_1 = create_todolist("list_1", ["Work", "Eat"])
     list_2 = create_todolist("list_2", ["Relax", "Chill", "Sleep"])
     create_todolist("list_3", ["Learn Python", "Walk the dog"])
@@ -152,7 +153,7 @@ def test_find_array_contains_any(configure_db, create_todolist):
         assert lst.name in (list_1.name, list_2.name)
 
 
-def test_find_limit(configure_db, create_company):
+def test_find_limit(configure_db, create_company) -> None:
     ids = ["1234555-1", "1234567-8", "2131232-4", "4124432-4"]
     for company_id in ids:
         create_company(company_id=company_id)
@@ -164,7 +165,7 @@ def test_find_limit(configure_db, create_company):
     assert len(companies_2) == 2
 
 
-def test_find_order_by(configure_db, create_company):
+def test_find_order_by(configure_db, create_company) -> None:
     companies_and_owners = [
         {"company_id": "1234555-1", "last_name": "A", "first_name": "A"},
         {"company_id": "1234555-2", "last_name": "A", "first_name": "B"},
@@ -208,7 +209,7 @@ def test_find_order_by(configure_db, create_company):
     assert companies_and_owners == lastname_ascending_firstname_ascending
 
 
-def test_find_offset(configure_db, create_company):
+def test_find_offset(configure_db, create_company) -> None:
     ids_and_lastnames = (
         ("1234555-1", "A"),
         ("1234567-8", "B"),
@@ -225,7 +226,7 @@ def test_find_offset(configure_db, create_company):
     assert len(companies_ascending) == 2
 
 
-def test_get_by_id(configure_db, create_company):
+def test_get_by_id(configure_db, create_company) -> None:
     c: Company = create_company(company_id="1234567-8")
 
     assert c.id is not None
@@ -239,12 +240,12 @@ def test_get_by_id(configure_db, create_company):
     assert c_2.owner.first_name == "John"
 
 
-def test_get_by_empty_str_id(configure_db):
+def test_get_by_empty_str_id(configure_db) -> None:
     with pytest.raises(ModelNotFoundError):
         Company.get_by_id("")
 
 
-def test_missing_collection(configure_db):
+def test_missing_collection(configure_db) -> None:
     class User(Model):
         name: str
 
@@ -252,7 +253,7 @@ def test_missing_collection(configure_db):
         User(name="John").save()
 
 
-def test_model_aliases(configure_db):
+def test_model_aliases(configure_db) -> None:
     class User(Model):
         __collection__ = "User"
 
@@ -261,6 +262,7 @@ def test_model_aliases(configure_db):
 
     user = User(firstName="John", city="Helsinki")
     user.save()
+    assert user.id
 
     user_from_db = User.get_by_id(user.id)
     assert user_from_db.first_name == "John"
@@ -295,7 +297,7 @@ def test_model_aliases(configure_db):
         "!:&+-*'()",
     ],
 )
-def test_models_with_valid_custom_id(configure_db, model_id):
+def test_models_with_valid_custom_id(configure_db, model_id) -> None:
     product_id = str(uuid4())
 
     product = Product(product_id=product_id, price=123.45, stock=2)
@@ -323,7 +325,7 @@ def test_models_with_valid_custom_id(configure_db, model_id):
         "foo/bar/baz",
     ],
 )
-def test_models_with_invalid_custom_id(configure_db, model_id):
+def test_models_with_invalid_custom_id(configure_db, model_id: str) -> None:
     product = Product(product_id="product 123", price=123.45, stock=2)
     product.id = model_id
     with pytest.raises(InvalidDocumentID):
@@ -333,7 +335,7 @@ def test_models_with_invalid_custom_id(configure_db, model_id):
         Product.get_by_id(model_id)
 
 
-def test_truncate_collection(configure_db, create_company):
+def test_truncate_collection(configure_db, create_company) -> None:
     create_company(company_id="1234567-8")
     create_company(company_id="1234567-9")
 
@@ -345,8 +347,8 @@ def test_truncate_collection(configure_db, create_company):
     assert len(new_companies) == 0
 
 
-def test_custom_id_model(configure_db):
-    c = CustomIDModel(bar="bar")
+def test_custom_id_model(configure_db) -> None:
+    c = CustomIDModel(bar="bar")  # type: ignore
     c.save()
 
     models = CustomIDModel.find({})
@@ -357,7 +359,7 @@ def test_custom_id_model(configure_db):
     assert m.bar == "bar"
 
 
-def test_custom_id_conflict(configure_db):
+def test_custom_id_conflict(configure_db) -> None:
     CustomIDConflictModel(foo="foo", bar="bar").save()
 
     models = CustomIDModel.find({})
@@ -368,9 +370,10 @@ def test_custom_id_conflict(configure_db):
     assert m.bar == "bar"
 
 
-def test_model_id_persistency(configure_db):
+def test_model_id_persistency(configure_db) -> None:
     c = CustomIDConflictModel(foo="foo", bar="bar")
     c.save()
+    assert c.id
 
     c = CustomIDConflictModel.get_by_doc_id(c.id)
     c.save()
@@ -378,9 +381,10 @@ def test_model_id_persistency(configure_db):
     assert len(CustomIDConflictModel.find({})) == 1
 
 
-def test_bare_model_document_id_persistency(configure_db):
-    c = CustomIDModel(bar="bar")
+def test_bare_model_document_id_persistency(configure_db) -> None:
+    c = CustomIDModel(bar="bar")  # type: ignore
     c.save()
+    assert c.foo
 
     c = CustomIDModel.get_by_doc_id(c.foo)
     c.save()
@@ -388,18 +392,18 @@ def test_bare_model_document_id_persistency(configure_db):
     assert len(CustomIDModel.find({})) == 1
 
 
-def test_bare_model_get_by_empty_doc_id(configure_db):
+def test_bare_model_get_by_empty_doc_id(configure_db) -> None:
     with pytest.raises(ModelNotFoundError):
         CustomIDModel.get_by_doc_id("")
 
 
-def test_extra_fields(configure_db):
-    CustomIDModelExtra(foo="foo", bar="bar", baz="baz").save()
+def test_extra_fields(configure_db) -> None:
+    CustomIDModelExtra(foo="foo", bar="bar", baz="baz").save()  # type: ignore
     with pytest.raises(ValidationError):
         CustomIDModel.find({})
 
 
-def test_company_stats(configure_db, create_company):
+def test_company_stats(configure_db, create_company) -> None:
     company: Company = create_company(company_id="1234567-8")
     company_stats = company.stats()
 
@@ -419,7 +423,7 @@ def test_company_stats(configure_db, create_company):
     assert stats.sales == 101
 
 
-def test_subcollection_model_safety(configure_db):
+def test_subcollection_model_safety(configure_db) -> None:
     """
     Ensure you shouldn't be able to use unprepared subcollection models accidentally
     """
@@ -427,9 +431,10 @@ def test_subcollection_model_safety(configure_db):
         UserStats.find({})
 
 
-def test_get_user_purchases(configure_db):
+def test_get_user_purchases(configure_db) -> None:
     u = User(name="Foo")
     u.save()
+    assert u.id
 
     us = UserStats.model_for(u)
     us(id="2021", purchases=42).save()
@@ -437,7 +442,7 @@ def test_get_user_purchases(configure_db):
     assert get_user_purchases(u.id) == 42
 
 
-def test_reload(configure_db):
+def test_reload(configure_db) -> None:
     u = User(name="Foo")
     u.save()
 
@@ -455,7 +460,7 @@ def test_reload(configure_db):
         another_user.reload()
 
 
-def test_save_with_exclude_none(configure_db):
+def test_save_with_exclude_none(configure_db) -> None:
     p = Profile(name="Foo")
     p.save(exclude_none=True)
 
@@ -476,7 +481,7 @@ def test_save_with_exclude_none(configure_db):
     assert data == {"name": "Foo", "photo_url": None}
 
 
-def test_save_with_exclude_unset(configure_db):
+def test_save_with_exclude_unset(configure_db) -> None:
     p = Profile(photo_url=None)
     p.save(exclude_unset=True)
 

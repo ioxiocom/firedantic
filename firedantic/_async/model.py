@@ -349,7 +349,7 @@ class AsyncBareSubModel(AsyncBareModel, ABC):
         pass
 
     @classmethod
-    def _create(cls, **kwargs) -> TAsyncBareSubModel:
+    def _create(cls: Type[TAsyncBareSubModel], **kwargs) -> TAsyncBareSubModel:
         return cls(  # type: ignore
             **kwargs,
         )

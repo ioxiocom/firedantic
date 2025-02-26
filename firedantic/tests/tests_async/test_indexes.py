@@ -12,6 +12,7 @@ from firedantic import (
     collection_group_index,
     collection_index,
 )
+from firedantic.common import IndexField
 from firedantic.tests.tests_async.conftest import MockListIndexOperation
 
 import pytest  # noqa isort: skip
@@ -26,10 +27,13 @@ class BaseModelWithIndexes(AsyncModel):
 
 
 @pytest.mark.asyncio
-async def test_set_up_composite_index(mock_admin_client):
+async def test_set_up_composite_index(mock_admin_client) -> None:
     class ModelWithIndexes(BaseModelWithIndexes):
         __composite_indexes__ = (
-            collection_index(("name", Query.ASCENDING), ("age", Query.DESCENDING)),
+            collection_index(
+                IndexField("name", Query.ASCENDING),
+                IndexField("age", Query.DESCENDING),
+            ),
         )
 
     result = await async_set_up_composite_indexes(
@@ -56,11 +60,12 @@ async def test_set_up_composite_index(mock_admin_client):
 
 
 @pytest.mark.asyncio
-async def test_set_up_collection_group_index(mock_admin_client):
+async def test_set_up_collection_group_index(mock_admin_client) -> None:
     class ModelWithIndexes(BaseModelWithIndexes):
         __composite_indexes__ = (
             collection_group_index(
-                ("name", Query.ASCENDING), ("age", Query.DESCENDING)
+                IndexField("name", Query.ASCENDING),
+                IndexField("age", Query.DESCENDING),
             ),
         )
 
@@ -84,10 +89,13 @@ async def test_set_up_collection_group_index(mock_admin_client):
 
 
 @pytest.mark.asyncio
-async def test_set_up_composite_indexes_and_policies(mock_admin_client):
+async def test_set_up_composite_indexes_and_policies(mock_admin_client) -> None:
     class ModelWithIndexes(BaseModelWithIndexes):
         __composite_indexes__ = (
-            collection_index(("name", Query.ASCENDING), ("age", Query.DESCENDING)),
+            collection_index(
+                IndexField("name", Query.ASCENDING),
+                IndexField("age", Query.DESCENDING),
+            ),
         )
 
         __ttl_field__ = "expire"
@@ -105,15 +113,21 @@ async def test_set_up_composite_indexes_and_policies(mock_admin_client):
 
 
 @pytest.mark.asyncio
-async def test_set_up_many_composite_indexes(mock_admin_client):
+async def test_set_up_many_composite_indexes(mock_admin_client) -> None:
     class ModelWithIndexes(BaseModelWithIndexes):
         __composite_indexes__ = (
-            collection_index(("name", Query.ASCENDING), ("age", Query.DESCENDING)),
-            collection_index(("age", Query.ASCENDING), ("status", Query.DESCENDING)),
             collection_index(
-                ("age", Query.ASCENDING),
-                ("status", Query.DESCENDING),
-                ("name", Query.DESCENDING),
+                IndexField("name", Query.ASCENDING),
+                IndexField("age", Query.DESCENDING),
+            ),
+            collection_index(
+                IndexField("age", Query.ASCENDING),
+                IndexField("status", Query.DESCENDING),
+            ),
+            collection_index(
+                IndexField("age", Query.ASCENDING),
+                IndexField("status", Query.DESCENDING),
+                IndexField("name", Query.DESCENDING),
             ),
         )
 
@@ -126,7 +140,7 @@ async def test_set_up_many_composite_indexes(mock_admin_client):
 
 
 @pytest.mark.asyncio
-async def test_set_up_indexes_model_without_indexes(mock_admin_client):
+async def test_set_up_indexes_model_without_indexes(mock_admin_client) -> None:
     class ModelWithoutIndexes(AsyncModel):
         __collection__ = "modelWithoutIndexes"
 
@@ -144,7 +158,7 @@ async def test_set_up_indexes_model_without_indexes(mock_admin_client):
 
 
 @pytest.mark.asyncio
-async def test_existing_indexes_are_skipped(mock_admin_client):
+async def test_existing_indexes_are_skipped(mock_admin_client) -> None:
     resp = ListIndexesResponse(
         {
             "indexes": [
@@ -181,8 +195,14 @@ async def test_existing_indexes_are_skipped(mock_admin_client):
 
     class ModelWithIndexes(BaseModelWithIndexes):
         __composite_indexes__ = (
-            collection_index(("name", Query.ASCENDING), ("age", Query.DESCENDING)),
-            collection_index(("age", Query.ASCENDING), ("name", Query.DESCENDING)),
+            collection_index(
+                IndexField("name", Query.ASCENDING),
+                IndexField("age", Query.DESCENDING),
+            ),
+            collection_index(
+                IndexField("age", Query.ASCENDING),
+                IndexField("name", Query.DESCENDING),
+            ),
         )
 
     result = await async_set_up_composite_indexes(
@@ -194,7 +214,7 @@ async def test_existing_indexes_are_skipped(mock_admin_client):
 
 
 @pytest.mark.asyncio
-async def test_same_fields_in_another_collection(mock_admin_client):
+async def test_same_fields_in_another_collection(mock_admin_client) -> None:
     # Test that when another collection has an index with exactly the same fields,
     # it won't affect creating an index in the target collection
     resp = ListIndexesResponse(
@@ -221,7 +241,10 @@ async def test_same_fields_in_another_collection(mock_admin_client):
 
     class ModelWithIndexes(BaseModelWithIndexes):
         __composite_indexes__ = (
-            collection_index(("name", Query.ASCENDING), ("age", Query.DESCENDING)),
+            collection_index(
+                IndexField("name", Query.ASCENDING),
+                IndexField("age", Query.DESCENDING),
+            ),
         )
 
     result = await async_set_up_composite_indexes(

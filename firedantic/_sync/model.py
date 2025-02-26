@@ -347,7 +347,7 @@ class BareSubModel(BareModel, ABC):
         pass
 
     @classmethod
-    def _create(cls, **kwargs) -> TBareSubModel:
+    def _create(cls: Type[TBareSubModel], **kwargs) -> TBareSubModel:
         return cls(  # type: ignore
             **kwargs,
         )

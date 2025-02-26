@@ -12,6 +12,7 @@ from firedantic import (
     set_up_composite_indexes,
     set_up_composite_indexes_and_ttl_policies,
 )
+from firedantic.common import IndexField
 from firedantic.tests.tests_sync.conftest import MockListIndexOperation
 
 import pytest  # noqa isort: skip
@@ -25,10 +26,13 @@ class BaseModelWithIndexes(Model):
     age: int
 
 
-def test_set_up_composite_index(mock_admin_client):
+def test_set_up_composite_index(mock_admin_client) -> None:
     class ModelWithIndexes(BaseModelWithIndexes):
         __composite_indexes__ = (
-            collection_index(("name", Query.ASCENDING), ("age", Query.DESCENDING)),
+            collection_index(
+                IndexField("name", Query.ASCENDING),
+                IndexField("age", Query.DESCENDING),
+            ),
         )
 
     result = set_up_composite_indexes(
@@ -54,11 +58,12 @@ def test_set_up_composite_index(mock_admin_client):
     assert index.fields[1].order.name == Query.DESCENDING
 
 
-def test_set_up_collection_group_index(mock_admin_client):
+def test_set_up_collection_group_index(mock_admin_client) -> None:
     class ModelWithIndexes(BaseModelWithIndexes):
         __composite_indexes__ = (
             collection_group_index(
-                ("name", Query.ASCENDING), ("age", Query.DESCENDING)
+                IndexField("name", Query.ASCENDING),
+                IndexField("age", Query.DESCENDING),
             ),
         )
 
@@ -81,10 +86,13 @@ def test_set_up_collection_group_index(mock_admin_client):
     assert len(index.fields) == 2
 
 
-def test_set_up_composite_indexes_and_policies(mock_admin_client):
+def test_set_up_composite_indexes_and_policies(mock_admin_client) -> None:
     class ModelWithIndexes(BaseModelWithIndexes):
         __composite_indexes__ = (
-            collection_index(("name", Query.ASCENDING), ("age", Query.DESCENDING)),
+            collection_index(
+                IndexField("name", Query.ASCENDING),
+                IndexField("age", Query.DESCENDING),
+            ),
         )
 
         __ttl_field__ = "expire"
@@ -101,15 +109,21 @@ def test_set_up_composite_indexes_and_policies(mock_admin_client):
     assert len(call_list) == 1
 
 
-def test_set_up_many_composite_indexes(mock_admin_client):
+def test_set_up_many_composite_indexes(mock_admin_client) -> None:
     class ModelWithIndexes(BaseModelWithIndexes):
         __composite_indexes__ = (
-            collection_index(("name", Query.ASCENDING), ("age", Query.DESCENDING)),
-            collection_index(("age", Query.ASCENDING), ("status", Query.DESCENDING)),
             collection_index(
-                ("age", Query.ASCENDING),
-                ("status", Query.DESCENDING),
-                ("name", Query.DESCENDING),
+                IndexField("name", Query.ASCENDING),
+                IndexField("age", Query.DESCENDING),
+            ),
+            collection_index(
+                IndexField("age", Query.ASCENDING),
+                IndexField("status", Query.DESCENDING),
+            ),
+            collection_index(
+                IndexField("age", Query.ASCENDING),
+                IndexField("status", Query.DESCENDING),
+                IndexField("name", Query.DESCENDING),
             ),
         )
 
@@ -121,7 +135,7 @@ def test_set_up_many_composite_indexes(mock_admin_client):
     assert len(result) == 3
 
 
-def test_set_up_indexes_model_without_indexes(mock_admin_client):
+def test_set_up_indexes_model_without_indexes(mock_admin_client) -> None:
     class ModelWithoutIndexes(Model):
         __collection__ = "modelWithoutIndexes"
 
@@ -138,7 +152,7 @@ def test_set_up_indexes_model_without_indexes(mock_admin_client):
     assert len(call_list) == 0
 
 
-def test_existing_indexes_are_skipped(mock_admin_client):
+def test_existing_indexes_are_skipped(mock_admin_client) -> None:
     resp = ListIndexesResponse(
         {
             "indexes": [
@@ -173,8 +187,14 @@ def test_existing_indexes_are_skipped(mock_admin_client):
 
     class ModelWithIndexes(BaseModelWithIndexes):
         __composite_indexes__ = (
-            collection_index(("name", Query.ASCENDING), ("age", Query.DESCENDING)),
-            collection_index(("age", Query.ASCENDING), ("name", Query.DESCENDING)),
+            collection_index(
+                IndexField("name", Query.ASCENDING),
+                IndexField("age", Query.DESCENDING),
+            ),
+            collection_index(
+                IndexField("age", Query.ASCENDING),
+                IndexField("name", Query.DESCENDING),
+            ),
         )
 
     result = set_up_composite_indexes(
@@ -185,7 +205,7 @@ def test_existing_indexes_are_skipped(mock_admin_client):
     assert len(result) == 0
 
 
-def test_same_fields_in_another_collection(mock_admin_client):
+def test_same_fields_in_another_collection(mock_admin_client) -> None:
     # Test that when another collection has an index with exactly the same fields,
     # it won't affect creating an index in the target collection
     resp = ListIndexesResponse(
@@ -210,7 +230,10 @@ def test_same_fields_in_another_collection(mock_admin_client):
 
     class ModelWithIndexes(BaseModelWithIndexes):
         __composite_indexes__ = (
-            collection_index(("name", Query.ASCENDING), ("age", Query.DESCENDING)),
+            collection_index(
+                IndexField("name", Query.ASCENDING),
+                IndexField("age", Query.DESCENDING),
+            ),
         )
 
     result = set_up_composite_indexes(
