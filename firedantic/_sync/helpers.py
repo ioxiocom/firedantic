@@ -2,7 +2,8 @@ from google.cloud.firestore_v1 import CollectionReference
 
 
 def truncate_collection(col_ref: CollectionReference, batch_size: int = 128) -> int:
-    """Removes all documents inside a collection.
+    """
+    Removes all documents inside a collection.
 
     :param col_ref: A collection reference to the collection to be truncated.
     :param batch_size: Batch size for listing documents.

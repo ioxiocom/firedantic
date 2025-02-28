@@ -320,6 +320,66 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
+## Transactions
+
+Firedantic basic support for
+[Firestore Transactions](https://firebase.google.com/docs/firestore/manage-data/transactions).
+The following methods can be used in a transaction:
+
+- `Model.delete(transaction=transaction)`
+- `Model.find_one(transaction=transaction)`
+- `Model.find(transaction=transaction)`
+- `Model.get_by_doc_id(transaction=transaction)`
+- `Model.get_by_id(transaction=transaction)`
+- `Model.reload(transaction=transaction)`
+- `Model.save(transaction=transaction)`
+- `SubModel.get_by_id(transaction=transaction)`
+
+When using transactions, note that read operations must come before write operations.
+
+### Transactions Example
+
+In this example, we are creating a `Profile` model in a transaction that verifies the
+email is unique and raises an error if there is a conflict.
+
+```python
+from firedantic import configure
+from google.cloud.firestore import transactional
+from google.cloud.firestore import Client
+
+client = Client()
+configure(client)
+
+
+class Profile(AsyncModel):
+    __collection__ = "profiles"
+    email: str
+
+
+@async_transactional
+async def create_in_transaction(transaction, email) -> Profile:
+    """Creates a Profile in a transaction"""
+    try:
+        await Profile.find_one({"email": email}, transaction=transaction)
+        raise ValueError(f"Profile already exists with email: {email}")
+    except ModelNotFoundError:
+        p = Profile(email=email)
+        await p.save(transaction=transaction)
+        return p
+
+
+transaction = client.transaction()
+p = await create_in_transaction(transaction, "test@example.com")
+assert isinstance(p, Profile)
+assert p.id
+
+transaction2 = client.transaction()
+try:
+    await create_in_transaction(transaction2, "test@example.com")
+except ValueError as e:
+    assert str(e) == "Profile already exists with email: test@example.com"
+```
+
 ## Development
 
 PRs are welcome!
