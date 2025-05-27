@@ -320,6 +320,62 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
+## Transactions
+
+Firedantic has basic support for
+[Firestore Transactions](https://firebase.google.com/docs/firestore/manage-data/transactions).
+The following methods can be used in a transaction:
+
+- `Model.delete(transaction=transaction)`
+- `Model.find_one(transaction=transaction)`
+- `Model.find(transaction=transaction)`
+- `Model.get_by_doc_id(transaction=transaction)`
+- `Model.get_by_id(transaction=transaction)`
+- `Model.reload(transaction=transaction)`
+- `Model.save(transaction=transaction)`
+- `SubModel.get_by_id(transaction=transaction)`
+
+When using transactions, note that read operations must come before write operations.
+
+### Transaction example
+
+In this example, we are updating a `City` to increase the population by 1.
+
+```python
+from firedantic import configure
+from google.cloud.firestore import async_transactional
+from google.cloud.firestore import AyncClient
+
+client = AsyncClient()
+configure(client)
+
+
+class City(AsyncModel):
+    __collection__ = "cities"
+    population: int
+
+
+@async_transactional
+async def update_in_transaction(transaction, city_ref) -> City:
+    """
+    Updates a City in a transaction
+
+    :param transaction: Firestore Transaction
+    :param city_ref: City reference
+    :return: City
+    """
+    city = await City.get_by_id(city_ref, transaction=transaction)
+    city.population += 1
+    await city.save(transaction=transaction)
+    return city
+
+
+transaction = client.transaction()
+city = await update_in_transaction(transaction, "SF")
+assert isinstance(city, City)
+assert city.id == "SF"
+```
+
 ## Development
 
 PRs are welcome!

@@ -6,7 +6,7 @@ import google.auth.credentials
 import pytest
 from google.cloud.firestore_admin_v1 import Field, FirestoreAdminClient
 from google.cloud.firestore_v1 import AsyncClient
-from pydantic import BaseModel, Extra, PrivateAttr
+from pydantic import BaseModel, PrivateAttr
 
 from firedantic import (
     AsyncBareModel,
@@ -30,7 +30,7 @@ class CustomIDModel(AsyncBareModel):
     bar: str
 
     class Config:
-        extra = Extra.forbid
+        extra = "forbid"
 
 
 class CustomIDModelExtra(AsyncBareModel):
@@ -42,7 +42,7 @@ class CustomIDModelExtra(AsyncBareModel):
     baz: str
 
     class Config:
-        extra = Extra.forbid
+        extra = "forbid"
 
 
 class CustomIDConflictModel(AsyncModel):
@@ -52,7 +52,14 @@ class CustomIDConflictModel(AsyncModel):
     bar: str
 
     class Config:
-        extra = Extra.forbid
+        extra = "forbid"
+
+
+class City(AsyncModel):
+    """Dummy city Firedantic model."""
+
+    __collection__ = "cities"
+    population: int
 
 
 class Owner(BaseModel):
@@ -62,7 +69,7 @@ class Owner(BaseModel):
     last_name: str
 
     class Config:
-        extra = Extra.forbid
+        extra = "forbid"
 
 
 class CompanyStats(AsyncBareSubModel):
@@ -99,7 +106,7 @@ class Company(AsyncModel):
     owner: Owner
 
     class Config:
-        extra = Extra.forbid
+        extra = "forbid"
 
     def stats(self) -> Type[CompanyStats]:
         return CompanyStats.model_for(self)  # type: ignore
@@ -115,7 +122,7 @@ class Product(AsyncModel):
     stock: int
 
     class Config:
-        extra = Extra.forbid
+        extra = "forbid"
 
 
 class Profile(AsyncModel):
@@ -124,10 +131,11 @@ class Profile(AsyncModel):
     __collection__ = "profiles"
 
     name: Optional[str] = ""
+    email: Optional[str] = None
     photo_url: Optional[str] = None
 
     class Config:
-        extra = Extra.forbid
+        extra = "forbid"
 
 
 class TodoList(AsyncModel):
@@ -139,7 +147,7 @@ class TodoList(AsyncModel):
     items: List[str]
 
     class Config:
-        extra = Extra.forbid
+        extra = "forbid"
 
 
 class ExpiringModel(AsyncModel):

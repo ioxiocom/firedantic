@@ -6,7 +6,7 @@ import google.auth.credentials
 import pytest
 from google.cloud.firestore_admin_v1 import Field, FirestoreAdminClient
 from google.cloud.firestore_v1 import Client
-from pydantic import BaseModel, Extra, PrivateAttr
+from pydantic import BaseModel, PrivateAttr
 
 from firedantic import (
     BareModel,
@@ -30,7 +30,7 @@ class CustomIDModel(BareModel):
     bar: str
 
     class Config:
-        extra = Extra.forbid
+        extra = "forbid"
 
 
 class CustomIDModelExtra(BareModel):
@@ -42,7 +42,7 @@ class CustomIDModelExtra(BareModel):
     baz: str
 
     class Config:
-        extra = Extra.forbid
+        extra = "forbid"
 
 
 class CustomIDConflictModel(Model):
@@ -52,7 +52,14 @@ class CustomIDConflictModel(Model):
     bar: str
 
     class Config:
-        extra = Extra.forbid
+        extra = "forbid"
+
+
+class City(Model):
+    """Dummy city Firedantic model."""
+
+    __collection__ = "cities"
+    population: int
 
 
 class Owner(BaseModel):
@@ -62,7 +69,7 @@ class Owner(BaseModel):
     last_name: str
 
     class Config:
-        extra = Extra.forbid
+        extra = "forbid"
 
 
 class CompanyStats(BareSubModel):
@@ -99,7 +106,7 @@ class Company(Model):
     owner: Owner
 
     class Config:
-        extra = Extra.forbid
+        extra = "forbid"
 
     def stats(self) -> Type[CompanyStats]:
         return CompanyStats.model_for(self)  # type: ignore
@@ -115,7 +122,7 @@ class Product(Model):
     stock: int
 
     class Config:
-        extra = Extra.forbid
+        extra = "forbid"
 
 
 class Profile(Model):
@@ -124,10 +131,11 @@ class Profile(Model):
     __collection__ = "profiles"
 
     name: Optional[str] = ""
+    email: Optional[str] = None
     photo_url: Optional[str] = None
 
     class Config:
-        extra = Extra.forbid
+        extra = "forbid"
 
 
 class TodoList(Model):
@@ -139,7 +147,7 @@ class TodoList(Model):
     items: List[str]
 
     class Config:
-        extra = Extra.forbid
+        extra = "forbid"
 
 
 class ExpiringModel(Model):
