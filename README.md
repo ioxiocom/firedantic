@@ -322,7 +322,7 @@ if __name__ == "__main__":
 
 ## Transactions
 
-Firedantic basic support for
+Firedantic has basic support for
 [Firestore Transactions](https://firebase.google.com/docs/firestore/manage-data/transactions).
 The following methods can be used in a transaction:
 
@@ -337,47 +337,43 @@ The following methods can be used in a transaction:
 
 When using transactions, note that read operations must come before write operations.
 
-### Transactions Example
+### Transaction example
 
-In this example, we are creating a `Profile` model in a transaction that verifies the
-email is unique and raises an error if there is a conflict.
+In this example, we are updating a `City` to increase the population by 1.
 
 ```python
 from firedantic import configure
-from google.cloud.firestore import transactional
-from google.cloud.firestore import Client
+from google.cloud.firestore import async_transactional
+from google.cloud.firestore import AyncClient
 
-client = Client()
+client = AsyncClient()
 configure(client)
 
 
-class Profile(AsyncModel):
-    __collection__ = "profiles"
-    email: str
+class City(AsyncModel):
+    __collection__ = "cities"
+    population: int
 
 
 @async_transactional
-async def create_in_transaction(transaction, email) -> Profile:
-    """Creates a Profile in a transaction"""
-    try:
-        await Profile.find_one({"email": email}, transaction=transaction)
-        raise ValueError(f"Profile already exists with email: {email}")
-    except ModelNotFoundError:
-        p = Profile(email=email)
-        await p.save(transaction=transaction)
-        return p
+async def update_in_transaction(transaction, city_ref) -> City:
+    """
+    Updates a City in a transaction
+
+    :param transaction: Firestore Transaction
+    :param city_ref: City reference
+    :return: City
+    """
+    city = await City.get_by_id(city_ref, transaction=transaction)
+    city.population += 1
+    await city.save(transaction=transaction)
+    return city
 
 
 transaction = client.transaction()
-p = await create_in_transaction(transaction, "test@example.com")
-assert isinstance(p, Profile)
-assert p.id
-
-transaction2 = client.transaction()
-try:
-    await create_in_transaction(transaction2, "test@example.com")
-except ValueError as e:
-    assert str(e) == "Profile already exists with email: test@example.com"
+city = await update_in_transaction(transaction, "SF")
+assert isinstance(city, City)
+assert city.id == "SF"
 ```
 
 ## Development

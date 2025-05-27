@@ -15,6 +15,7 @@ from firedantic.exceptions import (
     ModelNotFoundError,
 )
 from firedantic.tests.tests_async.conftest import (
+    City,
     Company,
     CustomIDConflictModel,
     CustomIDModel,
@@ -540,46 +541,52 @@ async def test_save_with_exclude_unset(configure_db) -> None:
 
 
 @pytest.mark.asyncio
-async def test_create_in_transaction(configure_db) -> None:
-    """Test creating a model in a transaction. Test case from README."""
+async def test_update_city_in_transaction(configure_db) -> None:
+    """
+    Test updating a model in a transaction. Test case from README.
 
-    @async_transactional  # type: ignore
-    async def create_in_transaction(transaction, email) -> Profile:
-        """Creates a Profile in a transaction"""
-        try:
-            await Profile.find_one({"email": email}, transaction=transaction)
-            raise ValueError(f"Profile already exists with email: {email}")
-        except ModelNotFoundError:
-            p = Profile(email=email)
-            await p.save(transaction=transaction)
-            return p
+    :param: configure_db: pytest fixture
+    """
+
+    @async_transactional
+    async def update_in_transaction(transaction, city_ref) -> City:
+        """
+        Updates a City in a transaction
+
+        :param transaction: Firestore Transaction
+        :param city_ref: City reference
+        :return: City
+        """
+        city = await City.get_by_id(city_ref, transaction=transaction)
+        city.population += 1
+        await city.save(transaction=transaction)
+        return city
+
+    c = City(id="SF", population=1)
 
     transaction = CONFIGURATIONS["db"].transaction()
-    p = await create_in_transaction(transaction, "test@example.com")
-    assert isinstance(p, Profile)
-    assert p.id
-
-    transaction2 = CONFIGURATIONS["db"].transaction()
-    with pytest.raises(ValueError) as excinfo:
-        await create_in_transaction(transaction2, "test@example.com")
-    assert str(excinfo.value) == "Profile already exists with email: test@example.com"
+    city = await update_in_transaction(transaction, c.id)
+    assert isinstance(city, City)
+    assert city.id == "SF"
+    assert city.population == 2
 
 
 @pytest.mark.asyncio
 async def test_delete_in_transaction(configure_db) -> None:
-    """Test deleting a model in a transaction."""
+    """
+    Test deleting a model in a transaction.
+
+    :param: configure_db: pytest fixture
+    """
 
     @async_transactional  # type: ignore
     async def delete_in_transaction(
         transaction: AsyncTransaction, profile_id: str
-    ) -> dict:
+    ) -> str:
         """Deletes a Profile in a transaction."""
-        try:
-            p = await Profile.get_by_id(profile_id, transaction=transaction)
-            await p.delete(transaction=transaction)
-            return {"id": profile_id}
-        except ModelNotFoundError:
-            raise ValueError(f"Profile not found: {profile_id}")
+        profile = await Profile.get_by_id(profile_id, transaction=transaction)
+        await profile.delete(transaction=transaction)
+        return profile_id
 
     p = Profile(name="Foo")
     await p.save()
@@ -588,28 +595,30 @@ async def test_delete_in_transaction(configure_db) -> None:
     transaction = CONFIGURATIONS["db"].transaction()
     result = await delete_in_transaction(transaction, p.id)
     assert isinstance(result, dict)
-    assert result == {"id": p.id}
+    assert result == p.id
 
-    transaction2 = CONFIGURATIONS["db"].transaction()
-    with pytest.raises(ValueError) as excinfo:
-        await delete_in_transaction(transaction2, p.id)
-    assert str(excinfo.value) == f"Profile not found: {p.id}"
+    with pytest.raises(ModelNotFoundError):
+        await Profile.get_by_id(p.id)
 
 
 @pytest.mark.asyncio
 async def test_update_model_in_transaction(configure_db) -> None:
-    """Test updating a model in a transaction."""
+    """
+    Test updating a model in a transaction.
+
+    :param: configure_db: pytest fixture
+    """
 
     @async_transactional  # type: ignore
     async def update_in_transaction(
         transaction: AsyncTransaction, profile_id: str, name: str
     ) -> Profile:
         """Updates a Profile in a transaction."""
-        p = Profile(id=profile_id)
-        await p.reload(transaction=transaction)
-        p.name = name
-        await p.save(transaction=transaction)
-        return p
+        profile = Profile(id=profile_id)
+        await profile.reload(transaction=transaction)
+        profile.name = name
+        await profile.save(transaction=transaction)
+        return profile
 
     p = Profile(name="Foo")
     await p.save()
@@ -618,23 +627,28 @@ async def test_update_model_in_transaction(configure_db) -> None:
     transaction = CONFIGURATIONS["db"].transaction()
     result = await update_in_transaction(transaction, p.id, "Bar")
     assert isinstance(result, Profile)
+    await result.reload()
     assert result.id == p.id
     assert result.name == "Bar"
 
 
 @pytest.mark.asyncio
 async def test_update_submodel_in_transaction(configure_db) -> None:
-    """Test Updating a submodel in a transaction."""
+    """
+    Test Updating a submodel in a transaction.
+
+    :param: configure_db: pytest fixture
+    """
 
     @async_transactional  # type: ignore
     async def update_submodel_in_transaction(
-        transaction: AsyncTransaction, user_id: str, period: str, purchases: int
+        transaction: AsyncTransaction, user_id: str, period: str
     ) -> UserStats:
         """Updates a UserStats in a transaction."""
-        u = await User.get_by_id(user_id)
+        u = await User.get_by_id(user_id, transaction=transaction)
         us = UserStats.model_for(u)
         user_stats: UserStats = await us.get_by_id(period)  # pylint: disable=no-member
-        user_stats.purchases = purchases
+        user_stats.purchases += 1
         await user_stats.save(transaction=transaction)
         return user_stats
 
@@ -645,7 +659,7 @@ async def test_update_submodel_in_transaction(configure_db) -> None:
     await us(id="2021", purchases=42).save()  # pylint: disable=no-member
 
     transaction = CONFIGURATIONS["db"].transaction()
-    user_stats = await update_submodel_in_transaction(transaction, u.id, "2021", 43)
+    user_stats = await update_submodel_in_transaction(transaction, u.id, "2021")
     assert isinstance(user_stats, UserStats)
     assert user_stats.purchases == 43
     assert await get_user_purchases(u.id) == 43

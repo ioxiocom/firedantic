@@ -55,6 +55,13 @@ class CustomIDConflictModel(Model):
         extra = "forbid"
 
 
+class City(Model):
+    """Dummy city Firedantic model."""
+
+    __collection__ = "cities"
+    population: int
+
+
 class Owner(BaseModel):
     """Dummy owner Pydantic model."""
 

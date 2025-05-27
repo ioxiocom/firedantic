@@ -55,6 +55,13 @@ class CustomIDConflictModel(AsyncModel):
         extra = "forbid"
 
 
+class City(AsyncModel):
+    """Dummy city Firedantic model."""
+
+    __collection__ = "cities"
+    population: int
+
+
 class Owner(BaseModel):
     """Dummy owner Pydantic model."""
 

@@ -15,9 +15,10 @@ from google.cloud.firestore_v1.async_transaction import AsyncTransaction
 import firedantic.operators as op
 from firedantic import async_truncate_collection
 from firedantic.common import IndexDefinition, OrderDirection
-from firedantic.configurations import CONFIGURATIONS
+from firedantic.configurations import CONFIGURATIONS, Configuration
 from firedantic.exceptions import (
     CollectionNotDefined,
+    ConfigurationNotFoundError,
     InvalidDocumentID,
     ModelNotFoundError,
 )
@@ -41,20 +42,35 @@ FIND_TYPES = {
 }
 
 
+def get_configuration(name: str = "default") -> Configuration:
+    """
+    Returns the configuration with the given name.
+
+    :params name: The configuration name.
+    :return: The configuration with the given name.
+    :raise ConfigurationNotFoundError: If the configuration is not found.
+    """
+    if name in CONFIGURATIONS:
+        return CONFIGURATIONS[name]
+    raise ConfigurationNotFoundError(f"Configuration `{name}` not found")
+
+
 def get_collection_name(cls, name: Optional[str]) -> str:
     """
-    Returns the collection name.
+    Returns the collection name with the optional prefix.
 
+    :params cls: The model class.
+    :params name: The collection name.
+    :return: The collection name with the optional prefix.
     :raise CollectionNotDefined: If the collection name is not defined.
     """
     if not name:
         raise CollectionNotDefined(f"Missing collection name for {cls.__name__}")
-
-    return f"{CONFIGURATIONS['prefix']}{name}"
+    return f"{get_configuration().prefix}{name}"
 
 
 def _get_col_ref(cls, name: Optional[str]) -> AsyncCollectionReference:
-    collection: AsyncCollectionReference = CONFIGURATIONS["db"].collection(
+    collection: AsyncCollectionReference = get_configuration().db.collection(
         get_collection_name(cls, name)
     )
     return collection
@@ -253,6 +269,7 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
         Returns a model based on the document ID.
 
         :param doc_id: The document ID of the entry.
+        :param transaction: Optional Transaction to use.
         :return: The model.
         :raise ModelNotFoundError: Raised if no matching document is found.
         """
@@ -366,7 +383,7 @@ class AsyncModel(AsyncBareModel):
 
         :param id_: Document ID.
         :param transaction: Optional Transaction to use.
-        :raises ModelNotFoundError:
+        :raises ModelNotFoundError: if no model was found by given id
         """
         return await cls.get_by_doc_id(id_, transaction=transaction)
 
