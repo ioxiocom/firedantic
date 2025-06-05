@@ -15,10 +15,9 @@ from google.cloud.firestore_v1.transaction import Transaction
 import firedantic.operators as op
 from firedantic import truncate_collection
 from firedantic.common import IndexDefinition, OrderDirection
-from firedantic.configurations import CONFIGURATIONS, Configuration
+from firedantic.configurations import CONFIGURATIONS
 from firedantic.exceptions import (
     CollectionNotDefined,
-    ConfigurationNotFoundError,
     InvalidDocumentID,
     ModelNotFoundError,
 )
@@ -42,35 +41,20 @@ FIND_TYPES = {
 }
 
 
-def get_configuration(name: str = "default") -> Configuration:
-    """
-    Returns the configuration with the given name.
-
-    :params name: The configuration name.
-    :return: The configuration with the given name.
-    :raise ConfigurationNotFoundError: If the configuration is not found.
-    """
-    if name in CONFIGURATIONS:
-        return CONFIGURATIONS[name]
-    raise ConfigurationNotFoundError(f"Configuration `{name}` not found")
-
-
 def get_collection_name(cls, name: Optional[str]) -> str:
     """
-    Returns the collection name with the optional prefix.
+    Returns the collection name.
 
-    :params cls: The model class.
-    :params name: The collection name.
-    :return: The collection name with the optional prefix.
     :raise CollectionNotDefined: If the collection name is not defined.
     """
     if not name:
         raise CollectionNotDefined(f"Missing collection name for {cls.__name__}")
-    return f"{get_configuration().prefix}{name}"
+
+    return f"{CONFIGURATIONS['prefix']}{name}"
 
 
 def _get_col_ref(cls, name: Optional[str]) -> CollectionReference:
-    collection: CollectionReference = get_configuration().db.collection(
+    collection: CollectionReference = CONFIGURATIONS["db"].collection(
         get_collection_name(cls, name)
     )
     return collection

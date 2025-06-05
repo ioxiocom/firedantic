@@ -1,10 +1,3 @@
-"""Firedantic Exceptions module."""
-
-
-class ConfigurationNotFoundError(Exception):
-    """Raised when a configuration is not found."""
-
-
 class ModelError(Exception):
     """Generic model error class."""
 
