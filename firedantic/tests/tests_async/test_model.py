@@ -514,7 +514,7 @@ async def test_save_with_exclude_none(configure_db) -> None:
     document = await Profile._get_col_ref().document(document_id).get()
 
     data = document.to_dict()
-    assert data == {"name": "Foo", "email": None, "photo_url": None}
+    assert data == {"name": "Foo", "photo_url": None}
 
 
 @pytest.mark.asyncio
@@ -536,7 +536,7 @@ async def test_save_with_exclude_unset(configure_db) -> None:
     document = await Profile._get_col_ref().document(document_id).get()
 
     data = document.to_dict()
-    assert data == {"name": "", "email": None, "photo_url": None}
+    assert data == {"name": "", "photo_url": None}
 
 
 @pytest.mark.asyncio

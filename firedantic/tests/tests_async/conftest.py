@@ -141,7 +141,6 @@ class Profile(AsyncModel):
     __collection__ = "profiles"
 
     name: Optional[str] = ""
-    email: Optional[str] = None
     photo_url: Optional[str] = None
 
     class Config:

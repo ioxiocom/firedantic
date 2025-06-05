@@ -480,7 +480,7 @@ def test_save_with_exclude_none(configure_db) -> None:
     document = Profile._get_col_ref().document(document_id).get()
 
     data = document.to_dict()
-    assert data == {"name": "Foo", "email": None, "photo_url": None}
+    assert data == {"name": "Foo", "photo_url": None}
 
 
 def test_save_with_exclude_unset(configure_db) -> None:
@@ -501,7 +501,7 @@ def test_save_with_exclude_unset(configure_db) -> None:
     document = Profile._get_col_ref().document(document_id).get()
 
     data = document.to_dict()
-    assert data == {"name": "", "email": None, "photo_url": None}
+    assert data == {"name": "", "photo_url": None}
 
 
 def test_update_city_in_transaction(configure_db) -> None:
