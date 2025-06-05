@@ -7,8 +7,7 @@ from google.cloud.firestore_v1.async_transaction import AsyncTransaction
 from pydantic import Field, ValidationError
 
 import firedantic.operators as op
-from firedantic import AsyncModel
-from firedantic.configurations import CONFIGURATIONS
+from firedantic import AsyncModel, get_async_transaction
 from firedantic.exceptions import (
     CollectionNotDefined,
     InvalidDocumentID,
@@ -549,26 +548,21 @@ async def test_update_city_in_transaction(configure_db) -> None:
     """
 
     @async_transactional
-    async def update_in_transaction(transaction, city_ref) -> City:
-        """
-        Updates a City in a transaction
-
-        :param transaction: Firestore Transaction
-        :param city_ref: City reference
-        :return: City
-        """
-        city = await City.get_by_id(city_ref, transaction=transaction)
-        city.population += 1
+    async def decrement_population(
+        transaction: AsyncTransaction, city: City, decrement: int = 1
+    ):
+        await city.reload(transaction=transaction)
+        city.population = max(0, city.population - decrement)
         await city.save(transaction=transaction)
-        return city
 
     c = City(id="SF", population=1)
+    await c.save()
+    await c.increment_population(increment=1)
+    assert c.population == 2
 
-    transaction = CONFIGURATIONS["db"].transaction()
-    city = await update_in_transaction(transaction, c.id)
-    assert isinstance(city, City)
-    assert city.id == "SF"
-    assert city.population == 2
+    t = get_async_transaction()
+    await decrement_population(transaction=t, city=c, decrement=5)
+    assert c.population == 0
 
 
 @pytest.mark.asyncio
@@ -582,20 +576,17 @@ async def test_delete_in_transaction(configure_db) -> None:
     @async_transactional  # type: ignore
     async def delete_in_transaction(
         transaction: AsyncTransaction, profile_id: str
-    ) -> str:
+    ) -> None:
         """Deletes a Profile in a transaction."""
         profile = await Profile.get_by_id(profile_id, transaction=transaction)
         await profile.delete(transaction=transaction)
-        return profile_id
 
     p = Profile(name="Foo")
     await p.save()
     assert p.id
 
-    transaction = CONFIGURATIONS["db"].transaction()
-    result = await delete_in_transaction(transaction, p.id)
-    assert isinstance(result, dict)
-    assert result == p.id
+    t = get_async_transaction()
+    await delete_in_transaction(t, p.id)
 
     with pytest.raises(ModelNotFoundError):
         await Profile.get_by_id(p.id)
@@ -612,24 +603,20 @@ async def test_update_model_in_transaction(configure_db) -> None:
     @async_transactional  # type: ignore
     async def update_in_transaction(
         transaction: AsyncTransaction, profile_id: str, name: str
-    ) -> Profile:
+    ) -> None:
         """Updates a Profile in a transaction."""
         profile = Profile(id=profile_id)
         await profile.reload(transaction=transaction)
         profile.name = name
         await profile.save(transaction=transaction)
-        return profile
 
     p = Profile(name="Foo")
     await p.save()
-    assert p.id
 
-    transaction = CONFIGURATIONS["db"].transaction()
-    result = await update_in_transaction(transaction, p.id, "Bar")
-    assert isinstance(result, Profile)
-    await result.reload()
-    assert result.id == p.id
-    assert result.name == "Bar"
+    t = get_async_transaction()
+    await update_in_transaction(t, p.id, name="Bar")
+    await p.reload()
+    assert p.name == "Bar"
 
 
 @pytest.mark.asyncio
@@ -658,8 +645,8 @@ async def test_update_submodel_in_transaction(configure_db) -> None:
     us = UserStats.model_for(u)
     await us(id="2021", purchases=42).save()  # pylint: disable=no-member
 
-    transaction = CONFIGURATIONS["db"].transaction()
-    user_stats = await update_submodel_in_transaction(transaction, u.id, "2021")
+    t = get_async_transaction()
+    user_stats = await update_submodel_in_transaction(t, u.id, "2021")
     assert isinstance(user_stats, UserStats)
     assert user_stats.purchases == 43
     assert await get_user_purchases(u.id) == 43

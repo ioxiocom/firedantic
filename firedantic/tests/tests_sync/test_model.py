@@ -7,8 +7,7 @@ from google.cloud.firestore_v1.transaction import Transaction
 from pydantic import Field, ValidationError
 
 import firedantic.operators as op
-from firedantic import Model
-from firedantic.configurations import CONFIGURATIONS
+from firedantic import Model, get_transaction
 from firedantic.exceptions import (
     CollectionNotDefined,
     InvalidDocumentID,
@@ -513,26 +512,19 @@ def test_update_city_in_transaction(configure_db) -> None:
     """
 
     @transactional
-    def update_in_transaction(transaction, city_ref) -> City:
-        """
-        Updates a City in a transaction
-
-        :param transaction: Firestore Transaction
-        :param city_ref: City reference
-        :return: City
-        """
-        city = City.get_by_id(city_ref, transaction=transaction)
-        city.population += 1
+    def decrement_population(transaction: Transaction, city: City, decrement: int = 1):
+        city.reload(transaction=transaction)
+        city.population = max(0, city.population - decrement)
         city.save(transaction=transaction)
-        return city
 
     c = City(id="SF", population=1)
+    c.save()
+    c.increment_population(increment=1)
+    assert c.population == 2
 
-    transaction = CONFIGURATIONS["db"].transaction()
-    city = update_in_transaction(transaction, c.id)
-    assert isinstance(city, City)
-    assert city.id == "SF"
-    assert city.population == 2
+    t = get_transaction()
+    decrement_population(transaction=t, city=c, decrement=5)
+    assert c.population == 0
 
 
 def test_delete_in_transaction(configure_db) -> None:
@@ -543,20 +535,17 @@ def test_delete_in_transaction(configure_db) -> None:
     """
 
     @transactional  # type: ignore
-    def delete_in_transaction(transaction: Transaction, profile_id: str) -> str:
+    def delete_in_transaction(transaction: Transaction, profile_id: str) -> None:
         """Deletes a Profile in a transaction."""
         profile = Profile.get_by_id(profile_id, transaction=transaction)
         profile.delete(transaction=transaction)
-        return profile_id
 
     p = Profile(name="Foo")
     p.save()
     assert p.id
 
-    transaction = CONFIGURATIONS["db"].transaction()
-    result = delete_in_transaction(transaction, p.id)
-    assert isinstance(result, dict)
-    assert result == p.id
+    t = get_transaction()
+    delete_in_transaction(t, p.id)
 
     with pytest.raises(ModelNotFoundError):
         Profile.get_by_id(p.id)
@@ -572,24 +561,20 @@ def test_update_model_in_transaction(configure_db) -> None:
     @transactional  # type: ignore
     def update_in_transaction(
         transaction: Transaction, profile_id: str, name: str
-    ) -> Profile:
+    ) -> None:
         """Updates a Profile in a transaction."""
         profile = Profile(id=profile_id)
         profile.reload(transaction=transaction)
         profile.name = name
         profile.save(transaction=transaction)
-        return profile
 
     p = Profile(name="Foo")
     p.save()
-    assert p.id
 
-    transaction = CONFIGURATIONS["db"].transaction()
-    result = update_in_transaction(transaction, p.id, "Bar")
-    assert isinstance(result, Profile)
-    result.reload()
-    assert result.id == p.id
-    assert result.name == "Bar"
+    t = get_transaction()
+    update_in_transaction(t, p.id, name="Bar")
+    p.reload()
+    assert p.name == "Bar"
 
 
 def test_update_submodel_in_transaction(configure_db) -> None:
@@ -617,8 +602,8 @@ def test_update_submodel_in_transaction(configure_db) -> None:
     us = UserStats.model_for(u)
     us(id="2021", purchases=42).save()  # pylint: disable=no-member
 
-    transaction = CONFIGURATIONS["db"].transaction()
-    user_stats = update_submodel_in_transaction(transaction, u.id, "2021")
+    t = get_transaction()
+    user_stats = update_submodel_in_transaction(t, u.id, "2021")
     assert isinstance(user_stats, UserStats)
     assert user_stats.purchases == 43
     assert get_user_purchases(u.id) == 43

@@ -5,7 +5,7 @@ from typing import Any, List, Optional, Type
 import google.auth.credentials
 import pytest
 from google.cloud.firestore_admin_v1 import Field, FirestoreAdminClient
-from google.cloud.firestore_v1 import AsyncClient
+from google.cloud.firestore_v1 import AsyncClient, AsyncTransaction, async_transactional
 from pydantic import BaseModel, PrivateAttr
 
 from firedantic import (
@@ -16,7 +16,7 @@ from firedantic import (
     AsyncSubCollection,
     AsyncSubModel,
 )
-from firedantic.configurations import configure
+from firedantic.configurations import configure, get_async_transaction
 from firedantic.exceptions import ModelNotFoundError
 
 from unittest.mock import AsyncMock, Mock  # noqa isort: skip
@@ -56,10 +56,20 @@ class CustomIDConflictModel(AsyncModel):
 
 
 class City(AsyncModel):
-    """Dummy city Firedantic model."""
+    """City model used for test with transactions"""
 
     __collection__ = "cities"
     population: int
+
+    async def increment_population(self, increment: int = 1):
+        @async_transactional
+        async def _increment_population(transaction: AsyncTransaction) -> None:
+            await self.reload(transaction=transaction)
+            self.population += increment
+            await self.save(transaction=transaction)
+
+        t = get_async_transaction()
+        await _increment_population(transaction=t)
 
 
 class Owner(BaseModel):

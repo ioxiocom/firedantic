@@ -5,7 +5,7 @@ from typing import Any, List, Optional, Type
 import google.auth.credentials
 import pytest
 from google.cloud.firestore_admin_v1 import Field, FirestoreAdminClient
-from google.cloud.firestore_v1 import Client
+from google.cloud.firestore_v1 import Client, Transaction, transactional
 from pydantic import BaseModel, PrivateAttr
 
 from firedantic import (
@@ -16,7 +16,7 @@ from firedantic import (
     SubCollection,
     SubModel,
 )
-from firedantic.configurations import configure
+from firedantic.configurations import configure, get_transaction
 from firedantic.exceptions import ModelNotFoundError
 
 from unittest.mock import Mock, Mock  # noqa isort: skip
@@ -56,10 +56,20 @@ class CustomIDConflictModel(Model):
 
 
 class City(Model):
-    """Dummy city Firedantic model."""
+    """City model used for test with transactions"""
 
     __collection__ = "cities"
     population: int
+
+    def increment_population(self, increment: int = 1):
+        @transactional
+        def _increment_population(transaction: Transaction) -> None:
+            self.reload(transaction=transaction)
+            self.population += increment
+            self.save(transaction=transaction)
+
+        t = get_transaction()
+        _increment_population(transaction=t)
 
 
 class Owner(BaseModel):

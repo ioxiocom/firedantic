@@ -5,6 +5,7 @@ import re
 from pathlib import Path
 
 SUBS = [
+    ("get_async_transaction", "get_transaction"),
     (
         "from google.cloud.firestore_v1.async_transaction",
         "from google.cloud.firestore_v1.transaction",
