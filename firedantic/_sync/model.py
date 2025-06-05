@@ -84,7 +84,7 @@ class BareModel(pydantic.BaseModel, ABC):
 
         :param exclude_unset: Whether to exclude fields that have not been explicitly set.
         :param exclude_none: Whether to exclude fields that have a value of `None`.
-        :param transaction: Optional Transaction to use.
+        :param transaction: Optional transaction to use.
         :raise DocumentIDError: If the document ID is not valid.
         """
         data = self.model_dump(
@@ -115,7 +115,7 @@ class BareModel(pydantic.BaseModel, ABC):
         """
         Reloads this model from the database.
 
-        :param transaction: Optional Transaction to use.
+        :param transaction: Optional transaction to use.
         :raise ModelNotFoundError: If the document ID is missing in the model.
         """
         doc_id = self.__dict__.get(self.__document_id__)
@@ -164,7 +164,7 @@ class BareModel(pydantic.BaseModel, ABC):
         :param order_by: List of columns and direction to order results by.
         :param limit: Maximum results to return.
         :param offset: Skip the first n results.
-        :param transaction: Optional Transaction to use.
+        :param transaction: Optional transaction to use.
         :return: List of found models.
         """
         query: Union[BaseQuery, CollectionReference] = cls._get_col_ref()
@@ -251,7 +251,7 @@ class BareModel(pydantic.BaseModel, ABC):
         Returns a model based on the document ID.
 
         :param doc_id: The document ID of the entry.
-        :param transaction: Optional Transaction to use.
+        :param transaction: Optional transaction to use.
         :return: The model.
         :raise ModelNotFoundError: Raised if no matching document is found.
         """
@@ -364,7 +364,7 @@ class Model(BareModel):
         Get single model by document ID.
 
         :param id_: Document ID.
-        :param transaction: Optional Transaction to use.
+        :param transaction: Optional transaction to use.
         :raises ModelNotFoundError: if no model was found by given id
         """
         return cls.get_by_doc_id(id_, transaction=transaction)
@@ -437,7 +437,7 @@ class SubModel(BareSubModel):
         Get single item by document ID
 
         :param id_: Document ID.
-        :param transaction: Optional Transaction to use.
+        :param transaction: Optional transaction to use.
         :raises ModelNotFoundError:
         """
         return cls.get_by_doc_id(id_, transaction=transaction)
