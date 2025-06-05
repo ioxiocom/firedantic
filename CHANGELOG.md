@@ -7,6 +7,13 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.11.0] - 2025-06-06
+
+### Added
+
+- Support for transactions, a big thanks to `@lukwam` for this! For more details of how
+  to use this, see the new section in the README.
+
 ## [0.10.0] - 2025-02-26
 
 ### Added
@@ -283,7 +290,8 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Update README.md
 - Update .gitignore
 
-[unreleased]: https://github.com/ioxiocom/firedantic/compare/0.10.0...HEAD
+[unreleased]: https://github.com/ioxiocom/firedantic/compare/0.11.0...HEAD
+[0.11.0]: https://github.com/ioxiocom/firedantic/compare/0.10.0...0.11.0
 [0.10.0]: https://github.com/ioxiocom/firedantic/compare/0.9.0...0.10.0
 [0.9.0]: https://github.com/ioxiocom/firedantic/compare/0.8.1...0.9.0
 [0.8.1]: https://github.com/ioxiocom/firedantic/compare/0.8.0...0.8.1
