@@ -366,7 +366,7 @@ class Model(BareModel):
 
         :param id_: Document ID.
         :param transaction: Optional transaction to use.
-        :raises ModelNotFoundError: if no model was found by given id
+        :raises ModelNotFoundError: If no model was found by given id.
         """
         return cls.get_by_doc_id(id_, transaction=transaction)
 
