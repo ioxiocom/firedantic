@@ -534,7 +534,7 @@ def test_delete_in_transaction(configure_db) -> None:
     :param: configure_db: pytest fixture
     """
 
-    @transactional  # type: ignore
+    @transactional
     def delete_in_transaction(transaction: Transaction, profile_id: str) -> None:
         """Deletes a Profile in a transaction."""
         profile = Profile.get_by_id(profile_id, transaction=transaction)
@@ -558,7 +558,7 @@ def test_update_model_in_transaction(configure_db) -> None:
     :param: configure_db: pytest fixture
     """
 
-    @transactional  # type: ignore
+    @transactional
     def update_in_transaction(
         transaction: Transaction, profile_id: str, name: str
     ) -> None:
@@ -584,7 +584,7 @@ def test_update_submodel_in_transaction(configure_db) -> None:
     :param: configure_db: pytest fixture
     """
 
-    @transactional  # type: ignore
+    @transactional
     def update_submodel_in_transaction(
         transaction: Transaction, user_id: str, period: str
     ) -> UserStats:

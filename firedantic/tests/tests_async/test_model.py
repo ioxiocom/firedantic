@@ -573,7 +573,7 @@ async def test_delete_in_transaction(configure_db) -> None:
     :param: configure_db: pytest fixture
     """
 
-    @async_transactional  # type: ignore
+    @async_transactional
     async def delete_in_transaction(
         transaction: AsyncTransaction, profile_id: str
     ) -> None:
@@ -600,7 +600,7 @@ async def test_update_model_in_transaction(configure_db) -> None:
     :param: configure_db: pytest fixture
     """
 
-    @async_transactional  # type: ignore
+    @async_transactional
     async def update_in_transaction(
         transaction: AsyncTransaction, profile_id: str, name: str
     ) -> None:
@@ -627,7 +627,7 @@ async def test_update_submodel_in_transaction(configure_db) -> None:
     :param: configure_db: pytest fixture
     """
 
-    @async_transactional  # type: ignore
+    @async_transactional
     async def update_submodel_in_transaction(
         transaction: AsyncTransaction, user_id: str, period: str
     ) -> UserStats:
