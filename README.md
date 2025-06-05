@@ -337,43 +337,138 @@ The following methods can be used in a transaction:
 
 When using transactions, note that read operations must come before write operations.
 
-### Transaction example
+### Transaction examples
 
-In this example, we are updating a `City` to increase the population by 1.
+In this example (async and sync version of it below), we are updating a `City` to
+increment and decrement the population of it, both using an instance method and a
+standalone function. Please note that the `@async_transactional` and `@transactional`
+decorators always expect the first argument of the wrapped function to be `transaction`;
+i.e. you can not directly wrap an instance method that has `self` as the first argument
+or a class method that has `cls` as the first argument.
+
+#### Transaction example (async)
 
 ```python
-from firedantic import configure
-from google.cloud.firestore import async_transactional
-from google.cloud.firestore import AyncClient
+import asyncio
+from os import environ
+from unittest.mock import Mock
 
-client = AsyncClient()
-configure(client)
+import google.auth.credentials
+from google.cloud.firestore import AsyncClient
+from google.cloud.firestore_v1 import async_transactional, AsyncTransaction
+
+from firedantic import AsyncModel, configure, get_async_transaction
+
+# Firestore emulator must be running if using locally.
+if environ.get("FIRESTORE_EMULATOR_HOST"):
+    client = AsyncClient(
+        project="firedantic-test",
+        credentials=Mock(spec=google.auth.credentials.Credentials),
+    )
+else:
+    client = AsyncClient()
+
+configure(client, prefix="firedantic-test-")
 
 
 class City(AsyncModel):
     __collection__ = "cities"
     population: int
 
+    async def increment_population(self, increment: int = 1):
+        @async_transactional
+        async def _increment_population(transaction: AsyncTransaction) -> None:
+            await self.reload(transaction=transaction)
+            self.population += increment
+            await self.save(transaction=transaction)
 
-@async_transactional
-async def update_in_transaction(transaction, city_ref) -> City:
-    """
-    Updates a City in a transaction
-
-    :param transaction: Firestore Transaction
-    :param city_ref: City reference
-    :return: City
-    """
-    city = await City.get_by_id(city_ref, transaction=transaction)
-    city.population += 1
-    await city.save(transaction=transaction)
-    return city
+        t = get_async_transaction()
+        await _increment_population(transaction=t)
 
 
-transaction = client.transaction()
-city = await update_in_transaction(transaction, "SF")
-assert isinstance(city, City)
-assert city.id == "SF"
+async def main():
+    @async_transactional
+    async def decrement_population(
+        transaction: AsyncTransaction, city: City, decrement: int = 1
+    ):
+        await city.reload(transaction=transaction)
+        city.population = max(0, city.population - decrement)
+        await city.save(transaction=transaction)
+
+    c = City(id="SF", population=1)
+    await c.save()
+    await c.increment_population(increment=1)
+    assert c.population == 2
+
+    t = get_async_transaction()
+    await decrement_population(transaction=t, city=c, decrement=5)
+    assert c.population == 0
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+#### Transaction example (sync)
+
+```python
+from os import environ
+from unittest.mock import Mock
+
+import google.auth.credentials
+from google.cloud.firestore import Client
+from google.cloud.firestore_v1 import transactional, Transaction
+
+from firedantic import Model, configure, get_transaction
+
+# Firestore emulator must be running if using locally.
+if environ.get("FIRESTORE_EMULATOR_HOST"):
+    client = Client(
+        project="firedantic-test",
+        credentials=Mock(spec=google.auth.credentials.Credentials),
+    )
+else:
+    client = Client()
+
+configure(client, prefix="firedantic-test-")
+
+
+class City(Model):
+    __collection__ = "cities"
+    population: int
+
+    def increment_population(self, increment: int = 1):
+        @transactional
+        def _increment_population(transaction: Transaction) -> None:
+            self.reload(transaction=transaction)
+            self.population += increment
+            self.save(transaction=transaction)
+
+        t = get_transaction()
+        _increment_population(transaction=t)
+
+
+def main():
+    @transactional
+    def decrement_population(
+        transaction: Transaction, city: City, decrement: int = 1
+    ):
+        city.reload(transaction=transaction)
+        city.population = max(0, city.population - decrement)
+        city.save(transaction=transaction)
+
+    c = City(id="SF", population=1)
+    c.save()
+    c.increment_population(increment=1)
+    assert c.population == 2
+
+    t = get_transaction()
+    decrement_population(transaction=t, city=c, decrement=5)
+    assert c.population == 0
+
+
+if __name__ == "__main__":
+    main()
 ```
 
 ## Development
