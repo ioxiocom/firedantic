@@ -216,9 +216,10 @@ class BareModel(pydantic.BaseModel, ABC):
                 _filter = FieldFilter(field, f_type, value[f_type])
                 query: BaseQuery = query.where(filter=_filter)  # type: ignore
             return query
-        _filter = FieldFilter(field, "==", value)
-        query: BaseQuery = query.where(filter=_filter)  # type: ignore
-        return query
+        else:
+            _filter = FieldFilter(field, "==", value)
+            query: BaseQuery = query.where(filter=_filter)  # type: ignore
+            return query
 
     @classmethod
     def find_one(

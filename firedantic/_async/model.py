@@ -216,9 +216,10 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
                 _filter = FieldFilter(field, f_type, value[f_type])
                 query: AsyncQuery = query.where(filter=_filter)  # type: ignore
             return query
-        _filter = FieldFilter(field, "==", value)
-        query: AsyncQuery = query.where(filter=_filter)  # type: ignore
-        return query
+        else:
+            _filter = FieldFilter(field, "==", value)
+            query: AsyncQuery = query.where(filter=_filter)  # type: ignore
+            return query
 
     @classmethod
     async def find_one(
