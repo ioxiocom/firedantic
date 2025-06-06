@@ -5,8 +5,8 @@ from typing import Any, List, Optional, Type
 import google.auth.credentials
 import pytest
 from google.cloud.firestore_admin_v1 import Field, FirestoreAdminClient
-from google.cloud.firestore_v1 import AsyncClient
-from pydantic import BaseModel, Extra, PrivateAttr
+from google.cloud.firestore_v1 import AsyncClient, AsyncTransaction, async_transactional
+from pydantic import BaseModel, PrivateAttr
 
 from firedantic import (
     AsyncBareModel,
@@ -16,7 +16,7 @@ from firedantic import (
     AsyncSubCollection,
     AsyncSubModel,
 )
-from firedantic.configurations import configure
+from firedantic.configurations import configure, get_async_transaction
 from firedantic.exceptions import ModelNotFoundError
 
 from unittest.mock import AsyncMock, Mock  # noqa isort: skip
@@ -30,7 +30,7 @@ class CustomIDModel(AsyncBareModel):
     bar: str
 
     class Config:
-        extra = Extra.forbid
+        extra = "forbid"
 
 
 class CustomIDModelExtra(AsyncBareModel):
@@ -42,7 +42,7 @@ class CustomIDModelExtra(AsyncBareModel):
     baz: str
 
     class Config:
-        extra = Extra.forbid
+        extra = "forbid"
 
 
 class CustomIDConflictModel(AsyncModel):
@@ -52,7 +52,24 @@ class CustomIDConflictModel(AsyncModel):
     bar: str
 
     class Config:
-        extra = Extra.forbid
+        extra = "forbid"
+
+
+class City(AsyncModel):
+    """City model used for test with transactions"""
+
+    __collection__ = "cities"
+    population: int
+
+    async def increment_population(self, increment: int = 1):
+        @async_transactional
+        async def _increment_population(transaction: AsyncTransaction) -> None:
+            await self.reload(transaction=transaction)
+            self.population += increment
+            await self.save(transaction=transaction)
+
+        t = get_async_transaction()
+        await _increment_population(transaction=t)
 
 
 class Owner(BaseModel):
@@ -62,7 +79,7 @@ class Owner(BaseModel):
     last_name: str
 
     class Config:
-        extra = Extra.forbid
+        extra = "forbid"
 
 
 class CompanyStats(AsyncBareSubModel):
@@ -99,7 +116,7 @@ class Company(AsyncModel):
     owner: Owner
 
     class Config:
-        extra = Extra.forbid
+        extra = "forbid"
 
     def stats(self) -> Type[CompanyStats]:
         return CompanyStats.model_for(self)  # type: ignore
@@ -115,7 +132,7 @@ class Product(AsyncModel):
     stock: int
 
     class Config:
-        extra = Extra.forbid
+        extra = "forbid"
 
 
 class Profile(AsyncModel):
@@ -127,7 +144,7 @@ class Profile(AsyncModel):
     photo_url: Optional[str] = None
 
     class Config:
-        extra = Extra.forbid
+        extra = "forbid"
 
 
 class TodoList(AsyncModel):
@@ -139,7 +156,7 @@ class TodoList(AsyncModel):
     items: List[str]
 
     class Config:
-        extra = Extra.forbid
+        extra = "forbid"
 
 
 class ExpiringModel(AsyncModel):

@@ -5,8 +5,8 @@ from typing import Any, List, Optional, Type
 import google.auth.credentials
 import pytest
 from google.cloud.firestore_admin_v1 import Field, FirestoreAdminClient
-from google.cloud.firestore_v1 import Client
-from pydantic import BaseModel, Extra, PrivateAttr
+from google.cloud.firestore_v1 import Client, Transaction, transactional
+from pydantic import BaseModel, PrivateAttr
 
 from firedantic import (
     BareModel,
@@ -16,7 +16,7 @@ from firedantic import (
     SubCollection,
     SubModel,
 )
-from firedantic.configurations import configure
+from firedantic.configurations import configure, get_transaction
 from firedantic.exceptions import ModelNotFoundError
 
 from unittest.mock import Mock, Mock  # noqa isort: skip
@@ -30,7 +30,7 @@ class CustomIDModel(BareModel):
     bar: str
 
     class Config:
-        extra = Extra.forbid
+        extra = "forbid"
 
 
 class CustomIDModelExtra(BareModel):
@@ -42,7 +42,7 @@ class CustomIDModelExtra(BareModel):
     baz: str
 
     class Config:
-        extra = Extra.forbid
+        extra = "forbid"
 
 
 class CustomIDConflictModel(Model):
@@ -52,7 +52,24 @@ class CustomIDConflictModel(Model):
     bar: str
 
     class Config:
-        extra = Extra.forbid
+        extra = "forbid"
+
+
+class City(Model):
+    """City model used for test with transactions"""
+
+    __collection__ = "cities"
+    population: int
+
+    def increment_population(self, increment: int = 1):
+        @transactional
+        def _increment_population(transaction: Transaction) -> None:
+            self.reload(transaction=transaction)
+            self.population += increment
+            self.save(transaction=transaction)
+
+        t = get_transaction()
+        _increment_population(transaction=t)
 
 
 class Owner(BaseModel):
@@ -62,7 +79,7 @@ class Owner(BaseModel):
     last_name: str
 
     class Config:
-        extra = Extra.forbid
+        extra = "forbid"
 
 
 class CompanyStats(BareSubModel):
@@ -99,7 +116,7 @@ class Company(Model):
     owner: Owner
 
     class Config:
-        extra = Extra.forbid
+        extra = "forbid"
 
     def stats(self) -> Type[CompanyStats]:
         return CompanyStats.model_for(self)  # type: ignore
@@ -115,7 +132,7 @@ class Product(Model):
     stock: int
 
     class Config:
-        extra = Extra.forbid
+        extra = "forbid"
 
 
 class Profile(Model):
@@ -127,7 +144,7 @@ class Profile(Model):
     photo_url: Optional[str] = None
 
     class Config:
-        extra = Extra.forbid
+        extra = "forbid"
 
 
 class TodoList(Model):
@@ -139,7 +156,7 @@ class TodoList(Model):
     items: List[str]
 
     class Config:
-        extra = Extra.forbid
+        extra = "forbid"
 
 
 class ExpiringModel(Model):

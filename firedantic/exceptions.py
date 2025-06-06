@@ -1,16 +1,14 @@
 class ModelError(Exception):
     """Generic model error class."""
 
-    pass
-
 
 class InvalidDocumentID(ModelError):
-    pass
+    """Raised when a document ID is invalid."""
 
 
 class ModelNotFoundError(ModelError):
-    pass
+    """Raised when a model is not found."""
 
 
 class CollectionNotDefined(ModelError):
-    pass
+    """Raised when the model collection is not defined."""

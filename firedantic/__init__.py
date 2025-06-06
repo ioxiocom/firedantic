@@ -32,6 +32,11 @@ from firedantic._sync.model import (
 )
 from firedantic._sync.ttl_policy import set_up_ttl_policies
 from firedantic.common import collection_group_index, collection_index
-from firedantic.configurations import CONFIGURATIONS, configure
+from firedantic.configurations import (
+    CONFIGURATIONS,
+    configure,
+    get_async_transaction,
+    get_transaction,
+)
 from firedantic.exceptions import *
 from firedantic.utils import get_all_subclasses
