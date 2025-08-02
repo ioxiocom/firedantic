@@ -144,7 +144,7 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
     @classmethod
     async def find(  # pylint: disable=too-many-arguments
         cls: Type[TAsyncBareModel],
-        filter_: Optional[Dict[str, Union[str, dict]]] = None,
+        filter_: Optional[Dict[str, Union[str, int, float, bool, dict]]] = None,
         order_by: Optional[_OrderBy] = None,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
@@ -224,7 +224,7 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
     @classmethod
     async def find_one(
         cls: Type[TAsyncBareModel],
-        filter_: Optional[Dict[str, Union[str, dict]]] = None,
+        filter_: Optional[Dict[str, Union[str, int, float, bool, dict]]] = None,
         order_by: Optional[_OrderBy] = None,
         transaction: Optional[AsyncTransaction] = None,
     ) -> TAsyncBareModel:
