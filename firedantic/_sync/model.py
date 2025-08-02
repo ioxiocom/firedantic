@@ -236,9 +236,7 @@ class BareModel(pydantic.BaseModel, ABC):
         :return: The model instance.
         :raise ModelNotFoundError: If the entry is not found.
         """
-        model = cls.find(
-            filter_, limit=1, order_by=order_by, transaction=transaction
-        )
+        model = cls.find(filter_, limit=1, order_by=order_by, transaction=transaction)
         try:
             return model[0]
         except IndexError as e:
