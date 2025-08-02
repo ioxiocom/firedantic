@@ -144,7 +144,7 @@ class BareModel(pydantic.BaseModel, ABC):
     @classmethod
     def find(  # pylint: disable=too-many-arguments
         cls: Type[TBareModel],
-        filter_: Optional[Dict[str, Union[str, dict]]] = None,
+        filter_: Optional[Dict[str, Union[str, int, float, bool, dict]]] = None,
         order_by: Optional[_OrderBy] = None,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
@@ -224,7 +224,7 @@ class BareModel(pydantic.BaseModel, ABC):
     @classmethod
     def find_one(
         cls: Type[TBareModel],
-        filter_: Optional[Dict[str, Union[str, dict]]] = None,
+        filter_: Optional[Dict[str, Union[str, int, float, bool, dict]]] = None,
         order_by: Optional[_OrderBy] = None,
         transaction: Optional[Transaction] = None,
     ) -> TBareModel:
