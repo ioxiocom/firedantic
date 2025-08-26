@@ -32,7 +32,7 @@ def get_client(proj, creds) -> Union[Client, AsyncClient]:
     return client
 
 
-# Allow configure to work as it was for backwards compatibility.
+# Allow configure method to work as it was for backwards compatibility.
 def configure(
     db: Union[Client, AsyncClient] = None,
     prefix: str = "",
@@ -53,20 +53,20 @@ def configure(
     CONFIGURATIONS["(default)"].prefix = prefix
 
 
-def get_transaction() -> Transaction:
+def get_transaction(config: str = "(default)") -> Transaction:
     """
     Get a new Firestore transaction for the configured client.
     """
-    transaction = CONFIGURATIONS["(default)"].client.transaction()
+    transaction = CONFIGURATIONS[config].client.transaction()
     assert isinstance(transaction, Transaction)
     return transaction
 
 
-def get_async_transaction() -> AsyncTransaction:
+def get_async_transaction(config: str = "(default)") -> AsyncTransaction:
     """
     Get a new async Firestore transaction for the configured client.
     """
-    transaction = CONFIGURATIONS["(default)"].async_client.transaction()
+    transaction = CONFIGURATIONS[config].async_client.transaction()
     assert isinstance(transaction, AsyncTransaction)
     return transaction
 
