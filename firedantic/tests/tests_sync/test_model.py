@@ -97,6 +97,12 @@ def test_find(configure_db, create_company, create_product) -> None:
     d = Company.find({"owner.first_name": "John"})
     assert len(d) == 4
 
+    d = Company.find({"owner.first_name": {op.EQ: "John"}})
+    assert len(d) == 4
+
+    d = Company.find({"owner.first_name": {"==": "John"}})
+    assert len(d) == 4
+
     for p in TEST_PRODUCTS:
         create_product(**p)
 
