@@ -41,7 +41,7 @@ FIND_TYPES = {
 }
 
 
-def get_collection_name(cls, name: Optional[str]) -> str:
+def get_collection_name(cls, name: Optional[str], config: str = "(default)") -> str:
     """
     Returns the collection name.
 
@@ -50,12 +50,12 @@ def get_collection_name(cls, name: Optional[str]) -> str:
     if not name:
         raise CollectionNotDefined(f"Missing collection name for {cls.__name__}")
 
-    return f"{CONFIGURATIONS[name].prefix}{name}"
+    return f"{CONFIGURATIONS[config].prefix}{name}"
 
 
-def _get_col_ref(cls, name: Optional[str]) -> AsyncCollectionReference:
-    collection: AsyncCollectionReference = CONFIGURATIONS[name].async_client.collection(
-        get_collection_name(cls, name)
+def _get_col_ref(cls, name: Optional[str], config: str = "(default)") -> AsyncCollectionReference:
+    collection: AsyncCollectionReference = CONFIGURATIONS[config].async_client.collection(
+        get_collection_name(cls, name, config)
     )
     return collection
 

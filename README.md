@@ -514,11 +514,25 @@ Set the host:
 export FIRESTORE_EMULATOR_HOST=<host port>
 ```
 
-Then run poetry:
+Setup a virtual environment(not required but will be easier to run poetry like so):
+
+```bash
+python -m venv firedantic
+source firedantic/bin/activate
+cd firedantic/tests
+```
+
+Then run poetry within `tests` directory:
 
 ```bash
 poetry install
 poetry run invoke test
+```
+
+to run a singular test:
+
+```bash
+poetry run pytest tests_sync/<test_file_name>.py::<test_name>
 ```
 
 \*Note, the emulator must be set and running for all tests to pass.
