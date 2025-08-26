@@ -475,12 +475,14 @@ if __name__ == "__main__":
 
 PRs are welcome!
 
-To run tests locally, you should run:
+### Prequisites:
 
-```bash
-poetry install
-poetry run invoke test
-```
+- [pipx](https://pipx.pypa.io/stable/installation/) (to install poetry, if needed)
+- `pipx install poetry`
+- `pip install pre-commit`
+- [nvm](https://github.com/nvm-sh/nvm)
+- `npm` (for firebase CLI installation)
+- [java](http://www.java.com) via `brew install openjdk@21`
 
 ### Running Firestore emulator
 
@@ -501,6 +503,25 @@ Run the Firestore emulator with a predictable port:
 # or on Windows run the .bat file
 start_emulator
 ```
+
+### Tests
+
+To run tests locally, you should first:
+
+Set the host:
+
+```bash
+export FIRESTORE_EMULATOR_HOST=<host port>
+```
+
+Then run poetry:
+
+```bash
+poetry install
+poetry run invoke test
+```
+
+\*Note, the emulator must be set and running for all tests to pass.
 
 ### About sync and async versions of library
 

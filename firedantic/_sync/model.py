@@ -50,11 +50,11 @@ def get_collection_name(cls, name: Optional[str]) -> str:
     if not name:
         raise CollectionNotDefined(f"Missing collection name for {cls.__name__}")
 
-    return f"{CONFIGURATIONS['prefix']}{name}"
+    return f"{CONFIGURATIONS[name].prefix}{name}"
 
 
-def _get_col_ref(cls, name: Optional[str]) -> CollectionReference:
-    collection: CollectionReference = CONFIGURATIONS["db"].collection(
+def _get_col_ref(cls, name: Optional[str] = "(default)") -> CollectionReference:
+    collection: CollectionReference = CONFIGURATIONS[name].client.collection(
         get_collection_name(cls, name)
     )
     return collection

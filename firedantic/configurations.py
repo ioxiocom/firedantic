@@ -1,35 +1,112 @@
-from typing import Any, Dict, Union
+from os import environ
+from typing import Dict, Optional, Union
 
+from google.auth.credentials import Credentials
 from google.cloud.firestore_v1 import AsyncClient, AsyncTransaction, Client, Transaction
+from pydantic import BaseModel
 
-CONFIGURATIONS: Dict[str, Any] = {}
+
+# for added support of multiple configurations/clients
+class ConfigItem(BaseModel):
+    prefix: str
+    project: str
+    credentials: Optional[Credentials] = None
+    client: Optional[Client] = None
+    async_client: Optional[AsyncClient] = None
+
+    class Config:
+        arbitrary_types_allowed = True
 
 
-def configure(db: Union[Client, AsyncClient], prefix: str = "") -> None:
+# updating CONFIGURATIONS dict to be able to contain many/multiple configurations
+CONFIGURATIONS: Dict[str, ConfigItem] = {}
+
+
+def get_client(proj, creds) -> Union[Client, AsyncClient]:
+    # Firestore emulator must be running if using locally.
+    if environ.get("FIRESTORE_EMULATOR_HOST"):
+        client = Client(project=proj, credentials=creds)
+    else:
+        client = Client()
+
+    return client
+
+
+# Allow configure to work as it was for backwards compatibility.
+def configure(
+    db: Union[Client, AsyncClient] = None,
+    prefix: str = "",
+) -> None:
     """Configures the prefix and DB.
 
     :param db: The firestore client instance.
     :param prefix: The prefix to use for collection names.
     """
     global CONFIGURATIONS
+    CONFIGURATIONS["(default)"] = ConfigItem
 
-    CONFIGURATIONS["db"] = db
-    CONFIGURATIONS["prefix"] = prefix
+    if isinstance(db, Client):
+        CONFIGURATIONS["(default)"].client = db
+    elif isinstance(db, AsyncClient):
+        CONFIGURATIONS["(default)"].async_client = db
+    # otherwise gets set to None by default
+    CONFIGURATIONS["(default)"].prefix = prefix
 
 
 def get_transaction() -> Transaction:
     """
-    Get a new Firestore transaction for the configured DB.
+    Get a new Firestore transaction for the configured client.
     """
-    transaction = CONFIGURATIONS["db"].transaction()
+    transaction = CONFIGURATIONS["(default)"].client.transaction()
     assert isinstance(transaction, Transaction)
     return transaction
 
 
 def get_async_transaction() -> AsyncTransaction:
     """
-    Get a new Firestore transaction for the configured DB.
+    Get a new async Firestore transaction for the configured client.
     """
-    transaction = CONFIGURATIONS["db"].transaction()
+    transaction = CONFIGURATIONS["(default)"].async_client.transaction()
     assert isinstance(transaction, AsyncTransaction)
     return transaction
+
+
+class Configuration:
+    def __init__(self):
+        self.configurations: Dict[str, ConfigItem] = {}
+
+    def create(
+        self,
+        name: str = "(default)",
+        prefix: str = "",
+        project: str = "",
+        credentials: Credentials = None,
+    ) -> None:
+        self.configurations[name] = ConfigItem(
+            prefix=prefix,
+            project=project,
+            credentials=credentials,
+            client=Client(
+                project=project,
+                credentials=credentials,
+            ),
+            async_client=AsyncClient(
+                project=project,
+                credentials=credentials,
+            ),
+        )
+        # add to global CONFIGURATIONS
+        global CONFIGURATIONS
+        CONFIGURATIONS[name] = self.configurations[name]
+
+    def get_client(self, name: str = "(default)") -> Client:
+        return self.configurations[name].client
+
+    def get_async_client(self, name: str = "(default)") -> AsyncClient:
+        return self.configurations[name].async_client
+
+    def get_transaction(self, name: str = "(default)") -> Transaction:
+        return self.get_client(name=name).transaction()
+
+    def get_async_transaction(self, name: str = "(default)") -> AsyncTransaction:
+        return self.get_async_client(name=name).transaction()

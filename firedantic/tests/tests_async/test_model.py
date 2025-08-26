@@ -103,6 +103,12 @@ async def test_find(configure_db, create_company, create_product) -> None:
     d = await Company.find({"owner.first_name": "John"})
     assert len(d) == 4
 
+    d = await Company.find({"owner.first_name": {op.EQ: "John"}})
+    assert len(d) == 4
+
+    d = await Company.find({"owner.first_name": {"==": "John"}})
+    assert len(d) == 4
+
     for p in TEST_PRODUCTS:
         await create_product(**p)
 
