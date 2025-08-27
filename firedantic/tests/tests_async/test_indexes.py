@@ -48,7 +48,7 @@ async def test_set_up_composite_index(mock_admin_client) -> None:
     path = call_list[0][1]["request"].parent
     assert (
         path
-        == f"projects/proj/databases/(default)/collectionGroups/{CONFIGURATIONS['prefix']}modelWithIndexes"
+        == f"projects/proj/databases/(default)/collectionGroups/{CONFIGURATIONS["(default)"].prefix}modelWithIndexes"
     )
     index = call_list[0][1]["request"].index
     assert index.query_scope.name == "COLLECTION"
@@ -81,7 +81,7 @@ async def test_set_up_collection_group_index(mock_admin_client) -> None:
     path = call_list[0][1]["request"].parent
     assert (
         path
-        == f"projects/proj/databases/(default)/collectionGroups/{CONFIGURATIONS['prefix']}modelWithIndexes"
+        == f"projects/proj/databases/(default)/collectionGroups/{CONFIGURATIONS["(default)"].prefix}modelWithIndexes"
     )
     index = call_list[0][1]["request"].index
     assert index.query_scope.name == "COLLECTION_GROUP"
@@ -165,7 +165,7 @@ async def test_existing_indexes_are_skipped(mock_admin_client) -> None:
                 {
                     "name": (
                         "projects/fake-project/databases/(default)/collectionGroups/"
-                        f"{CONFIGURATIONS['prefix']}modelWithIndexes/123456"
+                        f"{CONFIGURATIONS["(default)"].prefix}modelWithIndexes/123456"
                     ),
                     "query_scope": "COLLECTION",
                     "fields": [
@@ -177,7 +177,7 @@ async def test_existing_indexes_are_skipped(mock_admin_client) -> None:
                 {
                     "name": (
                         "projects/fake-project/databases/(default)/collectionGroups/"
-                        f"{CONFIGURATIONS['prefix']}modelWithIndexes/67889"
+                        f"{CONFIGURATIONS["(default)"].prefix}modelWithIndexes/67889"
                     ),
                     "query_scope": "COLLECTION",
                     "fields": [
@@ -223,7 +223,7 @@ async def test_same_fields_in_another_collection(mock_admin_client) -> None:
                 {
                     "name": (
                         "projects/fake-project/databases/(default)/collectionGroups/"
-                        f"{CONFIGURATIONS['prefix']}anotherModel/123456"
+                        f"{CONFIGURATIONS["(default)"].prefix}anotherModel/123456"
                     ),
                     "query_scope": "COLLECTION",
                     "fields": [
