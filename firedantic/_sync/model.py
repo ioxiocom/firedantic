@@ -102,16 +102,16 @@ class BareModel(pydantic.BaseModel, ABC):
             doc_ref.set(data)
         setattr(self, self.__document_id__, doc_ref.id)
 
-    def delete(self, transaction: Optional[Transaction] = None) -> None:
+    def delete(self, config: str = "(default)", transaction: Optional[Transaction] = None) -> None:
         """
         Deletes this model from the database.
 
         :raise DocumentIDError: If the ID is not valid.
         """
         if transaction is not None:
-            transaction.delete(self._get_doc_ref())
+            transaction.delete(self._get_doc_ref(config))
         else:
-            self._get_doc_ref().delete()
+            self._get_doc_ref(config).delete()
 
     def reload(self, config: str = "(default)", transaction: Optional[Transaction] = None) -> None:
         """
@@ -151,7 +151,7 @@ class BareModel(pydantic.BaseModel, ABC):
         limit: Optional[int] = None,
         offset: Optional[int] = None,
         transaction: Optional[Transaction] = None,
-        config: str = "(default)"
+        config: Optional[str] = "(default)"
     ) -> List[TBareModel]:
         """
         Returns a list of models from the database based on a filter.
@@ -168,9 +168,9 @@ class BareModel(pydantic.BaseModel, ABC):
         :param limit: Maximum results to return.
         :param offset: Skip the first n results.
         :param transaction: Optional transaction to use.
+        :param config: Client configuration to use.
         :return: List of found models.
         """
-        print(f'\nconfig is: {config}')
 
         query: Union[BaseQuery, CollectionReference] = cls._get_col_ref(config)
         if filter_:
@@ -232,6 +232,7 @@ class BareModel(pydantic.BaseModel, ABC):
         filter_: Optional[Dict[str, Union[str, dict]]] = None,
         order_by: Optional[_OrderBy] = None,
         transaction: Optional[Transaction] = None,
+        config: Optional[str] = "(default)"
     ) -> TBareModel:
         """
         Returns one model from the DB based on a filter.
@@ -242,7 +243,7 @@ class BareModel(pydantic.BaseModel, ABC):
         :raise ModelNotFoundError: If the entry is not found.
         """
         model = cls.find(
-            filter_, limit=1, order_by=order_by, transaction=transaction
+            filter_, limit=1, order_by=order_by, transaction=transaction, config=config
         )
         try:
             return model[0]
@@ -291,7 +292,7 @@ class BareModel(pydantic.BaseModel, ABC):
         return model
 
     @classmethod
-    def truncate_collection(cls, batch_size: int = 128) -> int:
+    def truncate_collection(cls, config: str = "(default)", batch_size: int = 128) -> int:
         """
         Removes all documents inside a collection.
 
@@ -299,7 +300,7 @@ class BareModel(pydantic.BaseModel, ABC):
         :return: Number of removed documents.
         """
         return truncate_collection(
-            col_ref=cls._get_col_ref(),
+            col_ref=cls._get_col_ref(config),
             batch_size=batch_size,
         )
 

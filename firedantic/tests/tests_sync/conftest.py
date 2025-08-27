@@ -16,10 +16,10 @@ from firedantic import (
     SubCollection,
     SubModel,
 )
-from firedantic.configurations import configure, get_transaction
+from firedantic.configurations import configure, Configuration, get_transaction
 from firedantic.exceptions import ModelNotFoundError
 
-from unittest.mock import Mock, Mock  # noqa isort: skip
+from unittest.mock import Mock  # noqa isort: skip
 
 
 class CustomIDModel(BareModel):
@@ -61,14 +61,14 @@ class City(Model):
     __collection__ = "cities"
     population: int
 
-    def increment_population(self, increment: int = 1):
+    def increment_population(self, increment: int = 1, config: str = "(default)"):
         @transactional
         def _increment_population(transaction: Transaction) -> None:
-            self.reload(transaction=transaction)
+            self.reload(config=config, transaction=transaction)
             self.population += increment
-            self.save(transaction=transaction)
+            self.save(config=config, transaction=transaction)
 
-        t = get_transaction()
+        t = get_transaction(config)
         _increment_population(transaction=t)
 
 
@@ -170,7 +170,7 @@ class ExpiringModel(Model):
 
 
 @pytest.fixture(autouse=True)
-def configure_db():
+def configure_client():
     client = Client(
         project="ioxio-local-dev",
         credentials=Mock(spec=google.auth.credentials.Credentials),
@@ -178,6 +178,27 @@ def configure_db():
 
     prefix = str(uuid.uuid4()) + "-"
     configure(client, prefix)
+
+@pytest.fixture
+def configure_multiple_clients():
+    config = Configuration()
+    mock_creds = Mock(spec=google.auth.credentials.Credentials)
+
+    # name = (default)
+    config.create(
+        prefix="ioxio-local-dev-",
+        project=str(uuid.uuid4()) + "-",
+        credentials=mock_creds
+    )
+
+    # name = multi
+    config.create(
+        name="multi",
+        prefix="test-multi-",
+        project="test-multi",
+        credentials=mock_creds,
+    )
+
 
 
 @pytest.fixture

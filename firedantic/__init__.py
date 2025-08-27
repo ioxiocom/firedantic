@@ -36,6 +36,7 @@ from firedantic.configurations import (
     CONFIGURATIONS,
     Configuration,
     configure,
+    ConfigItem,
     get_async_transaction,
     get_transaction,
 )
