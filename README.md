@@ -522,15 +522,23 @@ source firedantic/bin/activate
 cd firedantic/tests
 ```
 
-Then run poetry within `tests` directory:
+Run pytests within `tests` directory:
+```bash
+pip install pytest
+pip install pytest-asyncio
+pytest .
+```
+
+Poetry is configured to run on the published version of firedantic and will overwrite changes.
+Not recommended for local development. For public use, poetry is recommended:
+Run poetry within `tests` directory:
 
 ```bash
 poetry install
 poetry run invoke test
 ```
 
-to run a singular test:
-
+To run a singular test:
 ```bash
 poetry run pytest tests_sync/<test_file_name>.py::<test_name>
 ```
