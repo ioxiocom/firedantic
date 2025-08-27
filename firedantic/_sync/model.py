@@ -170,6 +170,8 @@ class BareModel(pydantic.BaseModel, ABC):
         :param transaction: Optional transaction to use.
         :return: List of found models.
         """
+        print(f'\nconfig is: {config}')
+
         query: Union[BaseQuery, CollectionReference] = cls._get_col_ref(config)
         if filter_:
             for key, value in filter_.items():
@@ -413,7 +415,7 @@ class BareSubModel(BareModel, ABC):
         )
 
     @classmethod
-    def _get_col_ref(cls) -> CollectionReference:
+    def _get_col_ref(cls, config: str = "(default)") -> CollectionReference:
         """
         Returns the collection reference.
         """
@@ -422,7 +424,7 @@ class BareSubModel(BareModel, ABC):
                 f"{cls.__name__} is not properly prepared. "
                 f"You should use {cls.__name__}.model_for(parent)"
             )
-        return _get_col_ref(cls.__collection_cls__, cls.__collection__)
+        return _get_col_ref(cls.__collection_cls__, cls.__collection__, config)
 
     @classmethod
     def model_for(cls, parent):
