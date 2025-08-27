@@ -9,7 +9,7 @@ from pydantic import BaseModel
 # for added support of multiple configurations/clients
 class ConfigItem(BaseModel):
     prefix: str
-    project: str
+    project: str = None
     credentials: Optional[Credentials] = None
     client: Optional[Client] = None
     async_client: Optional[AsyncClient] = None
@@ -49,8 +49,8 @@ def configure(
         CONFIGURATIONS["(default)"].client = db
     elif isinstance(db, AsyncClient):
         CONFIGURATIONS["(default)"].async_client = db
-    # otherwise gets set to None by default
     CONFIGURATIONS["(default)"].prefix = prefix
+    # other params get set to None by default
 
 
 def get_transaction(config: str = "(default)") -> Transaction:
