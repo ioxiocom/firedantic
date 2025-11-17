@@ -1,12 +1,41 @@
 from os import environ
-from typing import Dict, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 from google.auth.credentials import Credentials
 from google.cloud.firestore_v1 import AsyncClient, AsyncTransaction, Client, Transaction
 from pydantic import BaseModel
 
+""" Old Way """
+CONFIGURATIONS: Dict[str, Any] = {}
 
-# for added support of multiple configurations/clients
+def configure(client: Union[Client, AsyncClient], prefix: str = "") -> None:
+    """Configures the prefix and DB.
+    :param db: The firestore client instance.
+    :param prefix: The prefix to use for collection names.
+    """
+    global CONFIGURATIONS
+    CONFIGURATIONS["db"] = client
+    CONFIGURATIONS["prefix"] = prefix
+
+
+def get_transaction() -> Transaction:
+    """
+    Get a new Firestore transaction for the configured client.
+    """
+    transaction = CONFIGURATIONS["db"].client.transaction()
+    assert isinstance(transaction, Transaction)
+    return transaction
+
+
+def get_async_transaction() -> AsyncTransaction:
+    """
+    Get a new async Firestore transaction for the configured client.
+    """
+    transaction = CONFIGURATIONS["db"].async_client.transaction()
+    assert isinstance(transaction, AsyncTransaction)
+    return transaction
+
+""" New Way """
 class ConfigItem(BaseModel):
     prefix: str
     project: str = None
@@ -14,99 +43,63 @@ class ConfigItem(BaseModel):
     client: Optional[Client] = None
     async_client: Optional[AsyncClient] = None
 
-    class Config:
-        arbitrary_types_allowed = True
-
-
-# updating CONFIGURATIONS dict to be able to contain many/multiple configurations
-CONFIGURATIONS: Dict[str, ConfigItem] = {}
-
-
-def get_client(proj, creds) -> Union[Client, AsyncClient]:
-    # Firestore emulator must be running if using locally.
-    if environ.get("FIRESTORE_EMULATOR_HOST"):
-        client = Client(project=proj, credentials=creds)
-    else:
-        client = Client()
-
-    return client
-
-
-# Allow configure method to work as it was for backwards compatibility.
-def configure(
-    db: Union[Client, AsyncClient] = None,
-    prefix: str = "",
-) -> None:
-    """Configures the prefix and DB.
-
-    :param db: The firestore client instance.
-    :param prefix: The prefix to use for collection names.
-    """
-    global CONFIGURATIONS
-    CONFIGURATIONS["(default)"] = ConfigItem
-
-    if isinstance(db, Client):
-        CONFIGURATIONS["(default)"].client = db
-    elif isinstance(db, AsyncClient):
-        CONFIGURATIONS["(default)"].async_client = db
-    CONFIGURATIONS["(default)"].prefix = prefix
-    # other params get set to None by default
-
-
-def get_transaction(config: str = "(default)") -> Transaction:
-    """
-    Get a new Firestore transaction for the configured client.
-    """
-    transaction = CONFIGURATIONS[config].client.transaction()
-    assert isinstance(transaction, Transaction)
-    return transaction
-
-
-def get_async_transaction(config: str = "(default)") -> AsyncTransaction:
-    """
-    Get a new async Firestore transaction for the configured client.
-    """
-    transaction = CONFIGURATIONS[config].async_client.transaction()
-    assert isinstance(transaction, AsyncTransaction)
-    return transaction
-
-
 class Configuration:
     def __init__(self):
         self.configurations: Dict[str, ConfigItem] = {}
 
-    def create(
+    """
+    Add a named configuration.
+
+    You may either pass pre-built client and/or async_client,
+    or provide only project/credentials so clients will be constructed here.
+    """
+    def add(
         self,
         name: str = "(default)",
         prefix: str = "",
         project: str = "",
-        credentials: Credentials = None,
-    ) -> None:
-        self.configurations[name] = ConfigItem(
+        credentials: Optional[Credentials] = None,
+        client: Optional[Client] = None,
+        async_client: Optional[AsyncClient] = None,
+    ) -> ConfigItem:
+        # Construct clients only if they were not supplied
+        if client is None:
+            client = Client(project=project, credentials=credentials)
+        if async_client is None:
+            async_client = AsyncClient(project=project, credentials=credentials)
+
+        item = ConfigItem(
             prefix=prefix,
             project=project,
             credentials=credentials,
-            client=Client(
-                project=project,
-                credentials=credentials,
-            ),
-            async_client=AsyncClient(
-                project=project,
-                credentials=credentials,
-            ),
+            client=client,
+            async_client=async_client,
         )
-        # add to global CONFIGURATIONS
-        global CONFIGURATIONS
-        CONFIGURATIONS[name] = self.configurations[name]
+        self.configurations[name] = item
+        return item
+    
+    def get_config(self, name: str = "(default)") -> ConfigItem:
+        try:
+            return self.configurations[name]
+        except KeyError as err:
+            raise KeyError(
+                f"Configuration '{name}' not found. Available: {list(self.configurations.keys())}"
+            ) from err
 
-    def get_client(self, name: str = "(default)") -> Client:
-        return self.configurations[name].client
+    """
+    Resolve None -> "(default)" for clients since one may pass None to indicate default,
+    the same follows for transactions.
+    """
+    def get_client(self, name: Optional[str] = None) -> Client:
+        resolved = name if name is not None else "(default)"
+        return self.get_config(resolved).client
+    
+    def get_async_client(self, name: Optional[str] = None) -> AsyncClient:
+        resolved = name if name is not None else "(default)"
+        return self.get_config(resolved).async_client
 
-    def get_async_client(self, name: str = "(default)") -> AsyncClient:
-        return self.configurations[name].async_client
-
-    def get_transaction(self, name: str = "(default)") -> Transaction:
+    def get_transaction(self, name: Optional[str] = None) -> Transaction:
         return self.get_client(name=name).transaction()
 
-    def get_async_transaction(self, name: str = "(default)") -> AsyncTransaction:
+    def get_async_transaction(self, name: Optional[str] = None) -> AsyncTransaction:
         return self.get_async_client(name=name).transaction()
