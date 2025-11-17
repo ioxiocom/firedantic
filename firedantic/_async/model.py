@@ -15,7 +15,7 @@ from google.cloud.firestore_v1.async_transaction import AsyncTransaction
 import firedantic.operators as op
 from firedantic import async_truncate_collection
 from firedantic.common import IndexDefinition, OrderDirection
-from firedantic.configurations import CONFIGURATIONS
+from firedantic.configurations import Configuration
 from firedantic.exceptions import (
     CollectionNotDefined,
     InvalidDocumentID,
@@ -25,6 +25,7 @@ from firedantic.exceptions import (
 TAsyncBareModel = TypeVar("TAsyncBareModel", bound="AsyncBareModel")
 TAsyncBareSubModel = TypeVar("TAsyncBareSubModel", bound="AsyncBareSubModel")
 logger = getLogger("firedantic")
+configuration = Configuration()
 
 # https://firebase.google.com/docs/firestore/query-data/queries#query_operators
 FIND_TYPES = {
@@ -49,14 +50,11 @@ def get_collection_name(cls, name: Optional[str], config: str = "(default)") -> 
     """
     if not name:
         raise CollectionNotDefined(f"Missing collection name for {cls.__name__}")
+    return f"{configuration.get_prefix}{name}"
 
-    return f"{CONFIGURATIONS[config].prefix}{name}"
 
-
-def _get_col_ref(cls, name: Optional[str], config: str = "(default)") -> AsyncCollectionReference:
-    collection: AsyncCollectionReference = CONFIGURATIONS[config].async_client.collection(
-        get_collection_name(cls, name, config)
-    )
+def _get_col_ref(cls, client, name: Optional[str], config: str = "(default)") -> AsyncCollectionReference:
+    collection: AsyncCollectionReference = configuration.get_collection_name(cls, client, name, config)
     return collection
 
 
