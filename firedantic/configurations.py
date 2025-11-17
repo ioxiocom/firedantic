@@ -22,7 +22,7 @@ def get_transaction() -> Transaction:
     """
     Get a new Firestore transaction for the configured client.
     """
-    transaction = CONFIGURATIONS["db"].client.transaction()
+    transaction = CONFIGURATIONS["db"].transaction()
     assert isinstance(transaction, Transaction)
     return transaction
 
@@ -31,7 +31,7 @@ def get_async_transaction() -> AsyncTransaction:
     """
     Get a new async Firestore transaction for the configured client.
     """
-    transaction = CONFIGURATIONS["db"].async_client.transaction()
+    transaction = CONFIGURATIONS["db"].transaction()
     assert isinstance(transaction, AsyncTransaction)
     return transaction
 
