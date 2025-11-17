@@ -60,8 +60,8 @@ def configure_multiple_clients():
     print(config.get_async_client("billing"))  ## will pull the billing async client
 
 
-# print("\n---- Running OLD way ----")
-# configure_client()
-# configure_async_client()
-# print("\n---- Running NEW way ----")
-# configure_multiple_clients()
+print("\n---- Running OLD way ----")
+configure_client()
+configure_async_client()
+print("\n---- Running NEW way ----")
+configure_multiple_clients()

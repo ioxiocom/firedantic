@@ -15,7 +15,7 @@ from google.cloud.firestore_v1.transaction import Transaction
 import firedantic.operators as op
 from firedantic import truncate_collection
 from firedantic.common import IndexDefinition, OrderDirection
-from firedantic.configurations import CONFIGURATIONS
+from firedantic.configurations import Configuration
 from firedantic.exceptions import (
     CollectionNotDefined,
     InvalidDocumentID,
@@ -25,6 +25,7 @@ from firedantic.exceptions import (
 TBareModel = TypeVar("TBareModel", bound="BareModel")
 TBareSubModel = TypeVar("TBareSubModel", bound="BareSubModel")
 logger = getLogger("firedantic")
+configuration = Configuration()
 
 # https://firebase.google.com/docs/firestore/query-data/queries#query_operators
 FIND_TYPES = {
@@ -49,14 +50,11 @@ def get_collection_name(cls, name: Optional[str], config: str = "(default)") -> 
     """
     if not name:
         raise CollectionNotDefined(f"Missing collection name for {cls.__name__}")
+    return f"{configuration.get_prefix}{name}"
 
-    return f"{CONFIGURATIONS[config].prefix}{name}"
 
-
-def _get_col_ref(cls, name: Optional[str], config: str = "(default)") -> CollectionReference:
-    collection: CollectionReference = CONFIGURATIONS[config].client.collection(
-        get_collection_name(cls, name, config)
-    )
+def _get_col_ref(cls, client, name: Optional[str], config: str = "(default)") -> CollectionReference:
+    collection: CollectionReference = configuration.get_collection_name(cls, client, name, config)
     return collection
 
 
@@ -79,7 +77,6 @@ class BareModel(pydantic.BaseModel, ABC):
         exclude_unset: bool = False,
         exclude_none: bool = False,
         transaction: Optional[Transaction] = None,
-        
     ) -> None:
         """
         Saves this model in the database.
@@ -171,7 +168,6 @@ class BareModel(pydantic.BaseModel, ABC):
         :param config: Client configuration to use.
         :return: List of found models.
         """
-
         query: Union[BaseQuery, CollectionReference] = cls._get_col_ref(config)
         if filter_:
             for key, value in filter_.items():

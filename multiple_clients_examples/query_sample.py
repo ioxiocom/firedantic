@@ -13,6 +13,9 @@ configure_client()
 companies1 = Company.find({"owner.first_name": "John"})
 companies2 = Company.find({"owner.first_name": {op.EQ: "John"}})
 companies3 = Company.find({"owner.first_name": {"==": "John"}})
+print(companies1)
+
+assert companies1 != []
 assert companies1 == companies2 == companies3
 
 
@@ -22,4 +25,6 @@ configure_multiple_clients()
 companies1 = Company.find({"owner.first_name": "Alice"})
 companies2 = Company.find({"owner.first_name": {op.EQ: "Alice"}})
 companies3 = Company.find({"owner.first_name": {"==": "Alice"}})
+print(companies1)
+assert companies1 != []
 assert companies1 == companies2 == companies3
