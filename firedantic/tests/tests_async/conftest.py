@@ -169,6 +169,13 @@ class ExpiringModel(AsyncModel):
     content: str
 
 
+@pytest.fixture(scope="session", autouse=True)
+def use_emulator(monkeypatch):
+    monkeypatch.setenv("FIRESTORE_EMULATOR_HOST", "localhost:8080")
+    monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "test-project")
+    yield
+
+
 @pytest.fixture(autouse=True)
 def configure_client():
     client = AsyncClient(

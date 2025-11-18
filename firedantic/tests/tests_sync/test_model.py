@@ -37,7 +37,14 @@ TEST_PRODUCTS = [
 
 
 
-def test_save_model(configure_client, create_company) -> None:
+def test_save_model_old_way(create_company) -> None:
+    company = create_company()
+
+    assert company.id is not None
+    assert company.owner.first_name == "John"
+    assert company.owner.last_name == "Doe"
+
+def test_save_model_new_way(create_company) -> None:
     company = create_company()
 
     assert company.id is not None

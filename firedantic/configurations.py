@@ -49,7 +49,22 @@ class ConfigItem(BaseModel):
 
 class Configuration:
     def __init__(self):
-        self.configurations: Dict[str, ConfigItem] = {}
+        self.config: Dict[str, ConfigItem] = {
+            "(default)": ConfigItem(
+                name="(default)",
+                prefix="",
+                project=environ.get("GOOGLE_CLOUD_PROJECT", ""),
+                credentials=None,
+                client=Client(
+                    project=environ.get("GOOGLE_CLOUD_PROJECT", ""),
+                    credentials=None,
+                ),
+                async_client=AsyncClient(
+                    project=environ.get("GOOGLE_CLOUD_PROJECT", ""),
+                    credentials=None,           
+                ),
+            )
+        }
 
     """
     Add a named configuration.
@@ -59,7 +74,7 @@ class Configuration:
     """
     def add(
         self,
-        name: str = "(default)",
+        name: str = "(default)",  # adding a config without a name results in overriding the default
         prefix: str = "",
         project: str = "",
         credentials: Optional[Credentials] = None,
@@ -79,15 +94,15 @@ class Configuration:
             client=client,
             async_client=async_client,
         )
-        self.configurations[name] = item
+        self.config[name] = item
         return item
     
-    def get_config(self, name: str = "(default)") -> ConfigItem:
+    def get_config_name(self, name: str = "(default)") -> ConfigItem:
         try:
-            return self.configurations[name]
+            return self.config[name]
         except KeyError as err:
             raise KeyError(
-                f"Configuration '{name}' not found. Available: {list(self.configurations.keys())}"
+                f"Configuration '{name}' not found. Available: {list(self.config.keys())}"
             ) from err
 
     """
@@ -96,11 +111,11 @@ class Configuration:
     """
     def get_client(self, name: Optional[str] = None) -> Client:
         resolved = name if name is not None else "(default)"
-        return self.get_config(resolved).client
+        return self.get_config_name(resolved).client
     
     def get_async_client(self, name: Optional[str] = None) -> AsyncClient:
         resolved = name if name is not None else "(default)"
-        return self.get_config(resolved).async_client
+        return self.get_config_name(resolved).async_client
 
     def get_transaction(self, name: Optional[str] = None) -> Transaction:
         return self.get_client(name=name).transaction()
