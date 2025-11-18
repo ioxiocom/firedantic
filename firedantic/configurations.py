@@ -43,6 +43,10 @@ class ConfigItem(BaseModel):
     client: Optional[Client] = None
     async_client: Optional[AsyncClient] = None
 
+    model_config = {
+        "arbitrary_types_allowed": True
+    }
+
 class Configuration:
     def __init__(self):
         self.configurations: Dict[str, ConfigItem] = {}
