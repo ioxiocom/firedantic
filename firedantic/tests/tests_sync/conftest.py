@@ -19,7 +19,7 @@ from firedantic import (
 from firedantic.configurations import configure, Configuration, get_transaction
 from firedantic.exceptions import ModelNotFoundError
 
-from unittest.mock import Mock  # noqa isort: skip
+from unittest.mock import MagicMock, Mock  # noqa isort: skip
 
 
 class CustomIDModel(BareModel):
@@ -43,7 +43,6 @@ class CustomIDModelExtra(BareModel):
 
     class Config:
         extra = "forbid"
-
 
 class CustomIDConflictModel(Model):
     __collection__ = "custom"
@@ -75,6 +74,7 @@ class City(Model):
 class Owner(BaseModel):
     """Dummy owner Pydantic model."""
 
+    __collection__ = "owners"
     first_name: str
     last_name: str
 
@@ -146,7 +146,6 @@ class Profile(Model):
     class Config:
         extra = "forbid"
 
-
 class TodoList(Model):
     """Dummy todo list Firedantic model."""
 
@@ -158,7 +157,6 @@ class TodoList(Model):
     class Config:
         extra = "forbid"
 
-
 class ExpiringModel(Model):
     """Dummy expiring model Firedantic model."""
 
@@ -169,8 +167,16 @@ class ExpiringModel(Model):
     content: str
 
 
-@pytest.fixture(autouse=True)
-def configure_client():
+
+# @pytest.fixture(scope="session", autouse=True)
+# def use_emulator(monkeypatch):
+#     monkeypatch.setenv("FIRESTORE_EMULATOR_HOST", "localhost:8080")
+#     monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "test-project")
+#     yield
+
+
+# allow configuring test client in this way to ensure old 'configure' method remains intact
+def configure_client_old():
     client = Client(
         project="ioxio-local-dev",
         credentials=Mock(spec=google.auth.credentials.Credentials),
@@ -203,6 +209,17 @@ def configure_multiple_clients():
 
 @pytest.fixture
 def create_company():
+    # Register the config under the name "companies"
+    config = Configuration()
+    config.add(
+        name="companies",
+        prefix="test_",
+        project="test-project",
+    )
+
+    # # cleanup after test(s)
+    # config.configurations.pop("companies", None)
+
     def _create(
         company_id: str = "1234567-8", first_name: str = "John", last_name: str = "Doe"
     ):

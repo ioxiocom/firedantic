@@ -8,6 +8,7 @@ from google.cloud.firestore_v1 import (
     AsyncDocumentReference,
     DocumentSnapshot,
     FieldFilter,
+    AsyncClient
 )
 from google.cloud.firestore_v1.async_query import AsyncQuery
 from google.cloud.firestore_v1.async_transaction import AsyncTransaction
@@ -42,7 +43,7 @@ FIND_TYPES = {
 }
 
 
-def get_collection_name(cls, name: Optional[str], config: str = "(default)") -> str:
+def get_collection_name(cls, name: Optional[str]) -> str:
     """
     Returns the collection name.
 
@@ -50,11 +51,11 @@ def get_collection_name(cls, name: Optional[str], config: str = "(default)") -> 
     """
     if not name:
         raise CollectionNotDefined(f"Missing collection name for {cls.__name__}")
-    return f"{configuration.get_prefix}{name}"
+    return f"{configuration.get_config_name}"
 
 
-def _get_col_ref(cls, client, name: Optional[str], config: str = "(default)") -> AsyncCollectionReference:
-    collection: AsyncCollectionReference = configuration.get_collection_name(cls, client, name, config)
+def _get_col_ref(cls, name: Optional[str]) -> AsyncCollectionReference:
+    collection: AsyncCollectionReference = configuration.get_async_client().collection(get_collection_name(cls, name))
     return collection
 
 
@@ -69,6 +70,12 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
     __document_id__: str
     __ttl_field__: Optional[str] = None
     __composite_indexes__: Optional[Iterable[IndexDefinition]] = None
+    __db_config__: str = "(default)"  # can be overridden in subclasses
+
+    @property
+    def _client(self) -> AsyncClient:
+        """Return the Firestore client bound to this model’s configured DB."""
+        return configuration.get_async_client(self.__db_config__)
 
     async def save(
         self,
@@ -268,9 +275,8 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
             raise ModelNotFoundError(
                 f"No '{cls.__name__}' found with {cls.__document_id__} '{doc_id}'"
             ) from e
-
         document: DocumentSnapshot = (
-            await cls._get_col_ref().document(doc_id).get(transaction=transaction)
+            await cls._get_doc_ref().get(transaction=transaction)
         )  # type: ignore
         data = document.to_dict()
         if data is None:
@@ -308,14 +314,20 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
         Returns the collection name.
         """
         return get_collection_name(cls, cls.__collection__)
-
+    
     def _get_doc_ref(self) -> AsyncDocumentReference:
         """
-        Returns the document reference.
-
-        :raise DocumentIDError: If the ID is not valid.
+        Return an AsyncDocumentReference for this instance.
+        If the instance already has an id, use it; otherwise call .document() with no args
+        so Firestore generates a new id.
         """
-        return self._get_col_ref().document(self.get_document_id())  # type: ignore
+        col_ref = self._get_col_ref()
+
+        doc_id = self.get_document_id()
+        if doc_id:
+            return col_ref.document(doc_id)
+        # no id -> create a new document reference (server will generate id on set)
+        return col_ref.document()
 
     @staticmethod
     def _validate_document_id(document_id: str):
