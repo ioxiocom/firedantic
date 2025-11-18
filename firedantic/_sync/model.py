@@ -42,7 +42,7 @@ FIND_TYPES = {
 }
 
 
-def get_collection_name(cls, name: Optional[str], config: str = "(default)") -> str:
+def get_collection_name(cls, name: Optional[str]) -> str:
     """
     Returns the collection name.
 
@@ -53,8 +53,8 @@ def get_collection_name(cls, name: Optional[str], config: str = "(default)") -> 
     return f"{configuration.get_prefix}{name}"
 
 
-def _get_col_ref(cls, client, name: Optional[str], config: str = "(default)") -> CollectionReference:
-    collection: CollectionReference = configuration.get_collection_name(cls, client, name, config)
+def _get_col_ref(cls, name: Optional[str]) -> CollectionReference:
+    collection: CollectionReference = configuration.get_collection_name(cls, name)
     return collection
 
 
@@ -69,10 +69,11 @@ class BareModel(pydantic.BaseModel, ABC):
     __document_id__: str
     __ttl_field__: Optional[str] = None
     __composite_indexes__: Optional[Iterable[IndexDefinition]] = None
+    __db_config__: str = "(default)"  # can be overridden in subclasses
+
 
     def save(
         self,
-        config: str = "(default)",
         *,
         exclude_unset: bool = False,
         exclude_none: bool = False,
@@ -92,25 +93,25 @@ class BareModel(pydantic.BaseModel, ABC):
         if self.__document_id__ in data:
             del data[self.__document_id__]
 
-        doc_ref = self._get_doc_ref(config)
+        doc_ref = self._get_doc_ref()
         if transaction is not None:
             transaction.set(doc_ref, data)
         else:
             doc_ref.set(data)
         setattr(self, self.__document_id__, doc_ref.id)
 
-    def delete(self, config: str = "(default)", transaction: Optional[Transaction] = None) -> None:
+    def delete(self, transaction: Optional[Transaction] = None) -> None:
         """
         Deletes this model from the database.
 
         :raise DocumentIDError: If the ID is not valid.
         """
         if transaction is not None:
-            transaction.delete(self._get_doc_ref(config))
+            transaction.delete(self._get_doc_ref())
         else:
-            self._get_doc_ref(config).delete()
+            self._get_doc_ref().delete()
 
-    def reload(self, config: str = "(default)", transaction: Optional[Transaction] = None) -> None:
+    def reload(self, transaction: Optional[Transaction] = None) -> None:
         """
         Reloads this model from the database.
 
@@ -121,7 +122,7 @@ class BareModel(pydantic.BaseModel, ABC):
         if doc_id is None:
             raise ModelNotFoundError("Can not reload unsaved model")
 
-        updated_model = self.get_by_doc_id(doc_id, config=config, transaction=transaction)
+        updated_model = self.get_by_doc_id(doc_id, transaction=transaction)
         updated_model_doc_id = updated_model.__dict__[self.__document_id__]
         assert doc_id == updated_model_doc_id
 
@@ -148,7 +149,6 @@ class BareModel(pydantic.BaseModel, ABC):
         limit: Optional[int] = None,
         offset: Optional[int] = None,
         transaction: Optional[Transaction] = None,
-        config: Optional[str] = "(default)"
     ) -> List[TBareModel]:
         """
         Returns a list of models from the database based on a filter.
@@ -165,10 +165,9 @@ class BareModel(pydantic.BaseModel, ABC):
         :param limit: Maximum results to return.
         :param offset: Skip the first n results.
         :param transaction: Optional transaction to use.
-        :param config: Client configuration to use.
         :return: List of found models.
         """
-        query: Union[BaseQuery, CollectionReference] = cls._get_col_ref(config)
+        query: Union[BaseQuery, CollectionReference] = cls._get_col_ref()
         if filter_:
             for key, value in filter_.items():
                 query = cls._add_filter(query, key, value)
@@ -228,7 +227,6 @@ class BareModel(pydantic.BaseModel, ABC):
         filter_: Optional[Dict[str, Union[str, dict]]] = None,
         order_by: Optional[_OrderBy] = None,
         transaction: Optional[Transaction] = None,
-        config: Optional[str] = "(default)"
     ) -> TBareModel:
         """
         Returns one model from the DB based on a filter.
@@ -239,7 +237,7 @@ class BareModel(pydantic.BaseModel, ABC):
         :raise ModelNotFoundError: If the entry is not found.
         """
         model = cls.find(
-            filter_, limit=1, order_by=order_by, transaction=transaction, config=config
+            filter_, limit=1, order_by=order_by, transaction=transaction
         )
         try:
             return model[0]
@@ -250,7 +248,6 @@ class BareModel(pydantic.BaseModel, ABC):
     def get_by_doc_id(
         cls: Type[TBareModel],
         doc_id: str,
-        config: str = "(default)",
         transaction: Optional[Transaction] = None,
     ) -> TBareModel:
         """
@@ -275,7 +272,7 @@ class BareModel(pydantic.BaseModel, ABC):
             ) from e
 
         document: DocumentSnapshot = (
-            cls._get_col_ref(config).document(doc_id).get(transaction=transaction)
+            cls._get_col_ref().document(doc_id).get(transaction=transaction)
         )  # type: ignore
         data = document.to_dict()
         if data is None:
@@ -288,7 +285,7 @@ class BareModel(pydantic.BaseModel, ABC):
         return model
 
     @classmethod
-    def truncate_collection(cls, config: str = "(default)", batch_size: int = 128) -> int:
+    def truncate_collection(cls, batch_size: int = 128) -> int:
         """
         Removes all documents inside a collection.
 
@@ -296,16 +293,16 @@ class BareModel(pydantic.BaseModel, ABC):
         :return: Number of removed documents.
         """
         return truncate_collection(
-            col_ref=cls._get_col_ref(config),
+            col_ref=cls._get_col_ref(),
             batch_size=batch_size,
         )
 
     @classmethod
-    def _get_col_ref(cls, config: str = "(default)") -> CollectionReference:
+    def _get_col_ref(cls) -> CollectionReference:
         """
         Returns the collection reference.
         """
-        return _get_col_ref(cls, cls.__collection__, config)
+        return _get_col_ref(cls, cls.__collection__)
 
     @classmethod
     def get_collection_name(cls) -> str:
@@ -314,13 +311,13 @@ class BareModel(pydantic.BaseModel, ABC):
         """
         return get_collection_name(cls, cls.__collection__)
 
-    def _get_doc_ref(self, config: str = "(default)") -> DocumentReference:
+    def _get_doc_ref(self) -> DocumentReference:
         """
         Returns the document reference.
 
         :raise DocumentIDError: If the ID is not valid.
         """
-        return self._get_col_ref(config).document(self.get_document_id())  # type: ignore
+        return self._get_col_ref().document(self.get_document_id())  # type: ignore
 
     @staticmethod
     def _validate_document_id(document_id: str):
@@ -364,7 +361,6 @@ class Model(BareModel):
     def get_by_id(
         cls: Type[TBareModel],
         id_: str,
-        config: str = "(default)",
         transaction: Optional[Transaction] = None,
     ) -> TBareModel:
         """
@@ -374,7 +370,7 @@ class Model(BareModel):
         :param transaction: Optional transaction to use.
         :raises ModelNotFoundError: If no model was found by given id.
         """
-        return cls.get_by_doc_id(id_, config=config, transaction=transaction)
+        return cls.get_by_doc_id(id_, transaction=transaction)
 
 
 class BareSubCollection(ABC):
@@ -412,7 +408,7 @@ class BareSubModel(BareModel, ABC):
         )
 
     @classmethod
-    def _get_col_ref(cls, config: str = "(default)") -> CollectionReference:
+    def _get_col_ref(cls) -> CollectionReference:
         """
         Returns the collection reference.
         """
@@ -421,7 +417,7 @@ class BareSubModel(BareModel, ABC):
                 f"{cls.__name__} is not properly prepared. "
                 f"You should use {cls.__name__}.model_for(parent)"
             )
-        return _get_col_ref(cls.__collection_cls__, cls.__collection__, config)
+        return _get_col_ref(cls.__collection_cls__, cls.__collection__)
 
     @classmethod
     def model_for(cls, parent):
@@ -438,7 +434,6 @@ class SubModel(BareSubModel):
     def get_by_id(
         cls: Type[TBareModel],
         id_: str,
-        config: str = "(default)",
         transaction: Optional[Transaction] = None,
     ) -> TBareModel:
         """
@@ -448,7 +443,7 @@ class SubModel(BareSubModel):
         :param transaction: Optional transaction to use.
         :raises ModelNotFoundError:
         """
-        return cls.get_by_doc_id(id_, config=config, transaction=transaction)
+        return cls.get_by_doc_id(id_, transaction=transaction)
 
 
 class SubCollection(BareSubCollection, ABC):
