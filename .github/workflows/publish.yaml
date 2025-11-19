@@ -27,7 +27,7 @@ jobs:
           ./start_emulator.sh > /dev/null 2>&1 &
 
       - name: Install Poetry and pre-commit 💈
-        run: pip install poetry==1.8.5 pre-commit
+        run: pip install poetry==2.2.1 pre-commit
 
       - name: Install dependencies 🛠
         run: poetry install
@@ -62,4 +62,5 @@ jobs:
           path: dist
 
       - name: Publish package to PyPI 🙌
-        uses: pypa/gh-action-pypi-publish@2f6f737ca5f74c637829c0f5c3acd0e29ea5e8bf #v1.8.11
+        if: success() && github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e #v1.13.0
