@@ -8,6 +8,7 @@ from google.cloud.firestore_v1 import (
     DocumentReference,
     DocumentSnapshot,
     FieldFilter,
+    Client
 )
 from google.cloud.firestore_v1.base_query import BaseQuery
 from google.cloud.firestore_v1.transaction import Transaction
@@ -15,7 +16,7 @@ from google.cloud.firestore_v1.transaction import Transaction
 import firedantic.operators as op
 from firedantic import truncate_collection
 from firedantic.common import IndexDefinition, OrderDirection
-from firedantic.configurations import CONFIGURATIONS
+from firedantic.configurations import Configuration
 from firedantic.exceptions import (
     CollectionNotDefined,
     InvalidDocumentID,
@@ -25,6 +26,7 @@ from firedantic.exceptions import (
 TBareModel = TypeVar("TBareModel", bound="BareModel")
 TBareSubModel = TypeVar("TBareSubModel", bound="BareSubModel")
 logger = getLogger("firedantic")
+configuration = Configuration()
 
 # https://firebase.google.com/docs/firestore/query-data/queries#query_operators
 FIND_TYPES = {
@@ -41,22 +43,19 @@ FIND_TYPES = {
 }
 
 
-def get_collection_name(cls, name: Optional[str]) -> str:
+def get_collection_name(model_class, name: Optional[str]) -> str:
     """
     Returns the collection name.
 
     :raise CollectionNotDefined: If the collection name is not defined.
     """
     if not name:
-        raise CollectionNotDefined(f"Missing collection name for {cls.__name__}")
+        raise CollectionNotDefined(f"Missing collection name for {model_class.__name__}")
+    return f"{configuration.get_config_name(name)}"
 
-    return f"{CONFIGURATIONS['prefix']}{name}"
 
-
-def _get_col_ref(cls, name: Optional[str]) -> CollectionReference:
-    collection: CollectionReference = CONFIGURATIONS["db"].collection(
-        get_collection_name(cls, name)
-    )
+def _get_col_ref(model_class, name: Optional[str]) -> CollectionReference:
+    collection: CollectionReference = get_collection_name(model_class, name)
     return collection
 
 
@@ -71,6 +70,44 @@ class BareModel(pydantic.BaseModel, ABC):
     __document_id__: str
     __ttl_field__: Optional[str] = None
     __composite_indexes__: Optional[Iterable[IndexDefinition]] = None
+    __db_config__: str = "(default)"  # can be overridden in subclasses
+
+    @property
+    def _resolve_config(self) -> str:
+        """Return the config name this class is bound to"""
+        return getattr(self.__class__, "__db_config__", "(default)")
+
+    @property
+    def _client(self) -> Client:
+        """Return the Firestore client this class is bound to"""
+        return configuration.get_client(self.__db_config__)
+    
+    def _get_collection(self, config_name: Optional[str] = None) -> CollectionReference:
+        """
+        Return a CollectionReference for this model based on the resolved config and
+        a collection name derived from the class (can override with a different naming scheme)
+        """
+        resolved = config_name if config_name is not None else self._resolve_config()
+        client: Client = configuration.get_client(name=resolved)
+        
+        # Use the config item's prefix + class-name-based collection name.
+        cfg_item = configuration.get_config(resolved)
+        collection_name = f"{cfg_item.prefix}{self.__class__.__name__.lower()}s"
+        return client.collection(collection_name)
+
+    def _get_doc_ref(self, config_name: Optional[str] = None) -> DocumentReference:
+        """
+        Return a DocumentReference for this instance.
+        If the instance has an id (self.__document_id__), use it; otherwise create a new doc ref
+        (client.collection().document() without an id will generate one).
+        """
+        collection = self._get_collection(config_name)
+        doc_id = getattr(self, self.__document_id__, None)
+        if doc_id:
+            return collection.document(doc_id)
+        # No id: create a new document reference (Firestore client will generate ID)
+        return collection.document()  
+
 
     def save(
         self,
@@ -93,11 +130,16 @@ class BareModel(pydantic.BaseModel, ABC):
         if self.__document_id__ in data:
             del data[self.__document_id__]
 
+        # get the document ref bound to the models configuration (db_config)
         doc_ref = self._get_doc_ref()
+    
+        # Write data to firestore db using transaction or directly.
         if transaction is not None:
             transaction.set(doc_ref, data)
         else:
             doc_ref.set(data)
+
+        # Ensure the instance has the document id set.
         setattr(self, self.__document_id__, doc_ref.id)
 
     def delete(self, transaction: Optional[Transaction] = None) -> None:

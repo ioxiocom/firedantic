@@ -19,6 +19,7 @@ from firedantic.tests.tests_sync.conftest import (
     CustomIDConflictModel,
     CustomIDModel,
     CustomIDModelExtra,
+    Owner,
     Product,
     Profile,
     TodoList,
@@ -35,7 +36,15 @@ TEST_PRODUCTS = [
 ]
 
 
-def test_save_model(configure_db, create_company) -> None:
+
+def test_save_model_old_way(create_company) -> None:
+    company = create_company()
+
+    assert company.id is not None
+    assert company.owner.first_name == "John"
+    assert company.owner.last_name == "Doe"
+
+def test_save_model_new_way(create_company) -> None:
     company = create_company()
 
     assert company.id is not None
@@ -43,7 +52,29 @@ def test_save_model(configure_db, create_company) -> None:
     assert company.owner.last_name == "Doe"
 
 
-def test_delete_model(configure_db, create_company) -> None:
+def test_save_multi_client_model(configure_multiple_clients):
+    owner = Owner(first_name="Alice", last_name="Begone")
+    company = Company(company_id="1234567-9", owner=owner)
+    company.save()  # will use 'default' as config name
+    company.reload()  # with no name supplied, config refers to "(default)"
+
+    config="multi"
+    product = Product(product_id=str(uuid4()), price=123.45, stock=2)
+    product.save(config)
+    product = Product(product_id=str(uuid4()), price=89.95, stock=8)
+    product.save(config)
+    product.reload(config)
+
+    # Can retrieve info from either client: (default) or multi.
+    # When config= is not set, it will default to '(default)' config.
+    # The models do not know which config you intended to use them for, and they
+    # could be used for a multitude of configurations at once.
+    assert Company.find_one({"owner.first_name": "Alice"}).company_id == "1234567-9"
+    assert Product.find_one({"price": 123.45}, config=config).stock == 2
+    assert Product.find_one({"stock": 8}, config=config).stock == 8
+
+
+def test_delete_model(configure_client, create_company) -> None:
     company: Company = create_company(
         company_id="11223344-5", first_name="Jane", last_name="Doe"
     )
@@ -57,7 +88,35 @@ def test_delete_model(configure_db, create_company) -> None:
         Company.get_by_id(_id)
 
 
-def test_find_one(configure_db, create_company) -> None:
+def test_delete_multi_client_model(configure_multiple_clients, create_company) -> None:
+    # will use 'default' as config name
+    owner = Owner(first_name="Alice", last_name="Begone")
+    company = Company(company_id="12345678", owner=owner)
+    company.save()
+    
+    config="multi"
+    product = Product(product_id="1112", price=123.45, stock=2)
+    product.save(config)
+    product = Product(product_id="1114", price=89.95, stock=8)
+    product.save(config)
+
+    _id = company.id
+    assert _id
+
+    _pid = product.id
+    assert _pid
+
+    company.delete()
+    product.delete(config)
+
+    with pytest.raises(ModelNotFoundError):
+        Company.get_by_id(_id)
+
+    with pytest.raises(ModelNotFoundError):
+        Product.get_by_id(_pid)
+
+
+def test_find_one(configure_client, create_company) -> None:
     with pytest.raises(ModelNotFoundError):
         Company.find_one()
 
@@ -85,7 +144,7 @@ def test_find_one(configure_db, create_company) -> None:
     assert first_desc.owner.first_name == "Foo"
 
 
-def test_find(configure_db, create_company, create_product) -> None:
+def test_find(configure_client, create_company, create_product) -> None:
     ids = ["1234555-1", "1234567-8", "2131232-4", "4124432-4"]
     for company_id in ids:
         create_company(company_id=company_id)
@@ -94,8 +153,12 @@ def test_find(configure_db, create_company, create_product) -> None:
     assert c[0].company_id == "4124432-4"
     assert c[0].owner.first_name == "John"
 
-    d = Company.find({"owner.first_name": "John"})
-    assert len(d) == 4
+    d1 = Company.find({"owner.first_name": "John"})
+
+    d2 = Company.find({"owner.first_name": {op.EQ: "John"}})
+
+    d3 = Company.find({"owner.first_name": {"==": "John"}})
+    assert d1 == d2 == d3
 
     for p in TEST_PRODUCTS:
         create_product(**p)
@@ -115,7 +178,7 @@ def test_find(configure_db, create_company, create_product) -> None:
         Product.find({"product_id": {"<>": "a"}})
 
 
-def test_find_not_in(configure_db, create_company) -> None:
+def test_find_not_in(configure_client, create_company) -> None:
     ids = ["1234555-1", "1234567-8", "2131232-4", "4124432-4"]
     for company_id in ids:
         create_company(company_id=company_id)
@@ -135,7 +198,7 @@ def test_find_not_in(configure_db, create_company) -> None:
         assert company.company_id in ("2131232-4", "4124432-4")
 
 
-def test_find_array_contains(configure_db, create_todolist) -> None:
+def test_find_array_contains(configure_client, create_todolist) -> None:
     list_1 = create_todolist("list_1", ["Work", "Eat", "Sleep"])
     create_todolist("list_2", ["Learn Python", "Walk the dog"])
 
@@ -144,7 +207,7 @@ def test_find_array_contains(configure_db, create_todolist) -> None:
     assert found[0].name == list_1.name
 
 
-def test_find_array_contains_any(configure_db, create_todolist) -> None:
+def test_find_array_contains_any(configure_client, create_todolist) -> None:
     list_1 = create_todolist("list_1", ["Work", "Eat"])
     list_2 = create_todolist("list_2", ["Relax", "Chill", "Sleep"])
     create_todolist("list_3", ["Learn Python", "Walk the dog"])
@@ -155,7 +218,7 @@ def test_find_array_contains_any(configure_db, create_todolist) -> None:
         assert lst.name in (list_1.name, list_2.name)
 
 
-def test_find_limit(configure_db, create_company) -> None:
+def test_find_limit(configure_client, create_company) -> None:
     ids = ["1234555-1", "1234567-8", "2131232-4", "4124432-4"]
     for company_id in ids:
         create_company(company_id=company_id)
@@ -167,7 +230,7 @@ def test_find_limit(configure_db, create_company) -> None:
     assert len(companies_2) == 2
 
 
-def test_find_order_by(configure_db, create_company) -> None:
+def test_find_order_by(configure_client, create_company) -> None:
     companies_and_owners = [
         {"company_id": "1234555-1", "last_name": "A", "first_name": "A"},
         {"company_id": "1234555-2", "last_name": "A", "first_name": "B"},
@@ -211,7 +274,8 @@ def test_find_order_by(configure_db, create_company) -> None:
     assert companies_and_owners == lastname_ascending_firstname_ascending
 
 
-def test_find_offset(configure_db, create_company) -> None:
+
+def test_find_offset(configure_client, create_company) -> None:
     ids_and_lastnames = (
         ("1234555-1", "A"),
         ("1234567-8", "B"),
@@ -228,7 +292,7 @@ def test_find_offset(configure_db, create_company) -> None:
     assert len(companies_ascending) == 2
 
 
-def test_get_by_id(configure_db, create_company) -> None:
+def test_get_by_id(configure_client, create_company) -> None:
     c: Company = create_company(company_id="1234567-8")
 
     assert c.id is not None
@@ -242,12 +306,55 @@ def test_get_by_id(configure_db, create_company) -> None:
     assert c_2.owner.first_name == "John"
 
 
-def test_get_by_empty_str_id(configure_db) -> None:
+def test_get_by_id_multi_client(configure_multiple_clients) -> None:
+    owner = Owner(first_name="Alice", last_name="Begone")
+    c1 = Company(company_id="1234567-8", owner=owner)
+    c1.save()
+
+    config="multi"
+    owner = Owner(first_name="Crazy", last_name="Kitten")
+    c2 = Company(company_id="1234567-9", owner=owner)
+    c2.save(config)
+
+    assert c1.id is not None
+    assert c1.company_id == "1234567-8"
+    assert c1.owner.last_name == "Begone"
+
+    cid1 = Company.get_by_id(c1.id)
+
+    assert cid1.id == c1.id
+    assert cid1.company_id == "1234567-8"
+    assert cid1.owner.first_name == "Alice"
+
+    assert c2.id is not None
+    assert c2.company_id == "1234567-9"
+    assert c2.owner.last_name == "Kitten"
+
+    cid2 = Company.get_by_id(c2.id, config)
+
+    assert cid2.id == c2.id
+    assert cid2.company_id == "1234567-9"
+    assert cid2.owner.first_name == "Crazy"
+
+
+def test_get_by_id_missing_config(configure_multiple_clients):
+    config="multi"
+    owner = Owner(first_name="Crazy", last_name="Kitten")
+    c2 = Company(company_id="1234567-9", owner=owner)
+    c2.save(config)
+
+    with pytest.raises(ModelNotFoundError):
+        cid2 = Company.get_by_id(c2.id)
+
+
+
+def test_get_by_empty_str_id(configure_client) -> None:
     with pytest.raises(ModelNotFoundError):
         Company.get_by_id("")
 
 
-def test_missing_collection(configure_db) -> None:
+
+def test_missing_collection(configure_client) -> None:
     class User(Model):
         name: str
 
@@ -255,7 +362,8 @@ def test_missing_collection(configure_db) -> None:
         User(name="John").save()
 
 
-def test_model_aliases(configure_db) -> None:
+
+def test_model_aliases(configure_client) -> None:
     class User(Model):
         __collection__ = "User"
 
@@ -269,6 +377,7 @@ def test_model_aliases(configure_db) -> None:
     user_from_db = User.get_by_id(user.id)
     assert user_from_db.first_name == "John"
     assert user_from_db.city == "Helsinki"
+
 
 
 @pytest.mark.parametrize(
@@ -299,7 +408,7 @@ def test_model_aliases(configure_db) -> None:
         "!:&+-*'()",
     ],
 )
-def test_models_with_valid_custom_id(configure_db, model_id) -> None:
+def test_models_with_valid_custom_id(configure_client, model_id) -> None:
     product_id = str(uuid4())
 
     product = Product(product_id=product_id, price=123.45, stock=2)
@@ -310,6 +419,7 @@ def test_models_with_valid_custom_id(configure_db, model_id) -> None:
     assert found.product_id == product_id
 
     found.delete()
+
 
 
 @pytest.mark.parametrize(
@@ -327,7 +437,7 @@ def test_models_with_valid_custom_id(configure_db, model_id) -> None:
         "foo/bar/baz",
     ],
 )
-def test_models_with_invalid_custom_id(configure_db, model_id: str) -> None:
+def test_models_with_invalid_custom_id(configure_client, model_id: str) -> None:
     product = Product(product_id="product 123", price=123.45, stock=2)
     product.id = model_id
     with pytest.raises(InvalidDocumentID):
@@ -337,7 +447,8 @@ def test_models_with_invalid_custom_id(configure_db, model_id: str) -> None:
         Product.get_by_id(model_id)
 
 
-def test_truncate_collection(configure_db, create_company) -> None:
+
+def test_truncate_collection(configure_client, create_company) -> None:
     create_company(company_id="1234567-8")
     create_company(company_id="1234567-9")
 
@@ -349,7 +460,33 @@ def test_truncate_collection(configure_db, create_company) -> None:
     assert len(new_companies) == 0
 
 
-def test_custom_id_model(configure_db) -> None:
+def test_truncate_multiple_collections(configure_multiple_clients) -> None:
+    owner = Owner(first_name="Alice", last_name="Begone")
+    c1 = Company(company_id="1234567-8", owner=owner)
+    c1.save()
+    c2 = Company(company_id="1234567-9", owner=owner)
+    c2.save()
+
+    config="multi"
+    owner = Owner(first_name="Crazy", last_name="Kitten")
+    c3 = Company(company_id="1234567-0", owner=owner)
+    c3.save(config)
+
+    companies = Company.find({})
+    assert len(companies) >= 2
+
+    companies = Company.find({}, config=config)
+    assert len(companies) >= 1
+
+    Company.truncate_collection()
+    assert len(Company.find({})) == 0
+
+    Company.truncate_collection(config)
+    assert len(Company.find({}, config=config)) == 0
+
+
+
+def test_custom_id_model(configure_client) -> None:
     c = CustomIDModel(bar="bar")  # type: ignore
     c.save()
 
@@ -361,7 +498,8 @@ def test_custom_id_model(configure_db) -> None:
     assert m.bar == "bar"
 
 
-def test_custom_id_conflict(configure_db) -> None:
+
+def test_custom_id_conflict(configure_client) -> None:
     CustomIDConflictModel(foo="foo", bar="bar").save()
 
     models = CustomIDModel.find({})
@@ -372,7 +510,8 @@ def test_custom_id_conflict(configure_db) -> None:
     assert m.bar == "bar"
 
 
-def test_model_id_persistency(configure_db) -> None:
+
+def test_model_id_persistency(configure_client) -> None:
     c = CustomIDConflictModel(foo="foo", bar="bar")
     c.save()
     assert c.id
@@ -383,7 +522,8 @@ def test_model_id_persistency(configure_db) -> None:
     assert len(CustomIDConflictModel.find({})) == 1
 
 
-def test_bare_model_document_id_persistency(configure_db) -> None:
+
+def test_bare_model_document_id_persistency(configure_client) -> None:
     c = CustomIDModel(bar="bar")  # type: ignore
     c.save()
     assert c.foo
@@ -394,18 +534,21 @@ def test_bare_model_document_id_persistency(configure_db) -> None:
     assert len(CustomIDModel.find({})) == 1
 
 
-def test_bare_model_get_by_empty_doc_id(configure_db) -> None:
+
+def test_bare_model_get_by_empty_doc_id(configure_client) -> None:
     with pytest.raises(ModelNotFoundError):
         CustomIDModel.get_by_doc_id("")
 
 
-def test_extra_fields(configure_db) -> None:
+
+def test_extra_fields(configure_client) -> None:
     CustomIDModelExtra(foo="foo", bar="bar", baz="baz").save()  # type: ignore
     with pytest.raises(ValidationError):
         CustomIDModel.find({})
 
 
-def test_company_stats(configure_db, create_company) -> None:
+
+def test_company_stats(configure_client, create_company) -> None:
     company: Company = create_company(company_id="1234567-8")
     company_stats = company.stats()
 
@@ -425,7 +568,8 @@ def test_company_stats(configure_db, create_company) -> None:
     assert stats.sales == 101
 
 
-def test_subcollection_model_safety(configure_db) -> None:
+
+def test_subcollection_model_safety(configure_client) -> None:
     """
     Ensure you shouldn't be able to use unprepared subcollection models accidentally
     """
@@ -433,7 +577,8 @@ def test_subcollection_model_safety(configure_db) -> None:
         UserStats.find({})
 
 
-def test_get_user_purchases(configure_db) -> None:
+
+def test_get_user_purchases(configure_client) -> None:
     u = User(name="Foo")
     u.save()
     assert u.id
@@ -444,7 +589,8 @@ def test_get_user_purchases(configure_db) -> None:
     assert get_user_purchases(u.id) == 42
 
 
-def test_reload(configure_db) -> None:
+
+def test_reload(configure_client) -> None:
     u = User(name="Foo")
     u.save()
 
@@ -461,8 +607,35 @@ def test_reload(configure_db) -> None:
     with pytest.raises(ModelNotFoundError):
         another_user.reload()
 
+def test_reload_multiple(configure_multiple_clients) -> None:
+    u1 = User(name="Coco")
+    u1.save() 
 
-def test_save_with_exclude_none(configure_db) -> None:
+    u2 = User(name="Foo")
+    u2.save("multi")
+
+    # change the value in the 'multi' database
+    u2_ = User.find_one({"name": "Foo"}, config="multi")
+    u2_.name = "Bar"
+    u2_.save("multi")
+
+    # assert that u2 was updated
+    assert u2.name == "Foo"
+    u2.reload("multi")
+
+    assert u2.name == "Bar"
+
+    # assert that u1 did not change even after reload
+    u1.reload()
+    assert u1.name == "Coco"
+
+    another_user = User(name="Another")
+    with pytest.raises(ModelNotFoundError):
+        another_user.reload()
+
+
+
+def test_save_with_exclude_none(configure_client) -> None:
     p = Profile(name="Foo")
     p.save(exclude_none=True)
 
@@ -483,7 +656,8 @@ def test_save_with_exclude_none(configure_db) -> None:
     assert data == {"name": "Foo", "photo_url": None}
 
 
-def test_save_with_exclude_unset(configure_db) -> None:
+
+def test_save_with_exclude_unset(configure_client) -> None:
     p = Profile(photo_url=None)
     p.save(exclude_unset=True)
 
@@ -504,15 +678,18 @@ def test_save_with_exclude_unset(configure_db) -> None:
     assert data == {"name": "", "photo_url": None}
 
 
-def test_update_city_in_transaction(configure_db) -> None:
+
+def test_update_city_in_transaction(configure_client) -> None:
     """
     Test updating a model in a transaction. Test case from README.
 
-    :param: configure_db: pytest fixture
+    :param: configure_client: pytest fixture
     """
 
     @transactional
-    def decrement_population(transaction: Transaction, city: City, decrement: int = 1):
+    def decrement_population(
+        transaction: Transaction, city: City, decrement: int = 1
+    ):
         city.reload(transaction=transaction)
         city.population = max(0, city.population - decrement)
         city.save(transaction=transaction)
@@ -527,15 +704,49 @@ def test_update_city_in_transaction(configure_db) -> None:
     assert c.population == 0
 
 
-def test_delete_in_transaction(configure_db) -> None:
+def test_update_city_in_multiple_transactions(configure_multiple_clients) -> None:
     """
-    Test deleting a model in a transaction.
-
-    :param: configure_db: pytest fixture
+    Test updating a model in 2 separate transactions. Based on test case from README.
     """
 
     @transactional
-    def delete_in_transaction(transaction: Transaction, profile_id: str) -> None:
+    def decrement_population(
+        transaction: Transaction, city: City, decrement: int = 1, config: str = "(default)"
+    ):
+        city.reload(config, transaction=transaction)
+        city.population = max(0, city.population - decrement)
+        city.save(config, transaction=transaction)
+
+    c = City(id="SF", population=1)
+    c.save()
+    c.increment_population(increment=1)
+    assert c.population == 2
+
+    t = get_transaction()
+    decrement_population(transaction=t, city=c, decrement=5)
+    assert c.population == 0
+
+    c = City(id="SF", population=8)
+    c.save("multi")
+    c.increment_population(increment=1, config="multi")
+    assert c.population == 9
+
+    t = get_transaction("multi")
+    decrement_population(transaction=t, city=c, decrement=5, config="multi")
+    assert c.population == 4
+
+
+def test_delete_in_transaction(configure_client) -> None:
+    """
+    Test deleting a model in a transaction.
+
+    :param: configure_client: pytest fixture
+    """
+
+    @transactional
+    def delete_in_transaction(
+        transaction: Transaction, profile_id: str
+    ) -> None:
         """Deletes a Profile in a transaction."""
         profile = Profile.get_by_id(profile_id, transaction=transaction)
         profile.delete(transaction=transaction)
@@ -551,11 +762,12 @@ def test_delete_in_transaction(configure_db) -> None:
         Profile.get_by_id(p.id)
 
 
-def test_update_model_in_transaction(configure_db) -> None:
+
+def test_update_model_in_transaction(configure_client) -> None:
     """
     Test updating a model in a transaction.
 
-    :param: configure_db: pytest fixture
+    :param: configure_client: pytest fixture
     """
 
     @transactional
@@ -577,11 +789,12 @@ def test_update_model_in_transaction(configure_db) -> None:
     assert p.name == "Bar"
 
 
-def test_update_submodel_in_transaction(configure_db) -> None:
+
+def test_update_submodel_in_transaction(configure_client) -> None:
     """
     Test Updating a submodel in a transaction.
 
-    :param: configure_db: pytest fixture
+    :param: configure_client: pytest fixture
     """
 
     @transactional

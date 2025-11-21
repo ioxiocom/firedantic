@@ -169,8 +169,15 @@ class ExpiringModel(AsyncModel):
     content: str
 
 
+@pytest.fixture(scope="session", autouse=True)
+def use_emulator(monkeypatch):
+    monkeypatch.setenv("FIRESTORE_EMULATOR_HOST", "localhost:8080")
+    monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "test-project")
+    yield
+
+
 @pytest.fixture(autouse=True)
-def configure_db():
+def configure_client():
     client = AsyncClient(
         project="ioxio-local-dev",
         credentials=Mock(spec=google.auth.credentials.Credentials),
