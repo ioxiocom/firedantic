@@ -26,7 +26,6 @@ def test_set_up_ttl_policies_new_policy(mock_admin_client):
         [Field.TtlConfig.State.NEEDS_REPAIR],
     ),
 )
-
 def test_set_up_ttl_policies_other_states(mock_admin_client, state):
     mock_admin_client.field_state = Field.TtlConfig.State.ACTIVE
     result = set_up_ttl_policies(

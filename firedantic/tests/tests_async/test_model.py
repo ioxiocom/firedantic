@@ -510,7 +510,7 @@ async def test_save_with_exclude_none() -> None:
     assert document_id
 
     # pylint: disable=protected-access
-    document = await Profile._get_col_ref().document(document_id).get() ### here
+    document = await Profile._get_col_ref().document(document_id).get()
 
     data = document.to_dict()
     assert data == {"name": "Foo"}

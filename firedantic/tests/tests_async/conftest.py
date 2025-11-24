@@ -168,8 +168,9 @@ class ExpiringModel(AsyncModel):
     expire: datetime
     content: str
 
+
 @pytest.fixture(autouse=True)
-def configure_client():
+def configure_db():
     client = AsyncClient(
         project="ioxio-local-dev",
         credentials=Mock(spec=google.auth.credentials.Credentials),
