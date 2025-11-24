@@ -191,14 +191,14 @@ def configure_multiple_clients():
     mock_creds = Mock(spec=google.auth.credentials.Credentials)
 
     # name = (default)
-    config.create(
+    config.add(
         prefix="ioxio-local-dev-",
         project=str(uuid.uuid4()) + "-",
         credentials=mock_creds
     )
 
     # name = multi
-    config.create(
+    config.add(
         name="multi",
         prefix="test-multi-",
         project="test-multi",

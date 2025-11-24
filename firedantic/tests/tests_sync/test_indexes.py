@@ -14,6 +14,7 @@ from firedantic import (
 )
 from firedantic.common import IndexField
 from firedantic.tests.tests_sync.conftest import MockListIndexOperation
+from firedantic.configurations import configuration
 
 import pytest  # noqa isort: skip
 
@@ -28,6 +29,7 @@ class BaseModelWithIndexes(Model):
 
 
 def test_set_up_composite_index(mock_admin_client) -> None:
+    configuration.add(name="(default)", prefix="test_", project="proj", client=mock_admin_client)
     class ModelWithIndexes(BaseModelWithIndexes):
         __composite_indexes__ = (
             collection_index(
@@ -46,9 +48,11 @@ def test_set_up_composite_index(mock_admin_client) -> None:
     call_list = mock_admin_client.create_index.call_args_list
     # index is a protobuf structure sent via Google Cloud Admin
     path = call_list[0][1]["request"].parent
+    expected_prefix = configuration.get_config("(default)").prefix
+
     assert (
         path
-        == f"projects/proj/databases/(default)/collectionGroups/{CONFIGURATIONS["(default)"].prefix}modelWithIndexes"
+        == f"projects/proj/databases/(default)/collectionGroups/{expected_prefix}modelWithIndexes"
     )
     index = call_list[0][1]["request"].index
     assert index.query_scope.name == "COLLECTION"
@@ -61,6 +65,7 @@ def test_set_up_composite_index(mock_admin_client) -> None:
 
 
 def test_set_up_collection_group_index(mock_admin_client) -> None:
+    configuration.add(name="(default)", prefix="test_", project="proj", client=mock_admin_client)
     class ModelWithIndexes(BaseModelWithIndexes):
         __composite_indexes__ = (
             collection_group_index(
@@ -79,9 +84,10 @@ def test_set_up_collection_group_index(mock_admin_client) -> None:
     call_list = mock_admin_client.create_index.call_args_list
     # index is a protobuf structure sent via Google Cloud Admin
     path = call_list[0][1]["request"].parent
+    expected_prefix = configuration.get_config("(default)").prefix
     assert (
         path
-        == f"projects/proj/databases/(default)/collectionGroups/{CONFIGURATIONS["(default)"].prefix}modelWithIndexes"
+        == f"projects/proj/databases/(default)/collectionGroups/{expected_prefix}modelWithIndexes"
     )
     index = call_list[0][1]["request"].index
     assert index.query_scope.name == "COLLECTION_GROUP"
@@ -90,6 +96,7 @@ def test_set_up_collection_group_index(mock_admin_client) -> None:
 
 
 def test_set_up_composite_indexes_and_policies(mock_admin_client) -> None:
+    configuration.add(name="(default)", prefix="test_", project="proj", client=mock_admin_client)
     class ModelWithIndexes(BaseModelWithIndexes):
         __composite_indexes__ = (
             collection_index(
@@ -114,6 +121,7 @@ def test_set_up_composite_indexes_and_policies(mock_admin_client) -> None:
 
 
 def test_set_up_many_composite_indexes(mock_admin_client) -> None:
+    configuration.add(name="(default)", prefix="test_", project="proj", client=mock_admin_client)
     class ModelWithIndexes(BaseModelWithIndexes):
         __composite_indexes__ = (
             collection_index(
@@ -141,6 +149,7 @@ def test_set_up_many_composite_indexes(mock_admin_client) -> None:
 
 
 def test_set_up_indexes_model_without_indexes(mock_admin_client) -> None:
+    configuration.add(name="(default)", prefix="test_", project="proj", client=mock_admin_client)
     class ModelWithoutIndexes(Model):
         __collection__ = "modelWithoutIndexes"
 
@@ -159,13 +168,15 @@ def test_set_up_indexes_model_without_indexes(mock_admin_client) -> None:
 
 
 def test_existing_indexes_are_skipped(mock_admin_client) -> None:
+    configuration.add(name="(default)", prefix="test_", project="proj", client=mock_admin_client)
+    expected_prefix = configuration.get_config("(default)").prefix
     resp = ListIndexesResponse(
         {
             "indexes": [
                 {
                     "name": (
                         "projects/fake-project/databases/(default)/collectionGroups/"
-                        f"{CONFIGURATIONS["(default)"].prefix}modelWithIndexes/123456"
+                        f"{expected_prefix}modelWithIndexes/123456"
                     ),
                     "query_scope": "COLLECTION",
                     "fields": [
@@ -177,7 +188,7 @@ def test_existing_indexes_are_skipped(mock_admin_client) -> None:
                 {
                     "name": (
                         "projects/fake-project/databases/(default)/collectionGroups/"
-                        f"{CONFIGURATIONS["(default)"].prefix}modelWithIndexes/67889"
+                        f"{expected_prefix}modelWithIndexes/67889"
                     ),
                     "query_scope": "COLLECTION",
                     "fields": [
@@ -217,13 +228,15 @@ def test_existing_indexes_are_skipped(mock_admin_client) -> None:
 def test_same_fields_in_another_collection(mock_admin_client) -> None:
     # Test that when another collection has an index with exactly the same fields,
     # it won't affect creating an index in the target collection
+    configuration.add(name="(default)", prefix="test_", project="proj", client=mock_admin_client)
+    expected_prefix = configuration.get_config("(default)").prefix
     resp = ListIndexesResponse(
         {
             "indexes": [
                 {
                     "name": (
                         "projects/fake-project/databases/(default)/collectionGroups/"
-                        f"{CONFIGURATIONS["(default)"].prefix}anotherModel/123456"
+                        f"{expected_prefix}anotherModel/123456"
                     ),
                     "query_scope": "COLLECTION",
                     "fields": [

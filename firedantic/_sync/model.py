@@ -51,7 +51,7 @@ def get_collection_name(model_class, name: Optional[str]) -> str:
     """
     if not name:
         raise CollectionNotDefined(f"Missing collection name for {model_class.__name__}")
-    return f"{configuration.get_config_name(name)}"
+    return f"{configuration.get_config(name)}"
 
 
 def _get_col_ref(model_class, name: Optional[str]) -> CollectionReference:
@@ -71,6 +71,7 @@ class BareModel(pydantic.BaseModel, ABC):
     __ttl_field__: Optional[str] = None
     __composite_indexes__: Optional[Iterable[IndexDefinition]] = None
     __db_config__: str = "(default)"  # can be overridden in subclasses
+
 
     @property
     def _resolve_config(self) -> str:

@@ -8,7 +8,6 @@ from google.cloud.firestore_v1 import (
     AsyncDocumentReference,
     DocumentSnapshot,
     FieldFilter,
-    AsyncClient
 )
 from google.cloud.firestore_v1.async_query import AsyncQuery
 from google.cloud.firestore_v1.async_transaction import AsyncTransaction
@@ -16,7 +15,7 @@ from google.cloud.firestore_v1.async_transaction import AsyncTransaction
 import firedantic.operators as op
 from firedantic import async_truncate_collection
 from firedantic.common import IndexDefinition, OrderDirection
-from firedantic.configurations import Configuration
+from firedantic.configurations import configuration
 from firedantic.exceptions import (
     CollectionNotDefined,
     InvalidDocumentID,
@@ -26,7 +25,6 @@ from firedantic.exceptions import (
 TAsyncBareModel = TypeVar("TAsyncBareModel", bound="AsyncBareModel")
 TAsyncBareSubModel = TypeVar("TAsyncBareSubModel", bound="AsyncBareSubModel")
 logger = getLogger("firedantic")
-configuration = Configuration()
 
 # https://firebase.google.com/docs/firestore/query-data/queries#query_operators
 FIND_TYPES = {
@@ -43,20 +41,56 @@ FIND_TYPES = {
 }
 
 
-def get_collection_name(cls, name: Optional[str]) -> str:
+def get_collection_name(cls, collection_name: Optional[str]) -> str:
     """
-    Returns the collection name.
+    Return the collection name for `cls`.
 
-    :raise CollectionNotDefined: If the collection name is not defined.
+    - If `collection_name` is provided, treat it as an explicit collection name
+      and prefix it using the configured prefix for the class (via __db_config__).
+    - Otherwise, use the class name and the configured prefix.
+
+    :raises CollectionNotDefined: If neither a class collection nor derived name is available.
     """
-    if not name:
-        raise CollectionNotDefined(f"Missing collection name for {cls.__name__}")
-    return f"{configuration.get_config_name}"
+    # Resolve the config name from the model class (default to "(default)")
+    config_name = getattr(cls, "__db_config__", "(default)")
+
+    # If caller provided an explicit collection string, apply prefix from config
+    if collection_name:
+        cfg = configuration.get_config(config_name)
+        prefix = cfg.prefix or ""
+        return f"{prefix}{collection_name}"
+    
+    if getattr(cls, "__collection__", None):
+        cfg = configuration.get_config(config_name)
+        return f"{cfg.prefix or ''}{cls.__collection__}"
+
+    raise CollectionNotDefined(f"Missing collection name for {cls.__name__}")
 
 
-def _get_col_ref(cls, name: Optional[str]) -> AsyncCollectionReference:
-    collection: AsyncCollectionReference = configuration.get_async_client().collection(get_collection_name(cls, name))
-    return collection
+
+def _get_col_ref(cls, collection_name: Optional[str]) -> AsyncCollectionReference:
+    """
+    Return an AsyncCollectionReference for the model class using the configured async client.
+
+    :param cls: model class
+    :param collection_name: optional explicit collection name override
+    :raises CollectionNotDefined: when collection cannot be resolved
+    """
+    # Build the prefixed collection name
+    col_name = get_collection_name(cls, collection_name)
+
+    # Resolve config name from class and fetch async client
+    config_name = getattr(cls, "__db_config__", "(default)")
+    async_client = configuration.get_async_client(config_name)
+
+    # Return the AsyncCollectionReference (this is a real client call)
+    col_ref = async_client.collection(col_name)
+
+    # Ensure we got the right object back
+    if not hasattr(col_ref, "document"):
+        raise RuntimeError(f"_get_col_ref returned unexpected object for {cls}: {type(col_ref)!r}")
+    return col_ref
+
 
 
 class AsyncBareModel(pydantic.BaseModel, ABC):
@@ -70,12 +104,8 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
     __document_id__: str
     __ttl_field__: Optional[str] = None
     __composite_indexes__: Optional[Iterable[IndexDefinition]] = None
-    __db_config__: str = "(default)"  # can be overridden in subclasses
+    __db_config__: str = "(default)"  # override in subclasses when needed
 
-    @property
-    def _client(self) -> AsyncClient:
-        """Return the Firestore client bound to this model’s configured DB."""
-        return configuration.get_async_client(self.__db_config__)
 
     async def save(
         self,
@@ -133,7 +163,7 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
 
         self.__dict__.update(updated_model.__dict__)
 
-    def get_document_id(self):
+    def get_document_id(self) -> Optional[str]:
         """
         Returns the document ID for this model instance.
 
@@ -178,8 +208,7 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
                 query = cls._add_filter(query, key, value)
 
         if order_by is not None:
-            for order_by_item in order_by:
-                field, direction = order_by_item
+            for field, direction in order_by:
                 query = query.order_by(field, direction=direction)  # type: ignore
         if limit is not None:
             query = query.limit(limit)  # type: ignore
@@ -275,8 +304,9 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
             raise ModelNotFoundError(
                 f"No '{cls.__name__}' found with {cls.__document_id__} '{doc_id}'"
             ) from e
+
         document: DocumentSnapshot = (
-            await cls._get_doc_ref().get(transaction=transaction)
+            await cls._get_col_ref().document(doc_id).get(transaction=transaction)
         )  # type: ignore
         data = document.to_dict()
         if data is None:
@@ -314,20 +344,14 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
         Returns the collection name.
         """
         return get_collection_name(cls, cls.__collection__)
-    
+
     def _get_doc_ref(self) -> AsyncDocumentReference:
         """
-        Return an AsyncDocumentReference for this instance.
-        If the instance already has an id, use it; otherwise call .document() with no args
-        so Firestore generates a new id.
-        """
-        col_ref = self._get_col_ref()
+        Returns the document reference.
 
-        doc_id = self.get_document_id()
-        if doc_id:
-            return col_ref.document(doc_id)
-        # no id -> create a new document reference (server will generate id on set)
-        return col_ref.document()
+        :raise DocumentIDError: If the ID is not valid.
+        """
+        return self._get_col_ref().document(self.get_document_id())  # type: ignore
 
     @staticmethod
     def _validate_document_id(document_id: str):

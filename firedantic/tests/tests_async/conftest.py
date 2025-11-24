@@ -1,4 +1,5 @@
 import uuid
+import os
 from datetime import datetime
 from typing import Any, List, Optional, Type
 
@@ -168,13 +169,16 @@ class ExpiringModel(AsyncModel):
     expire: datetime
     content: str
 
+# @pytest.fixture
+# def use_emulator(monkeypatch):
+#     monkeypatch.setenv("FIRESTORE_EMULATOR_HOST", "localhost:8080")
+#     monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "test-project")
 
-@pytest.fixture(scope="session", autouse=True)
-def use_emulator(monkeypatch):
-    monkeypatch.setenv("FIRESTORE_EMULATOR_HOST", "localhost:8080")
-    monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "test-project")
-    yield
-
+#     # point to your running emulator host:port
+#     os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
+#     # any non-empty project id is fine for emulator
+#     os.environ["GOOGLE_CLOUD_PROJECT"] = "test-project"
+#     yield
 
 @pytest.fixture(autouse=True)
 def configure_client():

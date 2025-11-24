@@ -38,6 +38,7 @@ TEST_PRODUCTS = [
 
 
 def test_save_model_old_way(create_company) -> None:
+    
     company = create_company()
 
     assert company.id is not None
@@ -569,7 +570,7 @@ def test_company_stats(configure_client, create_company) -> None:
 
 
 
-def test_subcollection_model_safety(configure_client) -> None:
+def test_subcollection_model_safety() -> None:
     """
     Ensure you shouldn't be able to use unprepared subcollection models accidentally
     """
@@ -578,7 +579,7 @@ def test_subcollection_model_safety(configure_client) -> None:
 
 
 
-def test_get_user_purchases(configure_client) -> None:
+def test_get_user_purchases() -> None:
     u = User(name="Foo")
     u.save()
     assert u.id
@@ -590,7 +591,7 @@ def test_get_user_purchases(configure_client) -> None:
 
 
 
-def test_reload(configure_client) -> None:
+def test_reload() -> None:
     u = User(name="Foo")
     u.save()
 
@@ -607,7 +608,7 @@ def test_reload(configure_client) -> None:
     with pytest.raises(ModelNotFoundError):
         another_user.reload()
 
-def test_reload_multiple(configure_multiple_clients) -> None:
+def test_reload_multiple() -> None:
     u1 = User(name="Coco")
     u1.save() 
 
@@ -635,7 +636,7 @@ def test_reload_multiple(configure_multiple_clients) -> None:
 
 
 
-def test_save_with_exclude_none(configure_client) -> None:
+def test_save_with_exclude_none() -> None:
     p = Profile(name="Foo")
     p.save(exclude_none=True)
 
@@ -657,7 +658,7 @@ def test_save_with_exclude_none(configure_client) -> None:
 
 
 
-def test_save_with_exclude_unset(configure_client) -> None:
+def test_save_with_exclude_unset() -> None:
     p = Profile(photo_url=None)
     p.save(exclude_unset=True)
 
