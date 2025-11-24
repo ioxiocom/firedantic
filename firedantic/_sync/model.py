@@ -43,20 +43,55 @@ FIND_TYPES = {
 }
 
 
-def get_collection_name(model_class, name: Optional[str]) -> str:
+def get_collection_name(cls, collection_name: Optional[str]) -> str:
     """
-    Returns the collection name.
+    Return the collection name for `cls`.
 
-    :raise CollectionNotDefined: If the collection name is not defined.
+    - If `collection_name` is provided, treat it as an explicit collection name
+      and prefix it using the configured prefix for the class (via __db_config__).
+    - Otherwise, use the class name and the configured prefix.
+
+    :raises CollectionNotDefined: If neither a class collection nor derived name is available.
     """
-    if not name:
-        raise CollectionNotDefined(f"Missing collection name for {model_class.__name__}")
-    return f"{configuration.get_config(name)}"
+    # Resolve the config name from the model class (default to "(default)")
+    config_name = getattr(cls, "__db_config__", "(default)")
+
+    # If caller provided an explicit collection string, apply prefix from config
+    if collection_name:
+        cfg = configuration.get_config(config_name)
+        prefix = cfg.prefix or ""
+        return f"{prefix}{collection_name}"
+    
+    if getattr(cls, "__collection__", None):
+        cfg = configuration.get_config(config_name)
+        return f"{cfg.prefix or ''}{cls.__collection__}"
+
+    raise CollectionNotDefined(f"Missing collection name for {cls.__name__}")
 
 
-def _get_col_ref(model_class, name: Optional[str]) -> CollectionReference:
-    collection: CollectionReference = get_collection_name(model_class, name)
-    return collection
+def _get_col_ref(cls, collection_name: Optional[str]) -> CollectionReference:
+    """
+    Return a CollectionReference for the model class using the configured client.
+
+    :param cls: model class
+    :param collection_name: optional explicit collection name override
+    :raises CollectionNotDefined: when collection cannot be resolved
+    """
+    # Build the prefixed collection name
+    col_name = get_collection_name(cls, collection_name)
+
+    # Resolve config name from class and fetch client
+    config_name = getattr(cls, "__db_config__", "(default)")
+    client = configuration.get_client(config_name)
+
+    # Return the AsyncCollectionReference (this is a real client call)
+    col_ref = client.collection(col_name)
+
+    # Ensure we got the right object back
+    if not hasattr(col_ref, "document"):
+        raise RuntimeError(f"_get_col_ref returned unexpected object for {cls}: {type(col_ref)!r}")
+    return col_ref
+
 
 
 class BareModel(pydantic.BaseModel, ABC):
@@ -171,7 +206,7 @@ class BareModel(pydantic.BaseModel, ABC):
 
         self.__dict__.update(updated_model.__dict__)
 
-    def get_document_id(self):
+    def get_document_id(self) -> Optional[str]:
         """
         Returns the document ID for this model instance.
 
@@ -216,8 +251,7 @@ class BareModel(pydantic.BaseModel, ABC):
                 query = cls._add_filter(query, key, value)
 
         if order_by is not None:
-            for order_by_item in order_by:
-                field, direction = order_by_item
+            for field, direction in order_by:
                 query = query.order_by(field, direction=direction)  # type: ignore
         if limit is not None:
             query = query.limit(limit)  # type: ignore

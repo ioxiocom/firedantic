@@ -82,7 +82,7 @@ def create_composite_index(
 
 
 def set_up_composite_indexes(
-    gcloud_project: Optional[str],
+    gcloud_project: str,
     models: Iterable[Type[BareModel]],
     database: str = "(default)",
     client: Optional[FirestoreAdminClient] = None,
@@ -101,10 +101,9 @@ def set_up_composite_indexes(
 
     operations = []
     for model in models:
-
         if not getattr(model, "__composite_indexes__", None):
             continue
-
+        
         # Resolve config name: prefer model __db_config__ if present; else default
         config_name = getattr(model, "__db_config__", "(default)")
 
