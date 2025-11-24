@@ -300,7 +300,7 @@ def test_model_aliases() -> None:
         "!:&+-*'()",
     ],
 )
-def test_models_with_valid_custom_id( model_id) -> None:
+def test_models_with_valid_custom_id(model_id) -> None:
     product_id = str(uuid4())
 
     product = Product(product_id=product_id, price=123.45, stock=2)

@@ -44,6 +44,7 @@ async def test_save_model(create_company) -> None:
     assert company.owner.first_name == "John"
     assert company.owner.last_name == "Doe"
 
+
 @pytest.mark.asyncio
 async def test_delete_model(create_company) -> None:
     company: Company = await create_company(
@@ -441,7 +442,7 @@ async def test_extra_fields() -> None:
 
 
 @pytest.mark.asyncio
-async def test_company_stats( create_company) -> None:
+async def test_company_stats(create_company) -> None:
     company: Company = await create_company(company_id="1234567-8")
     company_stats = company.stats()
 

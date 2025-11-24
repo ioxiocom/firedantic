@@ -13,8 +13,8 @@ from firedantic import (
     collection_index,
 )
 from firedantic.common import IndexField
-from firedantic.tests.tests_async.conftest import MockListIndexOperation
 from firedantic.configurations import configuration
+from firedantic.tests.tests_async.conftest import MockListIndexOperation
 
 import pytest  # noqa isort: skip
 
@@ -29,7 +29,10 @@ class BaseModelWithIndexes(AsyncModel):
 
 @pytest.mark.asyncio
 async def test_set_up_composite_index(mock_admin_client) -> None:
-    configuration.add(name="(default)", prefix="test_", project="proj", async_client=mock_admin_client)
+    configuration.add(
+        name="(default)", prefix="test_", project="proj", async_client=mock_admin_client
+    )
+
     class ModelWithIndexes(BaseModelWithIndexes):
         __composite_indexes__ = (
             collection_index(
@@ -64,7 +67,10 @@ async def test_set_up_composite_index(mock_admin_client) -> None:
 
 @pytest.mark.asyncio
 async def test_set_up_collection_group_index(mock_admin_client) -> None:
-    configuration.add(name="(default)", prefix="test_", project="proj", async_client=mock_admin_client)
+    configuration.add(
+        name="(default)", prefix="test_", project="proj", async_client=mock_admin_client
+    )
+
     class ModelWithIndexes(BaseModelWithIndexes):
         __composite_indexes__ = (
             collection_group_index(
@@ -96,7 +102,10 @@ async def test_set_up_collection_group_index(mock_admin_client) -> None:
 
 @pytest.mark.asyncio
 async def test_set_up_composite_indexes_and_policies(mock_admin_client) -> None:
-    configuration.add(name="(default)", prefix="test_", project="proj", async_client=mock_admin_client)
+    configuration.add(
+        name="(default)", prefix="test_", project="proj", async_client=mock_admin_client
+    )
+
     class ModelWithIndexes(BaseModelWithIndexes):
         __composite_indexes__ = (
             collection_index(
@@ -121,7 +130,10 @@ async def test_set_up_composite_indexes_and_policies(mock_admin_client) -> None:
 
 @pytest.mark.asyncio
 async def test_set_up_many_composite_indexes(mock_admin_client) -> None:
-    configuration.add(name="(default)", prefix="test_", project="proj", async_client=mock_admin_client)
+    configuration.add(
+        name="(default)", prefix="test_", project="proj", async_client=mock_admin_client
+    )
+
     class ModelWithIndexes(BaseModelWithIndexes):
         __composite_indexes__ = (
             collection_index(
@@ -149,7 +161,10 @@ async def test_set_up_many_composite_indexes(mock_admin_client) -> None:
 
 @pytest.mark.asyncio
 async def test_set_up_indexes_model_without_indexes(mock_admin_client) -> None:
-    configuration.add(name="(default)", prefix="test_", project="proj", async_client=mock_admin_client)
+    configuration.add(
+        name="(default)", prefix="test_", project="proj", async_client=mock_admin_client
+    )
+
     class ModelWithoutIndexes(AsyncModel):
         __collection__ = "modelWithoutIndexes"
 
@@ -168,7 +183,9 @@ async def test_set_up_indexes_model_without_indexes(mock_admin_client) -> None:
 
 @pytest.mark.asyncio
 async def test_existing_indexes_are_skipped(mock_admin_client) -> None:
-    configuration.add(name="(default)", prefix="test_", project="proj", async_client=mock_admin_client)
+    configuration.add(
+        name="(default)", prefix="test_", project="proj", async_client=mock_admin_client
+    )
     expected_prefix = configuration.get_config("(default)").prefix
 
     resp = ListIndexesResponse(
@@ -227,7 +244,9 @@ async def test_existing_indexes_are_skipped(mock_admin_client) -> None:
 
 @pytest.mark.asyncio
 async def test_same_fields_in_another_collection(mock_admin_client) -> None:
-    configuration.add(name="(default)", prefix="test_", project="proj", async_client=mock_admin_client)
+    configuration.add(
+        name="(default)", prefix="test_", project="proj", async_client=mock_admin_client
+    )
     expected_prefix = configuration.get_config("(default)").prefix
 
     # Test that when another collection has an index with exactly the same fields,
