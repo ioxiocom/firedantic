@@ -16,10 +16,10 @@ from firedantic import (
     SubCollection,
     SubModel,
 )
-from firedantic.configurations import configure, Configuration, get_transaction
+from firedantic.configurations import configure, get_transaction
 from firedantic.exceptions import ModelNotFoundError
 
-from unittest.mock import MagicMock, Mock  # noqa isort: skip
+from unittest.mock import Mock, Mock  # noqa isort: skip
 
 
 class CustomIDModel(BareModel):
@@ -44,6 +44,7 @@ class CustomIDModelExtra(BareModel):
     class Config:
         extra = "forbid"
 
+
 class CustomIDConflictModel(Model):
     __collection__ = "custom"
 
@@ -60,21 +61,20 @@ class City(Model):
     __collection__ = "cities"
     population: int
 
-    def increment_population(self, increment: int = 1, config: str = "(default)"):
+    def increment_population(self, increment: int = 1):
         @transactional
         def _increment_population(transaction: Transaction) -> None:
-            self.reload(config=config, transaction=transaction)
+            self.reload(transaction=transaction)
             self.population += increment
-            self.save(config=config, transaction=transaction)
+            self.save(transaction=transaction)
 
-        t = get_transaction(config)
+        t = get_transaction()
         _increment_population(transaction=t)
 
 
 class Owner(BaseModel):
     """Dummy owner Pydantic model."""
 
-    __collection__ = "owners"
     first_name: str
     last_name: str
 
@@ -146,6 +146,7 @@ class Profile(Model):
     class Config:
         extra = "forbid"
 
+
 class TodoList(Model):
     """Dummy todo list Firedantic model."""
 
@@ -157,6 +158,7 @@ class TodoList(Model):
     class Config:
         extra = "forbid"
 
+
 class ExpiringModel(Model):
     """Dummy expiring model Firedantic model."""
 
@@ -167,16 +169,8 @@ class ExpiringModel(Model):
     content: str
 
 
-
-# @pytest.fixture(scope="session", autouse=True)
-# def use_emulator(monkeypatch):
-#     monkeypatch.setenv("FIRESTORE_EMULATOR_HOST", "localhost:8080")
-#     monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "test-project")
-#     yield
-
-
-# allow configuring test client in this way to ensure old 'configure' method remains intact
-def configure_client_old():
+@pytest.fixture(autouse=True)
+def configure_db():
     client = Client(
         project="ioxio-local-dev",
         credentials=Mock(spec=google.auth.credentials.Credentials),
@@ -185,41 +179,9 @@ def configure_client_old():
     prefix = str(uuid.uuid4()) + "-"
     configure(client, prefix)
 
-@pytest.fixture
-def configure_multiple_clients():
-    config = Configuration()
-    mock_creds = Mock(spec=google.auth.credentials.Credentials)
-
-    # name = (default)
-    config.add(
-        prefix="ioxio-local-dev-",
-        project=str(uuid.uuid4()) + "-",
-        credentials=mock_creds
-    )
-
-    # name = multi
-    config.add(
-        name="multi",
-        prefix="test-multi-",
-        project="test-multi",
-        credentials=mock_creds,
-    )
-
-
 
 @pytest.fixture
 def create_company():
-    # Register the config under the name "companies"
-    config = Configuration()
-    config.add(
-        name="companies",
-        prefix="test_",
-        project="test-project",
-    )
-
-    # # cleanup after test(s)
-    # config.configurations.pop("companies", None)
-
     def _create(
         company_id: str = "1234567-8", first_name: str = "John", last_name: str = "Doe"
     ):
@@ -233,9 +195,7 @@ def create_company():
 
 @pytest.fixture
 def create_product():
-    def _create(
-        product_id: Optional[str] = None, price: float = 1.23, stock: int = 3
-    ):
+    def _create(product_id: Optional[str] = None, price: float = 1.23, stock: int = 3):
         if not product_id:
             product_id = str(uuid.uuid4())
         p = Product(product_id=product_id, price=price, stock=stock)

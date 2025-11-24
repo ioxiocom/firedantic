@@ -16,7 +16,7 @@ from google.cloud.firestore_v1.transaction import Transaction
 import firedantic.operators as op
 from firedantic import truncate_collection
 from firedantic.common import IndexDefinition, OrderDirection
-from firedantic.configurations import Configuration
+from firedantic.configurations import configuration
 from firedantic.exceptions import (
     CollectionNotDefined,
     InvalidDocumentID,
@@ -26,7 +26,6 @@ from firedantic.exceptions import (
 TBareModel = TypeVar("TBareModel", bound="BareModel")
 TBareSubModel = TypeVar("TBareSubModel", bound="BareSubModel")
 logger = getLogger("firedantic")
-configuration = Configuration()
 
 # https://firebase.google.com/docs/firestore/query-data/queries#query_operators
 FIND_TYPES = {
@@ -45,7 +44,7 @@ FIND_TYPES = {
 
 def get_collection_name(cls, collection_name: Optional[str]) -> str:
     """
-    Return the collection name for `cls`.
+    Returns the collection name for `cls`.
 
     - If `collection_name` is provided, treat it as an explicit collection name
       and prefix it using the configured prefix for the class (via __db_config__).
