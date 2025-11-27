@@ -219,6 +219,19 @@ class BareModel(pydantic.BaseModel, ABC):
     _OrderBy = List[Tuple[str, OrderDirection]]
 
     @classmethod
+    def delete_all_for_model(cls, config_name: Optional[str] = None) -> None:
+
+         # Resolve config to use (explicit -> instance -> class -> default)
+        config_name = cls.__db_config__
+
+        client = configuration.get_client(config_name)
+        col_name = configuration.get_collection_name(cls, config_name=config_name)
+        col_ref = client.collection(col_name)
+
+        for doc in col_ref.stream():
+            doc.reference.delete()
+
+    @classmethod
     def find(  # pylint: disable=too-many-arguments
         cls: Type[TBareModel],
         filter_: Optional[Dict[str, Union[str, dict]]] = None,
@@ -391,7 +404,8 @@ class BareModel(pydantic.BaseModel, ABC):
 
         :raise DocumentIDError: If the ID is not valid.
         """
-        return self._get_col_ref().document(self.get_document_id())  # type: ignore
+        doc_id = self.get_document_id()
+        return self._get_col_ref().document(doc_id)  # type: ignore
 
     @staticmethod
     def _validate_document_id(document_id: str):

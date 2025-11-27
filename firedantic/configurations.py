@@ -174,15 +174,19 @@ class Configuration:
         return self.get_async_client(name=name).transaction()
     
     # helpers for models to derive collection name / reference
-    def get_collection_name(self, model_class: Type, name: Optional[str] = None) -> str:
+    def get_collection_name(self, model_class: Type, config_name: Optional[str] = None) -> str:
         """
         Return the collection name string (prefix + model name).
         """
-        resolved = name if name is not None else "(default)"
+        resolved = config_name if config_name is not None else "(default)"
         cfg = self.get_config(resolved)
         prefix = cfg.prefix or ""
-        model_name = model_class.__name__
-        return f"{prefix}{model_name[0].lower()}{model_name[1:]}"  # (lower case first letter of model name)
+        
+        if hasattr(model_class, "__collection__"):
+            return prefix + model_class.__collection__
+        else:
+            model_name = model_class.__name__
+            return f"{prefix}{model_name[0].lower()}{model_name[1:]}"  # (lower case first letter of model name)
 
     def get_collection_ref(self, model_class: Type, name: Optional[str] = None) -> CollectionReference:
         """
