@@ -1,6 +1,5 @@
 from unittest.mock import Mock
 
-from pydantic import BaseAsyncModel
 from firedantic import AsyncModel
 from firedantic.configurations import configuration, AsyncClient
 
@@ -9,7 +8,7 @@ import sys
 
 
 ## With single async client
-async def old_way():
+async def test_with_default():
     
     class Owner(AsyncModel):
         """Dummy owner Pydantic model."""
@@ -57,13 +56,12 @@ async def old_way():
     # Delete everything from the database
     await company.delete_all_for_model()
     deletion_success = [] == await Company.find({"company_id": "1234567-8a"})
-    print(f"\nDeletion of (default) DB succeeded: {deletion_success}\n")
-
-
+    if not deletion_success:
+        print(f"\nDeletion of (default) DB failed\n")
 
 
 # Now with multiple ASYNC clients/dbs:
-async def new_way():
+async def test_with_multiple():
 
     config_name = "companies"
 
@@ -169,10 +167,12 @@ async def new_way():
     await bc.delete_all_for_model()
 
     deletion_success = [] == await Company.find({"company_id": "1234567-8a"})
-    print(f"\nDeletion of 'companies' DB succeeded: {deletion_success}")
+    if not deletion_success:
+        print(f"\nDeletion of Company DB failed\n")
 
     deletion_success = [] == await BillingCompany.find({"billing_account.billing_id": 801048})
-    print(f"\nDeletion of 'billing' DB succeeded: {deletion_success}")
+    if not deletion_success:
+        print(f"\nDeletion of BillingCompany DB failed\n")
 
 
 
@@ -187,14 +187,5 @@ sys.excepthook = dbg_hook
 
 if __name__ == "__main__":
     import asyncio
-
-    print("\n---- Running OLD way ----")
-    asyncio.run(old_way())
-
-    print("\n---- Running NEW way ----")
-    asyncio.run(new_way())
-
-
-
-
-
+    asyncio.run(test_with_default())
+    asyncio.run(test_with_multiple())

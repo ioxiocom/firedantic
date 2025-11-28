@@ -1,6 +1,5 @@
 from unittest.mock import Mock
 
-# from pydantic import BaseModel
 from firedantic import Model
 from firedantic.configurations import configuration, Client
 
@@ -8,7 +7,7 @@ import google.auth.credentials
 
 
 ## With single sync client
-def old_way():
+def test_with_default():
     
     class Owner(Model):
         """Dummy owner Pydantic model."""
@@ -58,7 +57,7 @@ def old_way():
     company.delete_all_for_model()
 
 # Now with multiple SYNC clients/dbs:
-def new_way():
+def test_with_multiple():
 
     config_name = "companies"
 
@@ -164,11 +163,5 @@ def new_way():
     bc.delete_all_for_model()
 
 
-
-
-print("\n---- Running OLD way ----")
-old_way()
-print("\n---- Running NEW way ----")
-new_way()
-
-
+test_with_default()
+test_with_multiple()
