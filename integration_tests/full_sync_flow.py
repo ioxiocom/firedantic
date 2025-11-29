@@ -1,9 +1,52 @@
 from unittest.mock import Mock
 
+from pydantic import BaseModel
 from firedantic import Model
-from firedantic.configurations import configuration, Client
+from firedantic.configurations import configuration, Client, configure
 
 import google.auth.credentials
+from os import environ
+
+
+def test_old_way():
+    # This is the old way of doing things, kept for backwards compatibility.
+    # Firestore emulator must be running if using locally.
+    if environ.get("FIRESTORE_EMULATOR_HOST"):
+        client = Client(
+            project="firedantic-test",
+            credentials=Mock(spec=google.auth.credentials.Credentials)
+        )
+    else:
+        client = Client()
+
+    configure(client, prefix="firedantic-test-")
+
+    class Owner(BaseModel):
+        """Dummy owner Pydantic model."""
+        first_name: str
+        last_name: str
+
+
+    class Company(Model):
+        """Dummy company Firedantic model."""
+        __collection__ = "companies"
+        company_id: str
+        owner: Owner
+
+    # Now you can use the model to save it to Firestore
+    owner = Owner(first_name="Bill", last_name="Smith")
+    company = Company(company_id="1234567-7", owner=owner)
+    company.save()
+
+    # Reloads model data from the database
+    company.reload()
+
+    # Finding data from DB
+    print(f"\nNumber of company owners with first name: 'Bill': {len(Company.find({"owner.first_name": "Bill"}))}")
+    print(f"\nNumber of companies with id: '1234567-7': {len(Company.find({"company_id": "1234567-7"}))}")
+
+    # Delete everything from the database
+    company.delete_all_for_model()
 
 
 ## With single sync client
@@ -49,9 +92,7 @@ def test_with_default():
     
     # Finding data from DB
     print(f"\nNumber of company owners with first name: 'John': {len(Company.find({"owner.first_name": "John"}))}")
-
     print(f"\nNumber of companies with id: '1234567-8': {len(Company.find({"company_id": "1234567-8"}))}")
-
 
     # Delete everything from the database
     company.delete_all_for_model()
@@ -153,15 +194,18 @@ def test_with_multiple():
 
     # 3. Finding data
     print(f"\nNumber of company owners with first name: 'Alice': {len(Company.find({"owner.first_name": "Alice"}))}")
-
     print(f"\nNumber of billing companies with id: '1234567-8c': {len(BillingCompany.find({"company_id": "1234567-8c"}))}")
-
     print(f"\nNumber of billing accounts with billing_id: 801048: {len(BillingCompany.find({"billing_account.billing_id": 801048}))}")
 
     # now delete everything from the DBs:
     company.delete_all_for_model()
     bc.delete_all_for_model()
 
+## Ensure existing configure function works for backwards compatibility
+test_old_way()
 
+## Ensure new way with single default client works
 test_with_default()
+
+## Ensure new way with multiple clients works
 test_with_multiple()

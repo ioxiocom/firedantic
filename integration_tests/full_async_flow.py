@@ -1,11 +1,54 @@
 from unittest.mock import Mock
 
 from firedantic import AsyncModel
-from firedantic.configurations import configuration, AsyncClient
+from firedantic.configurations import configuration, AsyncClient, configure
 
 import google.auth.credentials
 import sys
+from os import environ
 
+async def test_old_way():
+    # This is the old way of doing things, kept for backwards compatibility.
+    # Firestore emulator must be running if using locally.
+    if environ.get("FIRESTORE_EMULATOR_HOST"):
+        client = AsyncClient(
+            project="firedantic-test",
+            credentials=Mock(spec=google.auth.credentials.Credentials)
+        )
+    else:
+        client = AsyncClient()
+
+    configure(client, prefix="firedantic-test-")
+
+    class Owner(AsyncModel):
+        """Dummy owner Pydantic model."""
+        first_name: str
+        last_name: str
+
+
+    class Company(AsyncModel):
+        """Dummy company Firedantic model."""
+        __collection__ = "companies"
+        company_id: str
+        owner: Owner
+
+    # Now you can use the model to save it to Firestore
+    owner = Owner(first_name="Bill", last_name="Smith")
+    company = Company(company_id="1234567-7", owner=owner)
+    await company.save()
+
+    # Reloads model data from the database
+    await company.reload()
+
+    # Finding data from DB
+    print(f"\nNumber of company owners with first name: 'Bill': {len(await Company.find({"owner.first_name": "Bill"}))}")
+    print(f"\nNumber of companies with id: '1234567-7': {len(await Company.find({"company_id": "1234567-7"}))}")
+
+    # Delete everything from the database
+    await company.delete_all_for_model()
+    deletion_success = [] == await Company.find({"company_id": "1234567-7"})
+    if not deletion_success:
+        print(f"\nDeletion of (default) DB failed\n")
 
 ## With single async client
 async def test_with_default():
@@ -185,7 +228,9 @@ def dbg_hook(exctype, value, tb):
 
 sys.excepthook = dbg_hook
 
+# Run the tests
 if __name__ == "__main__":
     import asyncio
+    asyncio.run(test_old_way())
     asyncio.run(test_with_default())
     asyncio.run(test_with_multiple())
