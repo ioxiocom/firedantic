@@ -171,10 +171,15 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
 
         :raise DocumentIDError: If the ID is not valid.
         """
+        doc_ref = self._get_doc_ref()
+
         if transaction is not None:
-            transaction.delete(self._get_doc_ref())
+            print(f"\nDeleting document: {doc_ref.path}")
+            transaction.delete(doc_ref)
+            print(f"Deleted document in transaction: {doc_ref.path}\n")
         else:
-            await self._get_doc_ref().delete()
+            print(f"\nTransaction not provided, deleting document: {self._get_doc_ref().path}")
+            await doc_ref.delete()
 
     async def reload(self, transaction: Optional[AsyncTransaction] = None) -> None:
         """

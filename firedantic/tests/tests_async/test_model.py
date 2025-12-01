@@ -589,7 +589,8 @@ async def test_delete_in_transaction() -> None:
     assert p.id
 
     t = get_async_transaction()
-    await delete_in_transaction(t, p.id)
+    async with t:
+        await delete_in_transaction(t, p.id)
 
     with pytest.raises(ModelNotFoundError):
         await Profile.get_by_id(p.id)
