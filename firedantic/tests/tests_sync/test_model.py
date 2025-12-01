@@ -44,7 +44,7 @@ def test_save_model(create_company) -> None:
     assert company.owner.last_name == "Doe"
 
 
-def test_delete_model(create_company) -> None:
+def test_delete_all_for_model(create_company) -> None:
     company: Company = create_company(
         company_id="11223344-5", first_name="Jane", last_name="Doe"
     )
@@ -52,7 +52,7 @@ def test_delete_model(create_company) -> None:
     _id = company.id
     assert _id
 
-    company.delete()
+    company.delete_all_for_model()
 
     with pytest.raises(ModelNotFoundError):
         Company.get_by_id(_id)

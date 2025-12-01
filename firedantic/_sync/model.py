@@ -42,7 +42,7 @@ FIND_TYPES = {
 }
 
 
-def get_collection_name(cls, collection_name: Optional[str]) -> str:
+def get_collection_name(cls, collection_name: Optional[str] = None) -> str:
     """
     Returns the collection name for `cls`.
 
@@ -225,7 +225,7 @@ class BareModel(pydantic.BaseModel, ABC):
         config_name = cls.__db_config__
 
         client = configuration.get_client(config_name)
-        col_name = configuration.get_collection_name(cls, config_name=config_name)
+        col_name = get_collection_name(cls)
         col_ref = client.collection(col_name)
 
         for doc in col_ref.stream():

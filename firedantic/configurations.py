@@ -9,7 +9,6 @@ from google.cloud.firestore_v1 import (
     CollectionReference,
     Transaction
 )
-from firedantic.exceptions import CollectionNotDefined
 from pydantic import BaseModel
 
 # --- Old compatibility surface (kept for backwards compatibility) ---
@@ -183,10 +182,6 @@ class Configuration:
         cfg = self.get_config(resolved)
         prefix = cfg.prefix or ""
 
-        # Resolve collection to use (explicit -> instance -> class -> default)
-        # col_name = getattr(self, "__collection__", None)
-        # if not col_name:
-        #     raise CollectionNotDefined(f"Missing collection name for {resolved}")
         if hasattr(model_class, "__collection__"):
             return prefix + model_class.__collection__
         else:
