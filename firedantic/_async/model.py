@@ -41,7 +41,7 @@ FIND_TYPES = {
 }
 
 
-def get_collection_name(cls, collection_name: Optional[str]) -> str:
+def get_collection_name(cls, collection_name: Optional[str] = None) -> str:
     """
     Return the collection name for `cls`.
 
@@ -132,7 +132,7 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
         if not resolved:
             resolved = getattr(self.__class__, "__db_config__", "(default)")
 
-        # Build payload - model_dump?
+        # Build payload
         data = self.model_dump(
             by_alias=True, 
             exclude_unset=exclude_unset, 
@@ -140,10 +140,15 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
         )
         if self.__document_id__ in data:
             del data[self.__document_id__]
+
+        async_client = configuration.get_async_client(resolved)
+        if async_client is None:
+            raise RuntimeError(f"No async client configured for config '{resolved}'")
         
-        # Get Async collection reference using configuration - what?
-        col_ref = configuration.get_async_collection_ref(self.__class__, name=resolved)
-        
+        # Get collection reference from async_client with the collection_name
+        collection_name = self.get_collection_name()
+        col_ref = async_client.collection(collection_name)
+
         # Build doc ref (use provided id if set, otherwise let server generate)
         doc_id = self.get_document_id()
         if doc_id:
@@ -158,7 +163,6 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
         else:
             await doc_ref.set(data)
 
-        # what does this do?
         setattr(self, self.__document_id__, doc_ref.id)
 
     async def delete(self, transaction: Optional[AsyncTransaction] = None) -> None:
@@ -209,7 +213,7 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
         config_name = cls.__db_config__
 
         client = configuration.get_async_client(config_name)
-        col_name = configuration.get_collection_name(cls, config_name=config_name)
+        col_name = get_collection_name(cls)
         col_ref = client.collection(col_name)
 
         async for doc in col_ref.stream():
@@ -482,7 +486,7 @@ class AsyncBareSubModel(AsyncBareModel, ABC):
         )
 
     @classmethod
-    def _get_col_ref(cls, collection_name: Optional[str]) -> AsyncCollectionReference:
+    def _get_col_ref(cls) -> AsyncCollectionReference:
         """
         Returns the collection reference.
         """

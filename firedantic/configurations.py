@@ -9,6 +9,7 @@ from google.cloud.firestore_v1 import (
     CollectionReference,
     Transaction
 )
+from firedantic.exceptions import CollectionNotDefined
 from pydantic import BaseModel
 
 # --- Old compatibility surface (kept for backwards compatibility) ---
@@ -181,7 +182,11 @@ class Configuration:
         resolved = config_name if config_name is not None else "(default)"
         cfg = self.get_config(resolved)
         prefix = cfg.prefix or ""
-        
+
+        # Resolve collection to use (explicit -> instance -> class -> default)
+        # col_name = getattr(self, "__collection__", None)
+        # if not col_name:
+        #     raise CollectionNotDefined(f"Missing collection name for {resolved}")
         if hasattr(model_class, "__collection__"):
             return prefix + model_class.__collection__
         else:
@@ -209,7 +214,9 @@ class Configuration:
         async_client = cfg.async_client
         if async_client is None:
             raise RuntimeError(f"No async client configured for config '{resolved}'")
+        
         collection_name = self.get_collection_name(model_class, resolved)
+
         return async_client.collection(collection_name)
     
 # make the module-level singleton available to models/tests

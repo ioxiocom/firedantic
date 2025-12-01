@@ -45,7 +45,7 @@ async def test_save_model(create_company) -> None:
     assert company.owner.last_name == "Doe"
 
 @pytest.mark.asyncio
-async def test_delete_model(create_company) -> None:
+async def test_delete_all_for_model(create_company) -> None:
     company: Company = await create_company(
         company_id="11223344-5", first_name="Jane", last_name="Doe"
     )
@@ -53,7 +53,7 @@ async def test_delete_model(create_company) -> None:
     _id = company.id
     assert _id
 
-    await company.delete()
+    await company.delete_all_for_model()
 
     with pytest.raises(ModelNotFoundError):
         await Company.get_by_id(_id)
@@ -275,6 +275,7 @@ async def test_get_by_empty_str_id() -> None:
 async def test_missing_collection() -> None:
     class User(AsyncModel):
         name: str
+        # normally __collection__ would be defined here
 
     with pytest.raises(CollectionNotDefined):
         await User(name="John").save()
@@ -441,7 +442,7 @@ async def test_extra_fields() -> None:
 
 
 @pytest.mark.asyncio
-async def test_company_stats( create_company) -> None:
+async def test_company_stats(create_company) -> None:
     company: Company = await create_company(company_id="1234567-8")
     company_stats = company.stats()
 
