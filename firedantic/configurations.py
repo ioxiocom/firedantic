@@ -2,6 +2,8 @@ from os import environ
 from typing import Any, Dict, Optional, Type, Union
 
 from google.auth.credentials import Credentials
+from google.api_core.client_options import ClientOptions
+from google.api_core.gapic_v1.client_info import ClientInfo
 from google.cloud.firestore_v1 import (
     AsyncClient, 
     AsyncTransaction, 
@@ -9,6 +11,9 @@ from google.cloud.firestore_v1 import (
     CollectionReference,
     Transaction
 )
+from google.cloud.firestore_admin_v1 import FirestoreAdminClient
+from google.cloud.firestore_admin_v1.services.firestore_admin import FirestoreAdminAsyncClient
+from google.cloud.firestore_admin_v1.services.firestore_admin.transports.base import DEFAULT_CLIENT_INFO
 from pydantic import BaseModel
 
 # --- Old compatibility surface (kept for backwards compatibility) ---
@@ -46,14 +51,24 @@ def get_async_transaction() -> AsyncTransaction:
 class ConfigItem(BaseModel):
     """
     Holds configuration for a named Firestore connection.
-    Use arbitrary_types_allowed so we can store Client/AsyncClient/Credentials objects.
+    Clients may be provided directly, or created lazily from the stored params.
     """
     name: str
-    prefix: str
+    prefix: str = ""
     project: Optional[str] = None
-    credentials: Optional[Credentials] = None
+    database: str = "(default)"
+
+    # client objects (may be None; created lazily)
     client: Optional[Any] = None
     async_client: Optional[Any] = None
+    admin_client: Optional[Any] = None
+    async_admin_client: Optional[Any] = None
+
+    # creation params (kept so we can lazily instantiate clients)
+    credentials: Optional[Credentials] = None
+    client_info: Optional[Any] = None
+    client_options: Optional[Union[Dict[str, Any], Any]] = None
+    admin_transport: Optional[Any] = None
 
     model_config = {"arbitrary_types_allowed": True}
 
@@ -67,7 +82,7 @@ class Configuration:
     """
 
     def __init__(self) -> None:
-        
+
         # mapping name -> ConfigItem
         self.config: Dict[str, ConfigItem] = {}
 
@@ -78,10 +93,56 @@ class Configuration:
             name="(default)",
             prefix="",
             project=default_project,
-            credentials=None,
-            client=None,
-            async_client=None
+            database="(default)",
         )
+
+    def add(
+        self,
+        name: str = "(default)",  # adding a config without a name results in overriding the default
+        *,
+        project: Optional[str] = None,
+        database: str = "(default)",
+        prefix: str = "",
+        client: Optional[Any] = None,
+        async_client: Optional[Any] = None,
+        admin_client: Optional[Any] = None,
+        async_admin_client: Optional[Any] = None,
+        credentials: Optional[Credentials] = None,
+        client_info: Optional[Any] = None,
+        client_options: Optional[Union[Dict[str, Any], Any]] = None,
+        admin_transport: Optional[Any] = None,
+    ) -> ConfigItem:
+        """
+        Add a named configuration.
+
+        You may either pass a pre-built client and/or an async_client,
+        or provide only project/credentials so clients will be constructed lazily.
+        """
+        
+        normalized_project = self._normalize_project(project)
+        
+        # Construct clients lazily, only when they were not supplied
+        # if client is None and normalized_project is not None:
+        #     client = Client(project=normalized_project, credentials=credentials)
+        # if async_client is None and normalized_project is not None:
+        #     async_client = AsyncClient(project=normalized_project, credentials=credentials)
+
+        item = ConfigItem(
+            name=name,
+            project=normalized_project,
+            database=database,
+            prefix=prefix,
+            client=client,
+            async_client=async_client,
+            admin_client=admin_client,
+            async_admin_client=async_admin_client,
+            credentials=credentials,
+            client_info=client_info,
+            client_options=client_options,
+            admin_transport=admin_transport,
+        )
+        self.config[name] = item
+        return item
     
     # dict-like accessors
     def __getitem__(self, name: str) -> ConfigItem:
@@ -101,6 +162,9 @@ class Configuration:
                 f"Configuration '{name}' not found. Available: {list(self.config.keys())}"
             ) from err
         
+    def get_config_names(self):
+        return list(self.config.keys())
+        
     def _normalize_project(self, project: Optional[str]) -> Optional[str]:
         """
         Convert empty-string project to None so Client(...) doesn't get empty string for project (i.e. project="")
@@ -109,64 +173,76 @@ class Configuration:
             return project
         return environ.get("GOOGLE_CLOUD_PROJECT") or None
 
-
-    """
-    Add a named configuration.
-
-    You may either pass pre-built client and/or async_client,
-    or provide only project/credentials so clients will be constructed here.
-    """
-    def add(
-        self,
-        name: str = "(default)",  # adding a config without a name results in overriding the default
-        prefix: str = "",
-        project: Optional[str] = None,
-        credentials: Optional[Credentials] = None,
-        client: Optional[Client] = None,
-        async_client: Optional[AsyncClient] = None,
-    ) -> ConfigItem:
-        
-        normalized_project = self._normalize_project(project)
-        
-        # Construct clients lazily, only when they were not supplied
-        if client is None and normalized_project is not None:
-            client = Client(project=normalized_project, credentials=credentials)
-        if async_client is None and normalized_project is not None:
-            async_client = AsyncClient(project=normalized_project, credentials=credentials)
-
-        item = ConfigItem(
-            name=name,
-            prefix=prefix,
-            project=normalized_project,
-            credentials=credentials,
-            client=client,
-            async_client=async_client,
-        )
-        self.config[name] = item
-        return item
-
-    # client accessors (lazy-check and raise errors)
+    # sync client accessor (lazy-create)
     def get_client(self, name: Optional[str] = None) -> Client:
         resolved = name if name is not None else "(default)"
         cfg = self.get_config(resolved)
         if cfg.client is None:
-            # give a clear error; tests should register a mock client or provide a project
-            raise RuntimeError(
-                f"No sync client configured for config '{resolved}'. "
-                "Call configuration.add(..., client=...) or set GOOGLE_CLOUD_PROJECT and let add() build the client."
+            # don't try to create a client if we lack project info
+            if cfg.project is None:
+                raise RuntimeError(
+                    f"No sync client configured for '{resolved}' and no project available; "
+                    "call configuration.add(..., client=..., project=...) or set " \
+                    "GOOGLE_CLOUD_PROJECT and let add() build the client."
+                )
+            cfg.client = Client(
+                project=cfg.project,
+                credentials=cfg.credentials,
+                client_info=cfg.client_info,
+                client_options=cfg.client_options,  # type: ignore[arg-type]
+                # NOTE: modern firestore clients may accept database param in constructor; keep for future.
             )
         return cfg.client
     
+    # async client accessor (lazy-create)
     def get_async_client(self, name: Optional[str] = None) -> AsyncClient:
         resolved = name if name is not None else "(default)"
         cfg = self.get_config(resolved)
+
         if cfg.async_client is None:
-            raise RuntimeError(
-                f"No async client configured for config '{resolved}'. "
-                "Call configuration.add(..., async_client=...) or set GOOGLE_CLOUD_PROJECT and let add() build the client."
+            if cfg.project is None:
+                raise RuntimeError(
+                    f"No async client configured for '{resolved}' and no project available; "
+                    "call configuration.add(..., async_client=..., project=...) or set " \
+                    "GOOGLE_CLOUD_PROJECT and let add() build the client."
+                )
+            cfg.async_client = AsyncClient(
+                project=cfg.project,
+                credentials=cfg.credentials,
+                client_info=cfg.client_info,
+                client_options=cfg.client_options,  # type: ignore[arg-type]
             )
         return cfg.async_client
+    
+    # admin client accessor (lazy-create)
+    def get_admin_client(self, name: Optional[str] = None) -> FirestoreAdminClient:
+        resolved = name if name is not None else "(default)"
+        cfg = self.get_config(resolved)
+       
+        if cfg.admin_client is None:
+            cfg.admin_client = FirestoreAdminClient(
+                credentials=cfg.credentials,
+                transport=cfg.admin_transport,
+                client_options=cfg.client_options,  # type: ignore[arg-type]
+                client_info=cfg.client_info or DEFAULT_CLIENT_INFO,
+            )
+        return cfg.admin_client
 
+    # async admin client accessor (lazy-create)
+    def get_async_admin_client(self, name: Optional[str] = None) -> FirestoreAdminAsyncClient:
+        resolved = name if name is not None else "(default)"
+        cfg = self.get_config(resolved)
+        
+        if cfg.async_admin_client is None:
+            cfg.async_admin_client = FirestoreAdminAsyncClient(
+                credentials=cfg.credentials,
+                transport=cfg.admin_transport,
+                client_options=cfg.client_options,  # type: ignore[arg-type]
+                client_info=cfg.client_info or DEFAULT_CLIENT_INFO,
+            )
+        return cfg.async_admin_client
+
+    # transactions
     def get_transaction(self, name: Optional[str] = None) -> Transaction:
         return self.get_client(name=name).transaction()
 

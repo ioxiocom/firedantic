@@ -130,6 +130,7 @@ async def set_up_composite_indexes(
     return operations
 
 
+## Edit this to handle different project and databases
 async def set_up_composite_indexes_and_ttl_policies(
     gcloud_project: str,
     models: Iterable[Type[AsyncBareModel]],
