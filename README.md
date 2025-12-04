@@ -16,7 +16,40 @@ The package is available on PyPI:
 pip install firedantic
 ```
 
+## Quick overview
+
+Firedantic provides simple Pydantic-based models for Firestore, with both sync and async model classes, helpers for composite indexes and TTL policies, and an improved configuration system that supports multiple named Firestore connections.
+
 ## Usage
+
+### Migration Guide: Legacy `configure()` → New `Configuration`
+
+We introduced a new, more flexible `Configuration` registry to support multiple Firestore clients, lazy client creation, and admin clients. The legacy `configure()` helper is still supported for backwards compatibility, but it is now considered **deprecated**. Scroll below for legacy instructions.
+
+
+### New (Recommended) Usage
+```python
+from firedantic.configurations import configuration
+
+# default config
+configuration.add(prefix="app-", project="my-project")
+
+# extra config
+configuration.add(name="billing", prefix="billing-", project="billing-project")
+
+# get clients
+client = configuration.get_client()                  # sync client for "(default)"
+async_client = configuration.get_async_client()      # async client for "(default)"
+billing_client = configuration.get_client("billing") # sync client for "billing"
+```
+
+Notes:
+
+- `configuration.add(...)` accepts either client/async_client (pre-built) or project+credentials and will lazily create clients.
+- Models can declare `__db_config__ = "custom-name"` to use a named configuration or omit it to use the `"(default)"` config.
+- Backwards-compatible helpers (`configure()`, `CONFIGURATIONS`) will still populate the old surface but are deprecated.
+
+### Old (Legacy – Still Works, Deprecated) Usage
 
 In your application you will need to configure the firestore db client and optionally
 the collection prefix, which by default is empty.
@@ -41,21 +74,29 @@ else:
 configure(client, prefix="firedantic-test-")
 ```
 
-Once that is done, you can start defining your Pydantic models, e.g:
+You may also still use:
+```python
+from firedantic.configurations import CONFIGURATIONS
 
+db = CONFIGURATIONS["db"]
+prefix = CONFIGURATIONS["prefix"]
+```
+
+### Defining Models
+
+Once that is done, you can start defining your Pydantic models. Models are Pydantic classes that extend Firedantic’s sync Model or async AsyncModel:
+
+#### Sync Model Example
 ```python
 from pydantic import BaseModel
-
 from firedantic import Model
 
 class Owner(BaseModel):
-    """Dummy owner Pydantic model."""
     first_name: str
     last_name: str
 
 
 class Company(Model):
-    """Dummy company Firedantic model."""
     __collection__ = "companies"
     company_id: str
     owner: Owner
@@ -65,7 +106,7 @@ owner = Owner(first_name="John", last_name="Doe")
 company = Company(company_id="1234567-8", owner=owner)
 company.save()
 
-# Prints out the firestore ID of the Company model
+# Access the company id
 print(company.id)
 
 # Reloads model data from the database
@@ -97,44 +138,22 @@ Product.find(order_by=[('unit_value', Query.ASCENDING), ('stock', Query.DESCENDI
 The query operators are found at
 [https://firebase.google.com/docs/firestore/query-data/queries#query_operators](https://firebase.google.com/docs/firestore/query-data/queries#query_operators).
 
-### Async usage
+### Async Usage
 
 Firedantic can also be used in an async way, like this:
 
+#### Async Model Example
+
 ```python
-import asyncio
-from os import environ
-from unittest.mock import Mock
-
-import google.auth.credentials
-from google.cloud.firestore import AsyncClient
-
-from firedantic import AsyncModel, configure
-
-# Firestore emulator must be running if using locally.
-if environ.get("FIRESTORE_EMULATOR_HOST"):
-    client = AsyncClient(
-        project="firedantic-test",
-        credentials=Mock(spec=google.auth.credentials.Credentials),
-    )
-else:
-    client = AsyncClient()
-
-configure(client, prefix="firedantic-test-")
-
-
 class Person(AsyncModel):
     __collection__ = "persons"
     name: str
 
-
 async def main():
     alice = Person(name="Alice")
     await alice.save()
-    print(f"Saved Alice as {alice.id}")
     bob = Person(name="Bob")
     await bob.save()
-    print(f"Saved Bob as {bob.id}")
 
     found_alice = await Person.find_one({"name": "Alice"})
     print(f"Found Alice: {found_alice.id}")
@@ -145,10 +164,7 @@ async def main():
     print(f"Found Bob: {found_bob.id}")
 
     await alice.delete()
-    print("Deleted Alice")
     await bob.delete()
-    print("Deleted Bob")
-
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -164,9 +180,7 @@ reference to using the `model_for()` method.
 
 ```python
 from typing import Optional, Type
-
 from firedantic import AsyncModel, AsyncSubCollection, AsyncSubModel, ModelNotFoundError
-
 
 class UserStats(AsyncSubModel):
     id: Optional[str] = None
@@ -176,11 +190,9 @@ class UserStats(AsyncSubModel):
         # Can use any properties of the "parent" model
         __collection_tpl__ = "users/{id}/stats"
 
-
 class User(AsyncModel):
     __collection__ = "users"
     name: str
-
 
 async def get_user_purchases(user_id: str, period: str = "2021") -> int:
     user = await User.get_by_id(user_id)
@@ -195,10 +207,141 @@ async def get_user_purchases(user_id: str, period: str = "2021") -> int:
 
 ## Composite Indexes and TTL Policies
 
-Firedantic has support for defining composite indexes and TTL policies as well as
-creating them.
+Firedantic supports defining and automatically creating Composite Indexes and TTL Policies for your Firestore models. These can be created using either:
 
-### Composite indexes
+- The new `Configuration` class (recommended)
+- The legacy `configure()` method (deprecated but still supported)
+
+### Defining Composite Indexes
+
+Composite indexes are defined on your model using the `__composite_indexes__` attribute.
+
+It must be a list of composite index definitions created using:
+
+- `collection_index(...)` – for single-collection queries
+- `collection_group_index(...)` – for collection group queries
+
+Each index definition takes an arbitrary number of (field_name, order) tuples. Order must be `Query.ASCENDING` or `Query.DESCENDING`.
+
+#### Example:
+```python
+__composite_indexes__ = [
+    collection_index(("content", Query.ASCENDING), ("expire", Query.DESCENDING)),
+    collection_group_index(("content", Query.DESCENDING), ("expire", Query.ASCENDING)),
+]
+```
+
+### Defining TTL Policies
+
+TTL (Time-To-Live) policies are defined using the `__ttl_field__` attribute.
+
+Rules:
+- The field must be a datetime object
+- The field name must be assigned to `__ttl_field__`
+- TTL policies cannot be created in the Firestore Emulator
+
+#### Example:
+```python
+__ttl_field__ = "expire"
+```
+
+#### Recommended Usage (New Configuration API)
+
+All index and TTL setup functions now automatically resolve:
+- The correct project
+- The correct database
+- The correct admin client
+…based on each model’s `__db_config__`
+
+This means you no longer need to pass projects, databases, or admin clients manually--  And further, you can maintain multiple of each within your app.
+
+#### Sync Example (Recommended)
+```python
+from datetime import datetime
+from google.cloud.firestore import Query
+
+from firedantic import (
+    Model,
+    collection_index,
+    collection_group_index,
+    get_all_subclasses,
+    set_up_composite_indexes_and_ttl_policies,
+)
+from firedantic.configurations import configuration
+
+class ExpiringModel(Model):
+    __collection__ = "expiringModel"
+    __ttl_field__ = "expire"
+    __composite_indexes__ = [
+        collection_index(("content", Query.ASCENDING), ("expire", Query.DESCENDING)),
+        collection_group_index(("content", Query.DESCENDING), ("expire", Query.ASCENDING)),
+    ]
+
+    expire: datetime
+    content: str
+
+def main():
+    configuration.add(
+        name="(default)",
+        project="my-project",
+        prefix="firedantic-test-",
+        # credentials=... optional
+    )
+
+    set_up_composite_indexes_and_ttl_policies(
+        models=get_all_subclasses(Model),
+    )
+
+if __name__ == "__main__":
+    main()
+```
+
+#### Async Example (Recommended)
+
+```python
+import asyncio
+from datetime import datetime
+from google.cloud.firestore import Query
+
+from firedantic import (
+    AsyncModel,
+    async_set_up_composite_indexes_and_ttl_policies,
+    collection_index,
+    collection_group_index,
+    get_all_subclasses,
+)
+from firedantic.configurations import configuration
+
+class ExpiringModel(AsyncModel):
+    __collection__ = "expiringModel"
+    __ttl_field__ = "expire"
+    __composite_indexes__ = [
+        collection_index(("content", Query.ASCENDING), ("expire", Query.DESCENDING)),
+        collection_group_index(("content", Query.DESCENDING), ("expire", Query.ASCENDING)),
+    ]
+
+    expire: datetime
+    content: str
+
+async def main():
+    configuration.add(
+        project="my-project",
+        prefix="firedantic-test-",
+    )
+
+    await async_set_up_composite_indexes_and_ttl_policies(
+        models=get_all_subclasses(AsyncModel),
+    )
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+#### Legacy Usage (Still Supported, Deprecated)
+
+The old method using `configure()` and manually passing Firestore Admin clients is still supported but deprecated.
+
+##### Composite indexes
 
 Composite indexes of a collection are defined in `__composite_indexes__`, which is a
 list of all indexes to be created.
@@ -213,7 +356,7 @@ to create indexes.
 
 For more details, see the example further down.
 
-### TTL Policies
+##### TTL Policies
 
 The field used for the TTL policy should be a datetime field and the name of the field
 should be defined in `__ttl_field__`. The `set_up_ttl_policies` and
@@ -221,31 +364,32 @@ should be defined in `__ttl_field__`. The `set_up_ttl_policies` and
 
 Note: The TTL policies can not be set up in the Firestore emulator.
 
-### Examples
+##### Examples
 
 Below are examples (both sync and async) to show how to use Firedantic to set up
-composite indexes and TTL policies.
+composite indexes and TTL policies with the legacy format.
 
 The examples use `async_set_up_composite_indexes_and_ttl_policies` and
 `set_up_composite_indexes_and_ttl_policies` functions to set up both composite indexes
 and TTL policies. However, you can use separate functions to set up only either one of
 them.
 
-#### Composite Index and TTL Policy Example (sync)
 
+### Legacy Sync Example
 ```python
 from datetime import datetime
+from google.cloud.firestore import Client, Query
+from google.cloud.firestore_admin_v1 import FirestoreAdminClient
+
 
 from firedantic import (
+    Model,
     collection_index,
     collection_group_index,
     configure,
     get_all_subclasses,
-    Model,
     set_up_composite_indexes_and_ttl_policies,
 )
-from google.cloud.firestore import Client, Query
-from google.cloud.firestore_admin_v1 import FirestoreAdminClient
 
 
 class ExpiringModel(Model):
@@ -267,18 +411,17 @@ def main():
         models=get_all_subclasses(Model),
         client=FirestoreAdminClient(),
     )
-    # or use set_up_composite_indexes / set_up_ttl_policies functions separately
-
 
 if __name__ == "__main__":
     main()
 ```
 
-#### Composite Index and TTL Policy Example (async)
-
+### Legacy Async Example
 ```python
 import asyncio
 from datetime import datetime
+from google.cloud.firestore import AsyncClient, Query
+from google.cloud.firestore_admin_v1.services.firestore_admin import FirestoreAdminAsyncClient
 
 from firedantic import (
     AsyncModel,
@@ -287,10 +430,6 @@ from firedantic import (
     collection_group_index,
     configure,
     get_all_subclasses,
-)
-from google.cloud.firestore import AsyncClient, Query
-from google.cloud.firestore_admin_v1.services.firestore_admin import (
-    FirestoreAdminAsyncClient,
 )
 
 
@@ -313,8 +452,6 @@ async def main():
         models=get_all_subclasses(AsyncModel),
         client=FirestoreAdminAsyncClient(),
     )
-    # or await async_set_up_composite_indexes / async_set_up_ttl_policies separately
-
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -324,7 +461,7 @@ if __name__ == "__main__":
 
 Firedantic has basic support for
 [Firestore Transactions](https://firebase.google.com/docs/firestore/manage-data/transactions).
-The following methods can be used in a transaction:
+The following methods can be used in a transaction for both **sync** and **async** models:
 
 - `Model.delete(transaction=transaction)`
 - `Model.find_one(transaction=transaction)`
@@ -337,7 +474,75 @@ The following methods can be used in a transaction:
 
 When using transactions, note that read operations must come before write operations.
 
+## Recommended Usage (New Configuration Class)
+
+With the new `Configuration` system, transactions automatically use the configured:
+- Project
+- Database
+- Client
+based on the active configuration.
+
+
 ### Transaction examples
+
+#### Sync Transaction Example (Recommended)
+```python
+from firedantic import Model, get_transaction
+from firedantic.configurations import configuration
+from google.cloud.firestore_v1 import transactional, Transaction
+
+
+# Configure once
+configuration.add(
+    project="firedantic-test",
+    prefix="firedantic-test-",
+)
+
+
+class City(Model):
+    __collection__ = "cities"
+    population: int
+
+    def increment_population(self, increment: int = 1):
+        @transactional
+        def _increment_population(transaction: Transaction) -> None:
+            self.reload(transaction=transaction)
+            self.population += increment
+            self.save(transaction=transaction)
+
+        t = get_transaction()
+        _increment_population(transaction=t)
+
+
+def main():
+    @transactional
+    def decrement_population(
+        transaction: Transaction, city: City, decrement: int = 1
+    ):
+        city.reload(transaction=transaction)
+        city.population = max(0, city.population - decrement)
+        city.save(transaction=transaction)
+
+    c = City(id="SF", population=1)
+    c.save()
+
+    c.increment_population(increment=1)
+    assert c.population == 2
+
+    t = get_transaction()
+    decrement_population(transaction=t, city=c, decrement=5)
+    assert c.population == 0
+
+
+if __name__ == "__main__":
+    main()
+```
+
+### Legacy Usage (Still Supported, Deprecated)
+
+The original configure() method and manual client wiring still works, but is now deprecated in favor of `Configuration`.
+
+#### Legacy Async Transaction Example
 
 In this example (async and sync version of it below), we are updating a `City` to
 increment and decrement the population of it, both using an instance method and a
@@ -345,8 +550,6 @@ standalone function. Please note that the `@async_transactional` and `@transacti
 decorators always expect the first argument of the wrapped function to be `transaction`;
 i.e. you can not directly wrap an instance method that has `self` as the first argument
 or a class method that has `cls` as the first argument.
-
-#### Transaction example (async)
 
 ```python
 import asyncio
@@ -409,7 +612,7 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-#### Transaction example (sync)
+#### Legacy Sync Transaction Example
 
 ```python
 from os import environ

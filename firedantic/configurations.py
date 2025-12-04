@@ -1,5 +1,6 @@
 from os import environ
 from typing import Any, Dict, Optional, Type, Union
+import warnings
 
 from google.auth.credentials import Credentials
 from google.api_core.client_options import ClientOptions
@@ -27,6 +28,15 @@ def configure(client: Union[Client, AsyncClient], prefix: str = "") -> None:
     :param db: The firestore client instance.
     :param prefix: The prefix to use for collection names.
     """
+
+    # soft deprecation notice for users (no stacktrace)
+    warnings.warn(
+        "firedantic.configure(client, ...) is deprecated and will be removed in a "
+        "future release. Use firedantic.configurations.configuration.add(...) instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
     if isinstance(client, AsyncClient):
         configuration.add(name="(default)", prefix=prefix, async_client=client)
     else:
@@ -38,12 +48,12 @@ def configure(client: Union[Client, AsyncClient], prefix: str = "") -> None:
 
 
 def get_transaction() -> Transaction:
-    """Backward-compatible transaction getter (sync)."""
+    """Backward-compatible sync transaction getter, forwards to new implementation."""
     return configuration.get_transaction()
 
 
 def get_async_transaction() -> AsyncTransaction:
-    """Backward-compatible async transaction getter."""
+    """Backward-compatible async transaction getter, forwards to new implementation."""
     return configuration.get_async_transaction()
 
 
