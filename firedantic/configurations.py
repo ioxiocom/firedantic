@@ -120,12 +120,6 @@ class Configuration:
         """
         
         normalized_project = self._normalize_project(project)
-        
-        # Construct clients lazily, only when they were not supplied
-        # if client is None and normalized_project is not None:
-        #     client = Client(project=normalized_project, credentials=credentials)
-        # if async_client is None and normalized_project is not None:
-        #     async_client = AsyncClient(project=normalized_project, credentials=credentials)
 
         item = ConfigItem(
             name=name,
