@@ -19,6 +19,7 @@ from firedantic.tests.tests_async.conftest import (
     CustomIDConflictModel,
     CustomIDModel,
     CustomIDModelExtra,
+    Owner,
     Product,
     Profile,
     TodoList,
@@ -36,16 +37,15 @@ TEST_PRODUCTS = [
 
 
 @pytest.mark.asyncio
-async def test_save_model(configure_db, create_company) -> None:
+async def test_save_model(create_company) -> None:
     company = await create_company()
 
     assert company.id is not None
     assert company.owner.first_name == "John"
     assert company.owner.last_name == "Doe"
 
-
 @pytest.mark.asyncio
-async def test_delete_model(configure_db, create_company) -> None:
+async def test_delete_all_for_model(create_company) -> None:
     company: Company = await create_company(
         company_id="11223344-5", first_name="Jane", last_name="Doe"
     )
@@ -53,14 +53,14 @@ async def test_delete_model(configure_db, create_company) -> None:
     _id = company.id
     assert _id
 
-    await company.delete()
+    await company.delete_all_for_model()
 
     with pytest.raises(ModelNotFoundError):
         await Company.get_by_id(_id)
 
 
 @pytest.mark.asyncio
-async def test_find_one(configure_db, create_company) -> None:
+async def test_find_one(create_company) -> None:
     with pytest.raises(ModelNotFoundError):
         await Company.find_one()
 
@@ -91,7 +91,7 @@ async def test_find_one(configure_db, create_company) -> None:
 
 
 @pytest.mark.asyncio
-async def test_find(configure_db, create_company, create_product) -> None:
+async def test_find(create_company, create_product) -> None:
     ids = ["1234555-1", "1234567-8", "2131232-4", "4124432-4"]
     for company_id in ids:
         await create_company(company_id=company_id)
@@ -101,6 +101,12 @@ async def test_find(configure_db, create_company, create_product) -> None:
     assert c[0].owner.first_name == "John"
 
     d = await Company.find({"owner.first_name": "John"})
+    assert len(d) == 4
+
+    d = await Company.find({"owner.first_name": {op.EQ: "John"}})
+    assert len(d) == 4
+
+    d = await Company.find({"owner.first_name": {"==": "John"}})
     assert len(d) == 4
 
     for p in TEST_PRODUCTS:
@@ -122,7 +128,7 @@ async def test_find(configure_db, create_company, create_product) -> None:
 
 
 @pytest.mark.asyncio
-async def test_find_not_in(configure_db, create_company) -> None:
+async def test_find_not_in(create_company) -> None:
     ids = ["1234555-1", "1234567-8", "2131232-4", "4124432-4"]
     for company_id in ids:
         await create_company(company_id=company_id)
@@ -143,7 +149,7 @@ async def test_find_not_in(configure_db, create_company) -> None:
 
 
 @pytest.mark.asyncio
-async def test_find_array_contains(configure_db, create_todolist) -> None:
+async def test_find_array_contains(create_todolist) -> None:
     list_1 = await create_todolist("list_1", ["Work", "Eat", "Sleep"])
     await create_todolist("list_2", ["Learn Python", "Walk the dog"])
 
@@ -153,7 +159,7 @@ async def test_find_array_contains(configure_db, create_todolist) -> None:
 
 
 @pytest.mark.asyncio
-async def test_find_array_contains_any(configure_db, create_todolist) -> None:
+async def test_find_array_contains_any(create_todolist) -> None:
     list_1 = await create_todolist("list_1", ["Work", "Eat"])
     list_2 = await create_todolist("list_2", ["Relax", "Chill", "Sleep"])
     await create_todolist("list_3", ["Learn Python", "Walk the dog"])
@@ -165,7 +171,7 @@ async def test_find_array_contains_any(configure_db, create_todolist) -> None:
 
 
 @pytest.mark.asyncio
-async def test_find_limit(configure_db, create_company) -> None:
+async def test_find_limit(create_company) -> None:
     ids = ["1234555-1", "1234567-8", "2131232-4", "4124432-4"]
     for company_id in ids:
         await create_company(company_id=company_id)
@@ -178,7 +184,7 @@ async def test_find_limit(configure_db, create_company) -> None:
 
 
 @pytest.mark.asyncio
-async def test_find_order_by(configure_db, create_company) -> None:
+async def test_find_order_by(create_company) -> None:
     companies_and_owners = [
         {"company_id": "1234555-1", "last_name": "A", "first_name": "A"},
         {"company_id": "1234555-2", "last_name": "A", "first_name": "B"},
@@ -227,7 +233,7 @@ async def test_find_order_by(configure_db, create_company) -> None:
 
 
 @pytest.mark.asyncio
-async def test_find_offset(configure_db, create_company) -> None:
+async def test_find_offset(create_company) -> None:
     ids_and_lastnames = (
         ("1234555-1", "A"),
         ("1234567-8", "B"),
@@ -245,7 +251,7 @@ async def test_find_offset(configure_db, create_company) -> None:
 
 
 @pytest.mark.asyncio
-async def test_get_by_id(configure_db, create_company) -> None:
+async def test_get_by_id(create_company) -> None:
     c: Company = await create_company(company_id="1234567-8")
 
     assert c.id is not None
@@ -260,22 +266,23 @@ async def test_get_by_id(configure_db, create_company) -> None:
 
 
 @pytest.mark.asyncio
-async def test_get_by_empty_str_id(configure_db) -> None:
+async def test_get_by_empty_str_id() -> None:
     with pytest.raises(ModelNotFoundError):
         await Company.get_by_id("")
 
 
 @pytest.mark.asyncio
-async def test_missing_collection(configure_db) -> None:
+async def test_missing_collection() -> None:
     class User(AsyncModel):
         name: str
+        # normally __collection__ would be defined here
 
     with pytest.raises(CollectionNotDefined):
         await User(name="John").save()
 
 
 @pytest.mark.asyncio
-async def test_model_aliases(configure_db) -> None:
+async def test_model_aliases() -> None:
     class User(AsyncModel):
         __collection__ = "User"
 
@@ -320,7 +327,7 @@ async def test_model_aliases(configure_db) -> None:
         "!:&+-*'()",
     ],
 )
-async def test_models_with_valid_custom_id(configure_db, model_id) -> None:
+async def test_models_with_valid_custom_id(model_id) -> None:
     product_id = str(uuid4())
 
     product = Product(product_id=product_id, price=123.45, stock=2)
@@ -349,7 +356,7 @@ async def test_models_with_valid_custom_id(configure_db, model_id) -> None:
         "foo/bar/baz",
     ],
 )
-async def test_models_with_invalid_custom_id(configure_db, model_id: str) -> None:
+async def test_models_with_invalid_custom_id(model_id: str) -> None:
     product = Product(product_id="product 123", price=123.45, stock=2)
     product.id = model_id
     with pytest.raises(InvalidDocumentID):
@@ -360,7 +367,7 @@ async def test_models_with_invalid_custom_id(configure_db, model_id: str) -> Non
 
 
 @pytest.mark.asyncio
-async def test_truncate_collection(configure_db, create_company) -> None:
+async def test_truncate_collection(create_company) -> None:
     await create_company(company_id="1234567-8")
     await create_company(company_id="1234567-9")
 
@@ -373,7 +380,7 @@ async def test_truncate_collection(configure_db, create_company) -> None:
 
 
 @pytest.mark.asyncio
-async def test_custom_id_model(configure_db) -> None:
+async def test_custom_id_model() -> None:
     c = CustomIDModel(bar="bar")  # type: ignore
     await c.save()
 
@@ -386,7 +393,7 @@ async def test_custom_id_model(configure_db) -> None:
 
 
 @pytest.mark.asyncio
-async def test_custom_id_conflict(configure_db) -> None:
+async def test_custom_id_conflict() -> None:
     await CustomIDConflictModel(foo="foo", bar="bar").save()
 
     models = await CustomIDModel.find({})
@@ -398,7 +405,7 @@ async def test_custom_id_conflict(configure_db) -> None:
 
 
 @pytest.mark.asyncio
-async def test_model_id_persistency(configure_db) -> None:
+async def test_model_id_persistency() -> None:
     c = CustomIDConflictModel(foo="foo", bar="bar")
     await c.save()
     assert c.id
@@ -410,7 +417,7 @@ async def test_model_id_persistency(configure_db) -> None:
 
 
 @pytest.mark.asyncio
-async def test_bare_model_document_id_persistency(configure_db) -> None:
+async def test_bare_model_document_id_persistency() -> None:
     c = CustomIDModel(bar="bar")  # type: ignore
     await c.save()
     assert c.foo
@@ -422,20 +429,20 @@ async def test_bare_model_document_id_persistency(configure_db) -> None:
 
 
 @pytest.mark.asyncio
-async def test_bare_model_get_by_empty_doc_id(configure_db) -> None:
+async def test_bare_model_get_by_empty_doc_id() -> None:
     with pytest.raises(ModelNotFoundError):
         await CustomIDModel.get_by_doc_id("")
 
 
 @pytest.mark.asyncio
-async def test_extra_fields(configure_db) -> None:
+async def test_extra_fields() -> None:
     await CustomIDModelExtra(foo="foo", bar="bar", baz="baz").save()  # type: ignore
     with pytest.raises(ValidationError):
         await CustomIDModel.find({})
 
 
 @pytest.mark.asyncio
-async def test_company_stats(configure_db, create_company) -> None:
+async def test_company_stats(create_company) -> None:
     company: Company = await create_company(company_id="1234567-8")
     company_stats = company.stats()
 
@@ -456,7 +463,7 @@ async def test_company_stats(configure_db, create_company) -> None:
 
 
 @pytest.mark.asyncio
-async def test_subcollection_model_safety(configure_db) -> None:
+async def test_subcollection_model_safety() -> None:
     """
     Ensure you shouldn't be able to use unprepared subcollection models accidentally
     """
@@ -465,7 +472,7 @@ async def test_subcollection_model_safety(configure_db) -> None:
 
 
 @pytest.mark.asyncio
-async def test_get_user_purchases(configure_db) -> None:
+async def test_get_user_purchases() -> None:
     u = User(name="Foo")
     await u.save()
     assert u.id
@@ -477,7 +484,7 @@ async def test_get_user_purchases(configure_db) -> None:
 
 
 @pytest.mark.asyncio
-async def test_reload(configure_db) -> None:
+async def test_reload() -> None:
     u = User(name="Foo")
     await u.save()
 
@@ -496,7 +503,7 @@ async def test_reload(configure_db) -> None:
 
 
 @pytest.mark.asyncio
-async def test_save_with_exclude_none(configure_db) -> None:
+async def test_save_with_exclude_none() -> None:
     p = Profile(name="Foo")
     await p.save(exclude_none=True)
 
@@ -518,7 +525,7 @@ async def test_save_with_exclude_none(configure_db) -> None:
 
 
 @pytest.mark.asyncio
-async def test_save_with_exclude_unset(configure_db) -> None:
+async def test_save_with_exclude_unset() -> None:
     p = Profile(photo_url=None)
     await p.save(exclude_unset=True)
 
@@ -540,11 +547,9 @@ async def test_save_with_exclude_unset(configure_db) -> None:
 
 
 @pytest.mark.asyncio
-async def test_update_city_in_transaction(configure_db) -> None:
+async def test_update_city_in_transaction() -> None:
     """
     Test updating a model in a transaction. Test case from README.
-
-    :param: configure_db: pytest fixture
     """
 
     @async_transactional
@@ -566,11 +571,9 @@ async def test_update_city_in_transaction(configure_db) -> None:
 
 
 @pytest.mark.asyncio
-async def test_delete_in_transaction(configure_db) -> None:
+async def test_delete_in_transaction() -> None:
     """
     Test deleting a model in a transaction.
-
-    :param: configure_db: pytest fixture
     """
 
     @async_transactional
@@ -586,18 +589,17 @@ async def test_delete_in_transaction(configure_db) -> None:
     assert p.id
 
     t = get_async_transaction()
-    await delete_in_transaction(t, p.id)
+    async with t:
+        await delete_in_transaction(t, p.id)
 
     with pytest.raises(ModelNotFoundError):
         await Profile.get_by_id(p.id)
 
 
 @pytest.mark.asyncio
-async def test_update_model_in_transaction(configure_db) -> None:
+async def test_update_model_in_transaction() -> None:
     """
     Test updating a model in a transaction.
-
-    :param: configure_db: pytest fixture
     """
 
     @async_transactional
@@ -620,11 +622,9 @@ async def test_update_model_in_transaction(configure_db) -> None:
 
 
 @pytest.mark.asyncio
-async def test_update_submodel_in_transaction(configure_db) -> None:
+async def test_update_submodel_in_transaction() -> None:
     """
     Test Updating a submodel in a transaction.
-
-    :param: configure_db: pytest fixture
     """
 
     @async_transactional

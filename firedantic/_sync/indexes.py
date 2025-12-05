@@ -14,6 +14,7 @@ from google.cloud.firestore_admin_v1.services.firestore_admin import (
 from firedantic._sync.model import BareModel
 from firedantic._sync.ttl_policy import set_up_ttl_policies
 from firedantic.common import IndexDefinition, IndexField
+from firedantic.configurations import configuration
 
 logger = getLogger("firedantic")
 
@@ -100,24 +101,29 @@ def set_up_composite_indexes(
 
     operations = []
     for model in models:
-        if not model.__composite_indexes__:
+        if not getattr(model, "__composite_indexes__", None):
             continue
-        path = (
-            f"projects/{gcloud_project}/databases/{database}/"
-            f"collectionGroups/{model.get_collection_name()}"
-        )
+        
+        # Resolve config name: prefer model __db_config__ if present; else default
+        config_name = getattr(model, "__db_config__", "(default)")
+
+        # If caller did not pass gcloud_project, try to get it from config
+        project = gcloud_project or configuration.get_config(config_name).project
+
+        # Build collection group path using configuration helper (includes prefix)
+        collection_group = configuration.get_collection_name(model, config_name=config_name)
+        path = f"projects/{project}/databases/{database}/collectionGroups/{collection_group}"
+
         indexes_in_db = get_existing_indexes(client, path=path)
         model_indexes = set(model.__composite_indexes__)
         existing_indexes = indexes_in_db.intersection(model_indexes)
         new_indexes = model_indexes.difference(indexes_in_db)
 
         for index in existing_indexes:
-            log_str = "Composite index already exists in DB: %s, collection: %s"
-            logger.debug(log_str, index, model.get_collection_name())
+            logger.debug("Composite index already exists in DB: %s, collection: %s", index, collection_group)
 
         for index in new_indexes:
-            log_str = "Creating new composite index: %s, collection: %s"
-            logger.info(log_str, index, model.get_collection_name())
+            logger.info("Creating new composite index: %s, collection: %s", index, collection_group)
             operation = create_composite_index(client, index, path)
             operations.append(operation)
 

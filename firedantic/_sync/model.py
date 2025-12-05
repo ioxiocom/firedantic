@@ -8,6 +8,7 @@ from google.cloud.firestore_v1 import (
     DocumentReference,
     DocumentSnapshot,
     FieldFilter,
+    Client
 )
 from google.cloud.firestore_v1.base_query import BaseQuery
 from google.cloud.firestore_v1.transaction import Transaction
@@ -15,7 +16,7 @@ from google.cloud.firestore_v1.transaction import Transaction
 import firedantic.operators as op
 from firedantic import truncate_collection
 from firedantic.common import IndexDefinition, OrderDirection
-from firedantic.configurations import CONFIGURATIONS
+from firedantic.configurations import configuration
 from firedantic.exceptions import (
     CollectionNotDefined,
     InvalidDocumentID,
@@ -41,23 +42,55 @@ FIND_TYPES = {
 }
 
 
-def get_collection_name(cls, name: Optional[str]) -> str:
+def get_collection_name(cls, collection_name: Optional[str] = None) -> str:
     """
-    Returns the collection name.
+    Returns the collection name for `cls`.
 
-    :raise CollectionNotDefined: If the collection name is not defined.
+    - If `collection_name` is provided, treat it as an explicit collection name
+      and prefix it using the configured prefix for the class (via __db_config__).
+    - Otherwise, use the class name and the configured prefix.
+
+    :raises CollectionNotDefined: If neither a class collection nor derived name is available.
     """
-    if not name:
-        raise CollectionNotDefined(f"Missing collection name for {cls.__name__}")
+    # Resolve the config name from the model class (default to "(default)")
+    config_name = getattr(cls, "__db_config__", "(default)")
 
-    return f"{CONFIGURATIONS['prefix']}{name}"
+    # If caller provided an explicit collection string, apply prefix from config
+    if collection_name:
+        cfg = configuration.get_config(config_name)
+        prefix = cfg.prefix or ""
+        return f"{prefix}{collection_name}"
+    
+    if getattr(cls, "__collection__", None):
+        cfg = configuration.get_config(config_name)
+        return f"{cfg.prefix or ''}{cls.__collection__}"
+
+    raise CollectionNotDefined(f"Missing collection name for {cls.__name__}")
 
 
-def _get_col_ref(cls, name: Optional[str]) -> CollectionReference:
-    collection: CollectionReference = CONFIGURATIONS["db"].collection(
-        get_collection_name(cls, name)
-    )
-    return collection
+def _get_col_ref(cls, collection_name: Optional[str]) -> CollectionReference:
+    """
+    Return a CollectionReference for the model class using the configured client.
+
+    :param cls: model class
+    :param collection_name: optional explicit collection name override
+    :raises CollectionNotDefined: when collection cannot be resolved
+    """
+    # Build the prefixed collection name
+    col_name = get_collection_name(cls, collection_name)
+
+    # Resolve config name from class and fetch client
+    config_name = getattr(cls, "__db_config__", "(default)")
+    client = configuration.get_client(config_name)
+
+    # Return the AsyncCollectionReference (this is a real client call)
+    col_ref = client.collection(col_name)
+
+    # Ensure we got the right object back
+    if not hasattr(col_ref, "document"):
+        raise RuntimeError(f"_get_col_ref returned unexpected object for {cls}: {type(col_ref)!r}")
+    return col_ref
+
 
 
 class BareModel(pydantic.BaseModel, ABC):
@@ -71,6 +104,45 @@ class BareModel(pydantic.BaseModel, ABC):
     __document_id__: str
     __ttl_field__: Optional[str] = None
     __composite_indexes__: Optional[Iterable[IndexDefinition]] = None
+    __db_config__: str = "(default)"  # can be overridden in subclasses
+
+
+    @property
+    def _resolve_config(self) -> str:
+        """Return the config name this class is bound to"""
+        return getattr(self.__class__, "__db_config__", "(default)")
+
+    @property
+    def _client(self) -> Client:
+        """Return the Firestore client this class is bound to"""
+        return configuration.get_client(self.__db_config__)
+    
+    def _get_collection(self, config_name: Optional[str] = None) -> CollectionReference:
+        """
+        Return a CollectionReference for this model based on the resolved config and
+        a collection name derived from the class (can override with a different naming scheme)
+        """
+        resolved = config_name if config_name is not None else self._resolve_config()
+        client: Client = configuration.get_client(name=resolved)
+        
+        # Use the config item's prefix + class-name-based collection name.
+        cfg_item = configuration.get_config(resolved)
+        collection_name = f"{cfg_item.prefix}{self.__class__.__name__.lower()}s"
+        return client.collection(collection_name)
+
+    def _get_doc_ref(self, config_name: Optional[str] = None) -> DocumentReference:
+        """
+        Return a DocumentReference for this instance.
+        If the instance has an id (self.__document_id__), use it; otherwise create a new doc ref
+        (client.collection().document() without an id will generate one).
+        """
+        collection = self._get_collection(config_name)
+        doc_id = getattr(self, self.__document_id__, None)
+        if doc_id:
+            return collection.document(doc_id)
+        # No id: create a new document reference (Firestore client will generate ID)
+        return collection.document()  
+
 
     def save(
         self,
@@ -93,11 +165,16 @@ class BareModel(pydantic.BaseModel, ABC):
         if self.__document_id__ in data:
             del data[self.__document_id__]
 
+        # get the document ref bound to the models configuration (db_config)
         doc_ref = self._get_doc_ref()
+    
+        # Write data to firestore db using transaction or directly.
         if transaction is not None:
             transaction.set(doc_ref, data)
         else:
             doc_ref.set(data)
+
+        # Ensure the instance has the document id set.
         setattr(self, self.__document_id__, doc_ref.id)
 
     def delete(self, transaction: Optional[Transaction] = None) -> None:
@@ -128,7 +205,7 @@ class BareModel(pydantic.BaseModel, ABC):
 
         self.__dict__.update(updated_model.__dict__)
 
-    def get_document_id(self):
+    def get_document_id(self) -> Optional[str]:
         """
         Returns the document ID for this model instance.
 
@@ -140,6 +217,19 @@ class BareModel(pydantic.BaseModel, ABC):
         return getattr(self, self.__document_id__, None)
 
     _OrderBy = List[Tuple[str, OrderDirection]]
+
+    @classmethod
+    def delete_all_for_model(cls, config_name: Optional[str] = None) -> None:
+
+         # Resolve config to use (explicit -> instance -> class -> default)
+        config_name = cls.__db_config__
+
+        client = configuration.get_client(config_name)
+        col_name = get_collection_name(cls)
+        col_ref = client.collection(col_name)
+
+        for doc in col_ref.stream():
+            doc.reference.delete()
 
     @classmethod
     def find(  # pylint: disable=too-many-arguments
@@ -173,8 +263,7 @@ class BareModel(pydantic.BaseModel, ABC):
                 query = cls._add_filter(query, key, value)
 
         if order_by is not None:
-            for order_by_item in order_by:
-                field, direction = order_by_item
+            for field, direction in order_by:
                 query = query.order_by(field, direction=direction)  # type: ignore
         if limit is not None:
             query = query.limit(limit)  # type: ignore
@@ -315,7 +404,8 @@ class BareModel(pydantic.BaseModel, ABC):
 
         :raise DocumentIDError: If the ID is not valid.
         """
-        return self._get_col_ref().document(self.get_document_id())  # type: ignore
+        doc_id = self.get_document_id()
+        return self._get_col_ref().document(doc_id)  # type: ignore
 
     @staticmethod
     def _validate_document_id(document_id: str):

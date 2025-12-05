@@ -34,7 +34,9 @@ from firedantic._sync.ttl_policy import set_up_ttl_policies
 from firedantic.common import collection_group_index, collection_index
 from firedantic.configurations import (
     CONFIGURATIONS,
+    Configuration,
     configure,
+    ConfigItem,
     get_async_transaction,
     get_transaction,
 )

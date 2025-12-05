@@ -15,7 +15,7 @@ from google.cloud.firestore_v1.async_transaction import AsyncTransaction
 import firedantic.operators as op
 from firedantic import async_truncate_collection
 from firedantic.common import IndexDefinition, OrderDirection
-from firedantic.configurations import CONFIGURATIONS
+from firedantic.configurations import configuration
 from firedantic.exceptions import (
     CollectionNotDefined,
     InvalidDocumentID,
@@ -41,23 +41,56 @@ FIND_TYPES = {
 }
 
 
-def get_collection_name(cls, name: Optional[str]) -> str:
+def get_collection_name(cls, collection_name: Optional[str] = None) -> str:
     """
-    Returns the collection name.
+    Return the collection name for `cls`.
 
-    :raise CollectionNotDefined: If the collection name is not defined.
+    - If `collection_name` is provided, treat it as an explicit collection name
+      and prefix it using the configured prefix for the class (via __db_config__).
+    - Otherwise, use the class name and the configured prefix.
+
+    :raises CollectionNotDefined: If neither a class collection nor derived name is available.
     """
-    if not name:
-        raise CollectionNotDefined(f"Missing collection name for {cls.__name__}")
+    # Resolve the config name from the model class (default to "(default)")
+    config_name = getattr(cls, "__db_config__", "(default)")
 
-    return f"{CONFIGURATIONS['prefix']}{name}"
+    # If caller provided an explicit collection string, apply prefix from config
+    if collection_name:
+        cfg = configuration.get_config(config_name)
+        prefix = cfg.prefix or ""
+        return f"{prefix}{collection_name}"
+    
+    if getattr(cls, "__collection__", None):
+        cfg = configuration.get_config(config_name)
+        return f"{cfg.prefix or ''}{cls.__collection__}"
+
+    raise CollectionNotDefined(f"Missing collection name for {cls.__name__}")
 
 
-def _get_col_ref(cls, name: Optional[str]) -> AsyncCollectionReference:
-    collection: AsyncCollectionReference = CONFIGURATIONS["db"].collection(
-        get_collection_name(cls, name)
-    )
-    return collection
+
+def _get_col_ref(cls, collection_name: Optional[str] = None) -> AsyncCollectionReference:
+    """
+    Return an AsyncCollectionReference for the model class using the configured async client.
+
+    :param cls: model class
+    :param collection_name: optional explicit collection name override
+    :raises CollectionNotDefined: when collection cannot be resolved
+    """
+    # Build the prefixed collection name
+    col_name = get_collection_name(cls, collection_name)
+
+    # Resolve config name from class and fetch async client
+    config_name = getattr(cls, "__db_config__", "(default)")
+    async_client = configuration.get_async_client(config_name)
+
+    # Return the AsyncCollectionReference (this is a real client call)
+    col_ref = async_client.collection(col_name)
+
+    # Ensure we got the right object back
+    if not hasattr(col_ref, "document"):
+        raise RuntimeError(f"_get_col_ref returned unexpected object for {cls}: {type(col_ref)!r}")
+    return col_ref
+
 
 
 class AsyncBareModel(pydantic.BaseModel, ABC):
@@ -71,10 +104,13 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
     __document_id__: str
     __ttl_field__: Optional[str] = None
     __composite_indexes__: Optional[Iterable[IndexDefinition]] = None
+    __db_config__: str = "(default)"  # override in subclasses when needed
+
 
     async def save(
         self,
         *,
+        config_name: Optional[str] = None,
         exclude_unset: bool = False,
         exclude_none: bool = False,
         transaction: Optional[AsyncTransaction] = None,
@@ -87,17 +123,46 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
         :param transaction: Optional transaction to use.
         :raise DocumentIDError: If the document ID is not valid.
         """
+
+        # Resolve config to use (explicit -> instance -> class -> default)
+        if config_name is not None:
+            resolved = config_name 
+        else:
+            resolved = getattr(self, "__db_config__", None)
+        if not resolved:
+            resolved = getattr(self.__class__, "__db_config__", "(default)")
+
+        # Build payload
         data = self.model_dump(
-            by_alias=True, exclude_unset=exclude_unset, exclude_none=exclude_none
+            by_alias=True, 
+            exclude_unset=exclude_unset, 
+            exclude_none=exclude_none
         )
         if self.__document_id__ in data:
             del data[self.__document_id__]
 
-        doc_ref = self._get_doc_ref()
+        async_client = configuration.get_async_client(resolved)
+        if async_client is None:
+            raise RuntimeError(f"No async client configured for config '{resolved}'")
+        
+        # Get collection reference from async_client with the collection_name
+        collection_name = self.get_collection_name()
+        col_ref = async_client.collection(collection_name)
+
+        # Build doc ref (use provided id if set, otherwise let server generate)
+        doc_id = self.get_document_id()
+        if doc_id:
+            doc_ref = col_ref.document(doc_id) 
+        else:
+            doc_ref = col_ref.document()
+
+        # Use transaction if provided (assume it's compatible) otherwise do direct await set
         if transaction is not None:
+            # Transaction.delete/set expects DocumentReference from the same client.
             transaction.set(doc_ref, data)
         else:
             await doc_ref.set(data)
+
         setattr(self, self.__document_id__, doc_ref.id)
 
     async def delete(self, transaction: Optional[AsyncTransaction] = None) -> None:
@@ -106,10 +171,13 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
 
         :raise DocumentIDError: If the ID is not valid.
         """
+        doc_ref = self._get_doc_ref()
+
         if transaction is not None:
-            transaction.delete(self._get_doc_ref())
+            transaction.delete(doc_ref)
         else:
-            await self._get_doc_ref().delete()
+            # print(f"\nTransaction not provided, deleting document: {self._get_doc_ref().path}")
+            await doc_ref.delete()
 
     async def reload(self, transaction: Optional[AsyncTransaction] = None) -> None:
         """
@@ -128,7 +196,7 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
 
         self.__dict__.update(updated_model.__dict__)
 
-    def get_document_id(self):
+    def get_document_id(self) -> Optional[str]:
         """
         Returns the document ID for this model instance.
 
@@ -140,6 +208,20 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
         return getattr(self, self.__document_id__, None)
 
     _OrderBy = List[Tuple[str, OrderDirection]]
+
+    @classmethod
+    async def delete_all_for_model(cls, config_name: Optional[str] = None) -> None:
+
+         # Resolve config to use (explicit -> instance -> class -> default)
+        config_name = cls.__db_config__
+
+        client = configuration.get_async_client(config_name)
+        col_name = get_collection_name(cls)
+        col_ref = client.collection(col_name)
+
+        async for doc in col_ref.stream():
+            await doc.reference.delete()
+
 
     @classmethod
     async def find(  # pylint: disable=too-many-arguments
@@ -173,8 +255,7 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
                 query = cls._add_filter(query, key, value)
 
         if order_by is not None:
-            for order_by_item in order_by:
-                field, direction = order_by_item
+            for field, direction in order_by:
                 query = query.order_by(field, direction=direction)  # type: ignore
         if limit is not None:
             query = query.limit(limit)  # type: ignore
@@ -298,11 +379,11 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
         )
 
     @classmethod
-    def _get_col_ref(cls) -> AsyncCollectionReference:
+    def _get_col_ref(cls, collection_name: Optional[str] = None) -> AsyncCollectionReference:
         """
         Returns the collection reference.
         """
-        return _get_col_ref(cls, cls.__collection__)
+        return _get_col_ref(cls, collection_name)
 
     @classmethod
     def get_collection_name(cls) -> str:
@@ -311,13 +392,13 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
         """
         return get_collection_name(cls, cls.__collection__)
 
-    def _get_doc_ref(self) -> AsyncDocumentReference:
+    def _get_doc_ref(self, config_name: Optional[str] = "(default)") -> AsyncDocumentReference:
         """
         Returns the document reference.
 
         :raise DocumentIDError: If the ID is not valid.
         """
-        return self._get_col_ref().document(self.get_document_id())  # type: ignore
+        return self._get_col_ref(config_name).document(self.get_document_id())  # type: ignore
 
     @staticmethod
     def _validate_document_id(document_id: str):
