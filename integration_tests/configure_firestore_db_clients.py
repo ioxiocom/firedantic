@@ -91,9 +91,9 @@ def configure_multiple_clients():
     assert default.prefix == "firedantic-test-"
     assert default.project == "firedantic-test"
 
-    # Client objects exist
-    assert default.client is not None
-    assert default.async_client is not None
+    # Client objects exist when called
+    assert config.get_client() is not None
+    assert config.get_async_client() is not None
 
     # Types are correct
     assert isinstance(default.client, Client)
@@ -115,6 +115,10 @@ def configure_multiple_clients():
     # Prefix & project
     assert billing.prefix == "test-billing-"
     assert billing.project == "test-billing"
+
+    # Client objects exist when called
+    assert config.get_client("billing") is not None
+    assert config.get_async_client("billing") is not None
 
     # Correct client types
     assert isinstance(billing.client, Client)
