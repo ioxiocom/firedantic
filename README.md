@@ -18,7 +18,7 @@ pip install firedantic
 
 ## Quick overview
 
-Firedantic provides simple Pydantic-based models for Firestore, with both sync and async model classes, helpers for composite indexes and TTL policies, and an improved configuration system that supports multiple named Firestore connections.
+Firedantic provides simple Pydantic-based models for Firestore, with both sync and async model classes, helpers for composite indexes and TTL policies, and a new configuration system that supports multiple named Firestore connections.
 
 ## Usage
 
@@ -375,7 +375,7 @@ and TTL policies. However, you can use separate functions to set up only either 
 them.
 
 
-### Legacy Sync Example
+###### Legacy Sync Example
 ```python
 from datetime import datetime
 from google.cloud.firestore import Client, Query
@@ -416,7 +416,7 @@ if __name__ == "__main__":
     main()
 ```
 
-### Legacy Async Example
+###### Legacy Async Example
 ```python
 import asyncio
 from datetime import datetime
@@ -474,7 +474,7 @@ The following methods can be used in a transaction for both **sync** and **async
 
 When using transactions, note that read operations must come before write operations.
 
-## Recommended Usage (New Configuration Class)
+### Recommended Usage (New Configuration Class)
 
 With the new `Configuration` system, transactions automatically use the configured:
 - Project
